@@ -4,6 +4,7 @@
   "private": true,
   "description": "Chrome MV3 extension that hides spoiler-prone YouTube durations and player progress.",
   "scripts": {
+    "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1",
     "test": "node --test"
   },
   "devDependencies": {}
