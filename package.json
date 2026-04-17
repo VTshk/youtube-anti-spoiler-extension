@@ -2,7 +2,7 @@
   "name": "youtube-anti-spoiler-extension",
   "version": "0.1.0",
   "private": true,
-  "description": "Chrome MV3 extension that hides spoiler-prone YouTube durations and player progress.",
+  "description": "Chrome MV3 extension that hides spoiler-prone YouTube time indicators, progress bars, and previews.",
   "scripts": {
     "build:release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-release.ps1",
     "test": "node --test"

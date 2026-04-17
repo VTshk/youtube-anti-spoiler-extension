@@ -29,11 +29,3 @@ The extension does not show ads and does not use user data for advertising.
 ## Limited Use Statement
 
 The extension's use of information is limited to providing and improving its single purpose: hiding spoiler-prone YouTube interface elements in the user's browser. The extension does not transfer, sell, or use user data for unrelated purposes.
-
-## Chrome Web Store Dashboard Notes
-
-For the Chrome Web Store privacy fields:
-
-- Data collection: select that the extension does not collect user data.
-- Remote code: select that the extension does not use remote code.
-- Privacy policy URL: publish this policy at a public URL and enter that URL in the dashboard.

@@ -14,18 +14,23 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 
 ```text
 .
-├── manifest.json
-├── icons/
-├── popup/
-│   ├── popup.html
-│   ├── popup.css
-│   └── popup.js
-├── src/
-│   ├── content/
-│   │   └── content.js
-│   └── shared/
-│       └── settings.js
-└── tests/
+|-- manifest.json
+|-- icons/
+|-- popup/
+|   |-- popup.html
+|   |-- popup.css
+|   `-- popup.js
+|-- src/
+|   |-- background/
+|   |   `-- background.js
+|   |-- content/
+|   |   `-- content.js
+|   `-- shared/
+|       `-- settings.js
+|-- tests/
+|-- scripts/
+|-- store/
+`-- docs/
 ```
 
 ## Local Installation
@@ -36,7 +41,7 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 4. Select the project folder.
 5. Open `https://www.youtube.com/`.
 
-No build step is required.
+No build step is required for local unpacked installation.
 
 ## Usage
 
@@ -45,19 +50,27 @@ The popup has a main **Protection is on** toggle. It fully enables or disables t
 Available settings:
 
 - **Hide time** - hides duration in lists/previews and time in the player. Enabled by default.
-- **Hide progress bar** - hides the player progress bar. Enabled by default.
+- **Hide progress bar** - hides the player timeline and preview progress bars. Enabled by default.
 - **Blur previews** - applies a strong blur to video thumbnails/previews. Disabled by default.
 
 ## Development
 
-Run the basic tests:
+Run the tests:
 
 ```bash
 npm test
 ```
 
-Tests cover setting defaults, legacy key migration, content script selectors, the MV3 manifest, and the popup.
+Tests cover setting defaults, legacy key migration, content script selectors, the MV3 manifest, toolbar icon state, popup behavior, and release packaging.
 
 ## Chrome Web Store Preparation
 
-The project already includes an MV3 manifest, popup, content script, `storage` permission, YouTube host permission, and placeholder PNG icons. Replace the icons with final assets before publishing.
+Build the upload package:
+
+```bash
+npm run build:release
+```
+
+The generated ZIP is written to `dist/` and contains only runtime extension files. Store listing text, permission justifications, reviewer notes, and the release checklist are in `store/`.
+
+The public privacy policy page is `docs/privacy.md`, intended for GitHub Pages.

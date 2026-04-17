@@ -3,5 +3,3 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 dist/
-.superpowers/
-.logo-preview-server.*

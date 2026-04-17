@@ -26,7 +26,7 @@
 - Copy the single purpose and permission justifications from `store/permissions.md`.
 - Select that Anti-Spoiler for YouTube does not collect user data.
 - Select that the extension does not use remote code.
-- Publish `store/privacy.md` at a public URL and add that URL to the dashboard.
+- Publish `docs/privacy.md` at a public URL and add that URL to the dashboard.
 
 ## Distribution
 

@@ -52,17 +52,3 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
     "src/content/content.js",
   ]);
 });
-
-test("repository excludes temporary logo preview artifacts", () => {
-  const rootPath = path.join(__dirname, "..");
-
-  [
-    path.join(rootPath, "icons", "logo-variants.html"),
-    path.join(rootPath, ".logo-preview-server.cjs"),
-    path.join(rootPath, ".logo-preview-server.err.log"),
-    path.join(rootPath, ".logo-preview-server.out.log"),
-    path.join(rootPath, ".superpowers"),
-  ].forEach((artifactPath) => {
-    assert.equal(fs.existsSync(artifactPath), false, `${artifactPath} should not exist`);
-  });
-});

@@ -53,6 +53,8 @@ test("store release documents cover Chrome Web Store dashboard fields", () => {
 
   assert.match(readText("store/listing.md"), /Chrome Web Store Listing/);
   assert.match(readText("store/privacy.md"), /Privacy Policy/);
+  assert.match(readText("docs/privacy.md"), /permalink: \/privacy\//);
+  assert.doesNotMatch(readText("docs/privacy.md"), /Chrome Web Store Dashboard Notes/);
   assert.match(readText("store/permissions.md"), /storage/);
   assert.match(readText("store/permissions.md"), /https:\/\/www\.youtube\.com\/\*/);
   assert.match(readText("store/reviewer-notes.md"), /Load unpacked/);
