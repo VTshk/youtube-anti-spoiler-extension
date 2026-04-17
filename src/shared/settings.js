@@ -1,0 +1,128 @@
+(function initSettings(root, factory) {
+  const api = factory(root);
+
+  root.YouTubeAntiSpoiler = Object.assign(root.YouTubeAntiSpoiler || {}, api);
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function createSettings(root) {
+  const DEFAULT_SETTINGS = Object.freeze({
+    extensionEnabled: true,
+    hideTime: true,
+    hidePlayerProgressBar: true,
+    hideVideoPreviews: false,
+  });
+
+  const SETTING_KEYS = Object.freeze(Object.keys(DEFAULT_SETTINGS));
+  const LEGACY_SETTING_KEYS = Object.freeze([
+    "hideThumbnailDuration",
+    "hidePlayerTime",
+  ]);
+  const STORAGE_READ_KEYS = Object.freeze([
+    ...SETTING_KEYS,
+    ...LEGACY_SETTING_KEYS,
+  ]);
+
+  function getBoolean(raw, key) {
+    return typeof raw[key] === "boolean" ? raw[key] : DEFAULT_SETTINGS[key];
+  }
+
+  function getMigratedHideTime(raw) {
+    if (typeof raw.hideTime === "boolean") {
+      return raw.hideTime;
+    }
+
+    const hasLegacyThumbnail = typeof raw.hideThumbnailDuration === "boolean";
+    const hasLegacyPlayer = typeof raw.hidePlayerTime === "boolean";
+
+    if (!hasLegacyThumbnail && !hasLegacyPlayer) {
+      return DEFAULT_SETTINGS.hideTime;
+    }
+
+    const legacyThumbnail = hasLegacyThumbnail
+      ? raw.hideThumbnailDuration
+      : DEFAULT_SETTINGS.hideTime;
+    const legacyPlayer = hasLegacyPlayer
+      ? raw.hidePlayerTime
+      : DEFAULT_SETTINGS.hideTime;
+
+    return legacyThumbnail && legacyPlayer;
+  }
+
+  function normalizeSettings(rawSettings) {
+    const raw = rawSettings || {};
+
+    return {
+      extensionEnabled: getBoolean(raw, "extensionEnabled"),
+      hideTime: getMigratedHideTime(raw),
+      hidePlayerProgressBar: getBoolean(raw, "hidePlayerProgressBar"),
+      hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
+    };
+  }
+
+  function getStorageArea(storageArea) {
+    if (storageArea) {
+      return storageArea;
+    }
+
+    if (root.chrome && root.chrome.storage && root.chrome.storage.sync) {
+      return root.chrome.storage.sync;
+    }
+
+    throw new Error("chrome.storage.sync is unavailable.");
+  }
+
+  function getLastRuntimeError() {
+    if (root.chrome && root.chrome.runtime && root.chrome.runtime.lastError) {
+      return root.chrome.runtime.lastError;
+    }
+
+    return null;
+  }
+
+  function readSettings(storageArea) {
+    const syncStorage = getStorageArea(storageArea);
+
+    return new Promise((resolve, reject) => {
+      syncStorage.get(STORAGE_READ_KEYS, (storedSettings) => {
+        const runtimeError = getLastRuntimeError();
+
+        if (runtimeError) {
+          reject(new Error(runtimeError.message));
+          return;
+        }
+
+        resolve(normalizeSettings(storedSettings));
+      });
+    });
+  }
+
+  function writeSettings(nextSettings, storageArea) {
+    const syncStorage = getStorageArea(storageArea);
+    const normalizedSettings = normalizeSettings(nextSettings);
+
+    return new Promise((resolve, reject) => {
+      syncStorage.set(normalizedSettings, () => {
+        const runtimeError = getLastRuntimeError();
+
+        if (runtimeError) {
+          reject(new Error(runtimeError.message));
+          return;
+        }
+
+        resolve(normalizedSettings);
+      });
+    });
+  }
+
+  return {
+    DEFAULT_SETTINGS,
+    SETTING_KEYS,
+    LEGACY_SETTING_KEYS,
+    STORAGE_READ_KEYS,
+    normalizeSettings,
+    readSettings,
+    writeSettings,
+  };
+});

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Anti-Spoiler for YouTube</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup-shell">
+      <header class="popup-header">
+        <img class="brand-logo" src="../icons/icon.svg" alt="" aria-hidden="true">
+        <h1 class="eyebrow">Anti-Spoiler for YouTube</h1>
+      </header>
+
+      <section class="power-card" aria-label="Main toggle">
+        <label class="power-toggle">
+          <input
+            class="power-input"
+            type="checkbox"
+            data-power-toggle
+            aria-label="Enable protection"
+          >
+          <span class="power-track" aria-hidden="true">
+            <span class="power-label power-label-on">ON</span>
+            <span class="power-label power-label-off">OFF</span>
+            <span class="power-knob"></span>
+          </span>
+        </label>
+
+        <p class="power-title" data-power-status>Protection is on</p>
+        <p class="power-note" data-power-note>Spoilers are hidden on YouTube</p>
+      </section>
+
+      <section class="settings-list" data-settings-panel aria-label="Protection settings">
+        <label class="setting-row">
+          <span class="setting-copy">
+            <span class="setting-title">Hide time</span>
+            <span class="setting-note">Hide video duration in the player and previews</span>
+          </span>
+          <input class="checkbox-input" type="checkbox" data-setting="hideTime">
+        </label>
+
+        <label class="setting-row">
+          <span class="setting-copy">
+            <span class="setting-title">Hide progress bar</span>
+            <span class="setting-note">Hide the timeline in the player and previews</span>
+          </span>
+          <input
+            class="checkbox-input"
+            type="checkbox"
+            data-setting="hidePlayerProgressBar"
+          >
+        </label>
+
+        <label class="setting-row">
+          <span class="setting-copy">
+            <span class="setting-title">Blur previews</span>
+            <span class="setting-note">Apply a strong blur to previews</span>
+          </span>
+          <input
+            class="checkbox-input"
+            type="checkbox"
+            data-setting="hideVideoPreviews"
+          >
+        </label>
+      </section>
+      <p class="status" data-status aria-live="polite"></p>
+    </main>
+
+    <script src="../src/shared/settings.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
