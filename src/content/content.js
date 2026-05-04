@@ -169,17 +169,10 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
     };
 
     const raw = settings || {};
-    const hasLegacyThumbnail = typeof raw.hideThumbnailDuration === "boolean";
-    const hasLegacyPlayer = typeof raw.hidePlayerTime === "boolean";
-    const legacyHideTime = hasLegacyThumbnail || hasLegacyPlayer
-      ? (hasLegacyThumbnail ? raw.hideThumbnailDuration : defaults.hideTime) &&
-        (hasLegacyPlayer ? raw.hidePlayerTime : defaults.hideTime)
-      : defaults.hideTime;
 
     return Object.keys(defaults).reduce((normalized, key) => {
       if (key === "hideTime") {
-        normalized[key] =
-          typeof raw.hideTime === "boolean" ? raw.hideTime : legacyHideTime;
+        normalized[key] = true;
         return normalized;
       }
 

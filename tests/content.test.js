@@ -32,6 +32,22 @@ test("getEnabledClassNames returns no hiding classes when the extension is disab
   );
 });
 
+test("getEnabledClassNames keeps time hiding enabled when stored setting is false", () => {
+  assert.deepEqual(
+    content.getEnabledClassNames({
+      extensionEnabled: true,
+      hideTime: false,
+      hidePlayerProgressBar: true,
+      hideVideoPreviews: false,
+    }),
+    [
+      "yas-extension-enabled",
+      "yas-hide-time",
+      "yas-hide-player-progress-bar",
+    ],
+  );
+});
+
 test("buildSpoilerCss targets YouTube thumbnail, player time, and progress selectors", () => {
   const css = content.buildSpoilerCss();
 

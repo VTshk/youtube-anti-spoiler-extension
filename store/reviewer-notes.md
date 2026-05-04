@@ -8,7 +8,7 @@ Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, includi
 
 1. In `chrome://extensions`, use **Load unpacked** and select the extension project folder.
 2. Open `https://www.youtube.com/`.
-3. Confirm that video durations in lists, recommendations, search results, and player controls are hidden when **Hide time** is enabled.
+3. Confirm that video durations in lists, recommendations, search results, and player controls are hidden when protection is on.
 4. Confirm that player and preview progress bars are hidden when **Hide progress bar** is enabled.
 5. Open the extension popup.
 6. Turn **Protection is on** off.

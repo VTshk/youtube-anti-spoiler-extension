@@ -28,34 +28,12 @@
     return typeof raw[key] === "boolean" ? raw[key] : DEFAULT_SETTINGS[key];
   }
 
-  function getMigratedHideTime(raw) {
-    if (typeof raw.hideTime === "boolean") {
-      return raw.hideTime;
-    }
-
-    const hasLegacyThumbnail = typeof raw.hideThumbnailDuration === "boolean";
-    const hasLegacyPlayer = typeof raw.hidePlayerTime === "boolean";
-
-    if (!hasLegacyThumbnail && !hasLegacyPlayer) {
-      return DEFAULT_SETTINGS.hideTime;
-    }
-
-    const legacyThumbnail = hasLegacyThumbnail
-      ? raw.hideThumbnailDuration
-      : DEFAULT_SETTINGS.hideTime;
-    const legacyPlayer = hasLegacyPlayer
-      ? raw.hidePlayerTime
-      : DEFAULT_SETTINGS.hideTime;
-
-    return legacyThumbnail && legacyPlayer;
-  }
-
   function normalizeSettings(rawSettings) {
     const raw = rawSettings || {};
 
     return {
       extensionEnabled: getBoolean(raw, "extensionEnabled"),
-      hideTime: getMigratedHideTime(raw),
+      hideTime: true,
       hidePlayerProgressBar: getBoolean(raw, "hidePlayerProgressBar"),
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
     };

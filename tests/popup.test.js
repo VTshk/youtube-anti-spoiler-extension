@@ -47,7 +47,6 @@ async function loadPopup(storedSettings = {}) {
   const pausedPanel = createPopupElement();
   const status = createPopupElement();
   const settingToggles = [
-    createPopupElement({ setting: "hideTime" }),
     createPopupElement({ setting: "hidePlayerProgressBar" }),
     createPopupElement({ setting: "hideVideoPreviews" }),
   ];
@@ -121,7 +120,7 @@ async function loadPopup(storedSettings = {}) {
   };
 }
 
-test("popup contains the English AdGuard-like power control and checkbox settings", () => {
+test("popup contains the English power control and configurable checkbox settings", () => {
   const popupPath = path.join(__dirname, "..", "popup", "popup.html");
   const html = fs.readFileSync(popupPath, "utf8");
 
@@ -133,8 +132,8 @@ test("popup contains the English AdGuard-like power control and checkbox setting
   assert.match(html, /Anti-Spoiler for YouTube/);
   assert.match(html, /Protection is on/);
   assert.match(html, /data-settings-panel/);
-  assert.match(html, /data-setting="hideTime"/);
-  assert.match(html, /Hide time/);
+  assert.doesNotMatch(html, /data-setting="hideTime"/);
+  assert.doesNotMatch(html, /Hide time/);
   assert.match(html, /data-setting="hidePlayerProgressBar"/);
   assert.match(html, /Hide progress bar/);
   assert.match(html, /data-setting="hideVideoPreviews"/);

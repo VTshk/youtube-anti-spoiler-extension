@@ -23,14 +23,14 @@ test("normalizeSettings keeps known boolean settings and fills missing defaults"
     }),
     {
       extensionEnabled: false,
-      hideTime: false,
+      hideTime: true,
       hidePlayerProgressBar: true,
       hideVideoPreviews: true,
     },
   );
 });
 
-test("normalizeSettings migrates legacy time settings into the unified hideTime setting", () => {
+test("normalizeSettings ignores legacy time settings and keeps hideTime enabled", () => {
   assert.deepEqual(
     settings.normalizeSettings({
       hideThumbnailDuration: true,
@@ -38,7 +38,7 @@ test("normalizeSettings migrates legacy time settings into the unified hideTime 
     }),
     {
       extensionEnabled: true,
-      hideTime: false,
+      hideTime: true,
       hidePlayerProgressBar: true,
       hideVideoPreviews: false,
     },
@@ -70,7 +70,7 @@ test("readSettings asks storage for current and legacy setting keys", async () =
   ]);
   assert.deepEqual(normalizedSettings, {
     extensionEnabled: true,
-    hideTime: false,
+    hideTime: true,
     hidePlayerProgressBar: false,
     hideVideoPreviews: false,
   });

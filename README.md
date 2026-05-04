@@ -47,9 +47,8 @@ No build step is required for local unpacked installation.
 
 The popup has a main **Protection is on** toggle. It fully enables or disables the extension without changing the other checkboxes.
 
-Available settings:
+Time hiding is always active while protection is on. Available settings:
 
-- **Hide time** - hides duration in lists/previews and time in the player. Enabled by default.
 - **Hide progress bar** - hides the player timeline and preview progress bars. Enabled by default.
 - **Blur previews** - applies a strong blur to video thumbnails/previews. Disabled by default.
 
@@ -61,7 +60,7 @@ Run the tests:
 npm test
 ```
 
-Tests cover setting defaults, legacy key migration, content script selectors, the MV3 manifest, toolbar icon state, popup behavior, and release packaging.
+Tests cover setting defaults, legacy key compatibility, content script selectors, the MV3 manifest, toolbar icon state, popup behavior, and release packaging.
 
 ## Chrome Web Store Preparation
 
