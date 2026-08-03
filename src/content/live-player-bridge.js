@@ -1,0 +1,502 @@
+(function initLivePlayerBridgeScript(root, factory) {
+  const api = factory(root);
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    api.initLivePlayerBridge(root);
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this, function createLivePlayerBridge() {
+  const LIVE_START_SEEK_EVENT = "youtube-anti-spoiler-live-start-seek";
+  const LIVE_START_SEEK_RESULT_EVENT = "youtube-anti-spoiler-live-start-seek-result";
+  const LIVE_GUARD_PAUSE_EVENT = "youtube-anti-spoiler-live-guard-pause";
+  const LIVE_GUARD_PLAY_EVENT = "youtube-anti-spoiler-live-guard-play";
+  const LIVE_GUARD_CONTINUE_EVENT = "youtube-anti-spoiler-live-guard-continue";
+  const LIVE_STATE_REQUEST_EVENT = "youtube-anti-spoiler-live-state-request";
+  const LIVE_STATE_RESULT_EVENT = "youtube-anti-spoiler-live-state-result";
+  const LIVE_START_VERIFY_DELAY_MS = 500;
+  const LIVE_START_SEEK_TOLERANCE_SECONDS = 2;
+  const BRIDGE_FLAG = "__youtubeAntiSpoilerLivePlayerBridgeInitialized";
+
+  function parseSeekDetail(detail) {
+    if (typeof detail !== "string") {
+      return {};
+    }
+
+    try {
+      return JSON.parse(detail);
+    } catch (error) {
+      return {};
+    }
+  }
+
+  function getFiniteNumber(value) {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function getPlayerSeekStart(player, fallbackSeconds) {
+    if (player && typeof player.getProgressState === "function") {
+      try {
+        const progressState = player.getProgressState();
+        const seekableStart = getFiniteNumber(
+          progressState && progressState.seekableStart,
+        );
+
+        if (seekableStart !== null) {
+          return seekableStart;
+        }
+      } catch (error) {
+        // Fall through to the content-world video seekable start.
+      }
+    }
+
+    const fallbackSeekStart = getFiniteNumber(fallbackSeconds);
+    return fallbackSeekStart !== null ? fallbackSeekStart : 0;
+  }
+
+  function getPlayerSeekableEnd(player) {
+    if (player && typeof player.getProgressState === "function") {
+      try {
+        const progressState = player.getProgressState();
+        return getFiniteNumber(progressState && progressState.seekableEnd);
+      } catch (error) {
+        // Fall through; the caller decides whether a live-head seek is possible.
+      }
+    }
+
+    return null;
+  }
+
+  function getPlayerCurrentTime(player) {
+    if (!player || typeof player.getCurrentTime !== "function") {
+      return null;
+    }
+
+    try {
+      return getFiniteNumber(player.getCurrentTime());
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function isNearSeekTarget(currentTime, seekSeconds) {
+    return (
+      Number.isFinite(currentTime) &&
+      Number.isFinite(seekSeconds) &&
+      Math.abs(currentTime - seekSeconds) <= LIVE_START_SEEK_TOLERANCE_SECONDS
+    );
+  }
+
+  function findPlayer(doc) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return null;
+    }
+
+    return doc.querySelector("#movie_player");
+  }
+
+  function getObject(value) {
+    return value && typeof value === "object" ? value : null;
+  }
+
+  function getNestedObject(rootObject, path) {
+    return path.reduce((current, key) => (
+      getObject(current) ? current[key] : null
+    ), rootObject);
+  }
+
+  function getVideoDataLiveSignal(videoData) {
+    if (!videoData || typeof videoData !== "object") {
+      return false;
+    }
+
+    // isLive means "live right now". isLiveContent stays true on VOD replays of
+    // finished streams, so it must never count as a live signal — the guard
+    // would block plain recordings and "Continue live" would seek to the end.
+    return videoData.isLive === true;
+  }
+
+  function getVideoDataVideoId(videoData) {
+    if (!videoData || typeof videoData !== "object") {
+      return null;
+    }
+
+    return videoData.video_id || videoData.videoId || null;
+  }
+
+  function getPlayerResponseLiveSignal(playerResponse) {
+    if (!playerResponse || typeof playerResponse !== "object") {
+      return false;
+    }
+
+    const videoDetails = getObject(playerResponse.videoDetails);
+    const liveBroadcastDetails = getNestedObject(
+      playerResponse,
+      ["microformat", "playerMicroformatRenderer", "liveBroadcastDetails"],
+    );
+    const playabilityStatus = getObject(playerResponse.playabilityStatus);
+
+    // Only "live right now" markers count. isLiveContent and a bare
+    // liveBroadcastDetails object persist on VODs of finished broadcasts.
+    return Boolean(
+      (videoDetails && videoDetails.isLive === true) ||
+      (liveBroadcastDetails && liveBroadcastDetails.isLiveNow === true) ||
+      (playabilityStatus && playabilityStatus.liveStreamability)
+    );
+  }
+
+  function getPlayerResponseVideoId(playerResponse) {
+    return getNestedObject(playerResponse, ["videoDetails", "videoId"]) || null;
+  }
+
+  function getPlayerVideoData(player) {
+    if (!player || typeof player.getVideoData !== "function") {
+      return null;
+    }
+
+    try {
+      return player.getVideoData();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function getPlayerResponse(root, player) {
+    if (player && typeof player.getPlayerResponse === "function") {
+      try {
+        const playerResponse = player.getPlayerResponse();
+
+        if (playerResponse) {
+          return playerResponse;
+        }
+      } catch (error) {
+        // Fall through to ytInitialPlayerResponse.
+      }
+    }
+
+    return root && root.ytInitialPlayerResponse
+      ? root.ytInitialPlayerResponse
+      : null;
+  }
+
+  function getLiveState(root, doc) {
+    const player = findPlayer(doc);
+    const videoData = getPlayerVideoData(player);
+    const playerResponse = getPlayerResponse(root, player);
+    const signals = {};
+    const videoDataVideoId = getVideoDataVideoId(videoData);
+    const playerResponseVideoId = getPlayerResponseVideoId(playerResponse);
+
+    if (getVideoDataLiveSignal(videoData)) {
+      signals.videoDataLive = true;
+    }
+
+    if (getPlayerResponseLiveSignal(playerResponse)) {
+      signals.playerResponseLive = true;
+    }
+
+    return {
+      isLive: Boolean(signals.videoDataLive || signals.playerResponseLive),
+      signals,
+      videoId: videoDataVideoId || playerResponseVideoId,
+    };
+  }
+
+  function seekPlayer(doc, fallbackSeconds) {
+    const player = findPlayer(doc);
+    const seekSeconds = getPlayerSeekStart(player, fallbackSeconds);
+
+    if (!player || typeof player.seekTo !== "function") {
+      return {
+        currentTime: getPlayerCurrentTime(player),
+        seekSeconds,
+        success: false,
+      };
+    }
+
+    try {
+      player.seekTo(seekSeconds, true);
+      return {
+        currentTime: null,
+        seekSeconds,
+        success: false,
+      };
+    } catch (error) {
+      return {
+        currentTime: getPlayerCurrentTime(player),
+        seekSeconds,
+        success: false,
+      };
+    }
+  }
+
+  function pausePlayer(doc) {
+    const player = findPlayer(doc);
+
+    if (player && typeof player.pauseVideo === "function") {
+      try {
+        player.pauseVideo();
+        return true;
+      } catch (error) {
+        // Fall through to the media element fallback.
+      }
+    }
+
+    if (!doc || typeof doc.querySelector !== "function") {
+      return false;
+    }
+
+    const video = doc.querySelector("video");
+
+    if (!video || typeof video.pause !== "function") {
+      return false;
+    }
+
+    try {
+      video.pause();
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function playMediaElement(doc) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return false;
+    }
+
+    const video = doc.querySelector("video");
+
+    if (!video || typeof video.play !== "function") {
+      return false;
+    }
+
+    try {
+      const result = video.play();
+
+      if (result && typeof result.catch === "function") {
+        result.catch(() => {});
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function playPlayer(doc) {
+    const player = findPlayer(doc);
+
+    if (player && typeof player.playVideo === "function") {
+      try {
+        player.playVideo();
+        return true;
+      } catch (error) {
+        return playMediaElement(doc);
+      }
+    }
+
+    return playMediaElement(doc);
+  }
+
+  function seekPlayerToLiveHead(doc) {
+    const player = findPlayer(doc);
+
+    if (player && typeof player.seekToLiveHead === "function") {
+      try {
+        player.seekToLiveHead();
+        return true;
+      } catch (error) {
+        // Fall through to the progress-state live edge.
+      }
+    }
+
+    const seekableEnd = getPlayerSeekableEnd(player);
+
+    if (
+      seekableEnd !== null &&
+      player &&
+      typeof player.seekTo === "function"
+    ) {
+      try {
+        player.seekTo(seekableEnd, true);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    return false;
+  }
+
+  function continuePlayer(doc) {
+    // "Continue live" must jump to the live edge first: the guard pauses the
+    // stream near the start of the DVR window, so a plain resume would replay
+    // from the beginning instead of the current live moment.
+    seekPlayerToLiveHead(doc);
+    return playPlayer(doc);
+  }
+
+  function verifyPlayerSeek(doc, seekResult) {
+    const player = findPlayer(doc);
+    const currentTime = getPlayerCurrentTime(player);
+
+    return {
+      currentTime,
+      seekSeconds: seekResult.seekSeconds,
+      success: isNearSeekTarget(currentTime, seekResult.seekSeconds),
+    };
+  }
+
+  function serializeSeekResultDetail(requestId, result) {
+    return JSON.stringify({
+      currentTime: result.currentTime,
+      requestId,
+      seekSeconds: result.seekSeconds,
+      success: result.success,
+    });
+  }
+
+  function dispatchSeekResult(root, doc, requestId, result) {
+    if (
+      !root ||
+      typeof root.CustomEvent !== "function" ||
+      !doc ||
+      typeof doc.dispatchEvent !== "function"
+    ) {
+      return false;
+    }
+
+    try {
+      doc.dispatchEvent(new root.CustomEvent(LIVE_START_SEEK_RESULT_EVENT, {
+        bubbles: true,
+        composed: true,
+        detail: serializeSeekResultDetail(requestId, result),
+      }));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function dispatchLiveStateResult(root, doc, requestId, result) {
+    if (
+      !root ||
+      typeof root.CustomEvent !== "function" ||
+      !doc ||
+      typeof doc.dispatchEvent !== "function"
+    ) {
+      return false;
+    }
+
+    try {
+      doc.dispatchEvent(new root.CustomEvent(LIVE_STATE_RESULT_EVENT, {
+        bubbles: true,
+        composed: true,
+        detail: JSON.stringify({
+          isLive: result.isLive,
+          requestId,
+          signals: result.signals,
+          videoId: result.videoId,
+        }),
+      }));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function scheduleSeekVerification(root, doc, requestId, seekResult) {
+    if (
+      seekResult.success ||
+      !root ||
+      typeof root.setTimeout !== "function"
+    ) {
+      dispatchSeekResult(root, doc, requestId, seekResult);
+      return;
+    }
+
+    root.setTimeout(() => {
+      dispatchSeekResult(
+        root,
+        doc,
+        requestId,
+        verifyPlayerSeek(doc, seekResult),
+      );
+    }, LIVE_START_VERIFY_DELAY_MS);
+  }
+
+  function initLivePlayerBridge(root) {
+    const currentWindow = root || {};
+    const currentDocument = currentWindow.document;
+
+    if (
+      !currentDocument ||
+      currentWindow[BRIDGE_FLAG] ||
+      typeof currentDocument.addEventListener !== "function"
+    ) {
+      return;
+    }
+
+    currentWindow[BRIDGE_FLAG] = true;
+
+    currentDocument.addEventListener(LIVE_START_SEEK_EVENT, (event) => {
+      const detail = parseSeekDetail(event && event.detail);
+      const result = seekPlayer(currentDocument, detail.fallbackSeconds);
+      scheduleSeekVerification(
+        currentWindow,
+        currentDocument,
+        detail.requestId,
+        result,
+      );
+    }, true);
+
+    currentDocument.addEventListener(LIVE_GUARD_PAUSE_EVENT, () => {
+      pausePlayer(currentDocument);
+    }, true);
+
+    currentDocument.addEventListener(LIVE_GUARD_PLAY_EVENT, () => {
+      playPlayer(currentDocument);
+    }, true);
+
+    currentDocument.addEventListener(LIVE_GUARD_CONTINUE_EVENT, () => {
+      continuePlayer(currentDocument);
+    }, true);
+
+    currentDocument.addEventListener(LIVE_STATE_REQUEST_EVENT, (event) => {
+      const detail = parseSeekDetail(event && event.detail);
+      dispatchLiveStateResult(
+        currentWindow,
+        currentDocument,
+        detail.requestId,
+        getLiveState(currentWindow, currentDocument),
+      );
+    }, true);
+  }
+
+  return {
+    LIVE_GUARD_PAUSE_EVENT,
+    LIVE_GUARD_PLAY_EVENT,
+    LIVE_GUARD_CONTINUE_EVENT,
+    LIVE_STATE_REQUEST_EVENT,
+    LIVE_STATE_RESULT_EVENT,
+    LIVE_START_SEEK_EVENT,
+    LIVE_START_SEEK_RESULT_EVENT,
+    LIVE_START_VERIFY_DELAY_MS,
+    continuePlayer,
+    dispatchSeekResult,
+    getPlayerCurrentTime,
+    getPlayerSeekStart,
+    getPlayerSeekableEnd,
+    getLiveState,
+    initLivePlayerBridge,
+    isNearSeekTarget,
+    parseSeekDetail,
+    pausePlayer,
+    playPlayer,
+    scheduleSeekVerification,
+    seekPlayer,
+    seekPlayerToLiveHead,
+    verifyPlayerSeek,
+  };
+});

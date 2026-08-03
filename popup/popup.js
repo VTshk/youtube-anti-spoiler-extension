@@ -27,10 +27,6 @@
     return root.document.querySelector("[data-settings-panel]");
   }
 
-  function getPausedPanel() {
-    return root.document.querySelector("[data-paused-panel]");
-  }
-
   function getEnabledIconPaths() {
     return {
       16: "/icons/icon16.png",
@@ -84,7 +80,7 @@
     });
   }
 
-  function renderPower(settings, powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel) {
+  function renderPower(settings, powerToggle, powerStatus, powerNote, settingsPanel) {
     const enabled = Boolean(settings.extensionEnabled);
 
     if (powerToggle) {
@@ -104,10 +100,6 @@
 
     if (settingsPanel) {
       settingsPanel.hidden = !enabled;
-    }
-
-    if (pausedPanel) {
-      pausedPanel.hidden = enabled;
     }
   }
 
@@ -133,7 +125,7 @@
     });
   }
 
-  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel, toggles) {
+  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, toggles) {
     if (!powerToggle) {
       return;
     }
@@ -142,13 +134,10 @@
       const nextSettings = getFormSettings(toggles, currentSettings);
       nextSettings.extensionEnabled = powerToggle.checked;
 
-      const saved = await saveSettings(nextSettings);
-
-      if (saved) {
-        renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel);
-      } else {
-        renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel);
-      }
+      // currentSettings reflects the attempted state whether or not the write
+      // succeeds, so the power UI is rendered the same way either way.
+      await saveSettings(nextSettings);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
     });
   }
 
@@ -158,25 +147,24 @@
     const powerStatus = getPowerStatus();
     const powerNote = getPowerNote();
     const settingsPanel = getSettingsPanel();
-    const pausedPanel = getPausedPanel();
 
     try {
       currentSettings = await namespace.readSettings();
       renderSettings(currentSettings, toggles);
-      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
       await setActionIcon(currentSettings);
       setStatus("");
     } catch (error) {
       console.error("[Anti-Spoiler for YouTube] Could not read settings.", error);
       currentSettings = namespace.DEFAULT_SETTINGS;
       renderSettings(currentSettings, toggles);
-      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
       await setActionIcon(currentSettings);
       setStatus("Using default settings");
     }
 
     bindToggleSaving(toggles);
-    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, pausedPanel, toggles);
+    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, toggles);
   }
 
   if (root.document.readyState === "loading") {

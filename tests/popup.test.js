@@ -44,11 +44,11 @@ async function loadPopup(storedSettings = {}) {
   const powerStatus = createPopupElement();
   const powerNote = createPopupElement();
   const settingsPanel = createPopupElement();
-  const pausedPanel = createPopupElement();
   const status = createPopupElement();
   const settingToggles = [
     createPopupElement({ setting: "hidePlayerProgressBar" }),
     createPopupElement({ setting: "hideVideoPreviews" }),
+    createPopupElement({ setting: "startLiveFromBeginning" }),
   ];
   const setIconCalls = [];
   const context = {
@@ -84,7 +84,6 @@ async function loadPopup(storedSettings = {}) {
           "[data-power-status]": powerStatus,
           "[data-power-note]": powerNote,
           "[data-settings-panel]": settingsPanel,
-          "[data-paused-panel]": pausedPanel,
           "[data-status]": status,
         }[selector] || null;
       },
@@ -115,6 +114,7 @@ async function loadPopup(storedSettings = {}) {
 
   return {
     powerToggle,
+    settingToggles,
     setIconCalls,
     storedSettings,
   };
@@ -138,6 +138,9 @@ test("popup contains the English power control and configurable checkbox setting
   assert.match(html, /Hide progress bar/);
   assert.match(html, /data-setting="hideVideoPreviews"/);
   assert.match(html, /Blur previews/);
+  assert.match(html, /data-setting="startLiveFromBeginning"/);
+  assert.match(html, /Protect live streams/);
+  assert.match(html, /Pause live streams and hide live chat behind a spoiler guard/);
   assert.match(html, /class="checkbox-input"/);
   assert.doesNotMatch(html, /switch-large/);
   assert.doesNotMatch(html, /data-setting="hideThumbnailDuration"/);
@@ -170,7 +173,6 @@ test("popup script updates English power status text and hides settings when pau
   assert.match(js, /Protection is on/);
   assert.match(js, /Protection is off/);
   assert.match(js, /settingsPanel\.hidden = !enabled/);
-  assert.match(js, /pausedPanel\.hidden = enabled/);
   assert.doesNotMatch(js, /Saved/);
   assert.match(js, /Could not save settings/);
 });
@@ -198,6 +200,7 @@ test("popup sets the toolbar action icon to normal after enabling protection", a
     hideTime: true,
     hidePlayerProgressBar: true,
     hideVideoPreviews: false,
+    startLiveFromBeginning: true,
   });
 
   powerToggle.checked = true;
@@ -207,4 +210,24 @@ test("popup sets the toolbar action icon to normal after enabling protection", a
   assert.deepEqual(setIconCalls.at(-1), {
     path: getEnabledIconPaths(),
   });
+});
+
+test("popup saves the live start setting when changed", async () => {
+  const { settingToggles, storedSettings } = await loadPopup({
+    extensionEnabled: true,
+    hideTime: true,
+    hidePlayerProgressBar: true,
+    hideVideoPreviews: false,
+    startLiveFromBeginning: true,
+  });
+  const liveStartToggle = settingToggles.find(
+    (toggle) => toggle.dataset.setting === "startLiveFromBeginning",
+  );
+
+  assert.equal(liveStartToggle.checked, true);
+
+  liveStartToggle.checked = false;
+  await liveStartToggle.listeners.change();
+
+  assert.equal(storedSettings.startLiveFromBeginning, false);
 });

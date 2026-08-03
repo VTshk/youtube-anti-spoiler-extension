@@ -28,7 +28,16 @@
     {
       "matches": ["https://www.youtube.com/*"],
       "js": [
+        "src/content/live-player-bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": [
         "src/shared/settings.js",
+        "src/content/live-start-controller.js",
         "src/content/content.js"
       ],
       "run_at": "document_start"

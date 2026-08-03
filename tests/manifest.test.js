@@ -45,10 +45,19 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
     assert.equal(fs.existsSync(disabledIconPath), true, `${fileName} should exist`);
   });
 
-  const [contentScript] = manifest.content_scripts;
+  const [playerBridgeScript, contentScript] = manifest.content_scripts;
+  assert.deepEqual(playerBridgeScript.matches, ["https://www.youtube.com/*"]);
+  assert.deepEqual(playerBridgeScript.js, [
+    "src/content/live-player-bridge.js",
+  ]);
+  assert.equal(playerBridgeScript.run_at, "document_start");
+  assert.equal(playerBridgeScript.world, "MAIN");
+
   assert.deepEqual(contentScript.matches, ["https://www.youtube.com/*"]);
   assert.deepEqual(contentScript.js, [
     "src/shared/settings.js",
+    "src/content/live-start-controller.js",
     "src/content/content.js",
   ]);
+  assert.equal(contentScript.run_at, "document_start");
 });

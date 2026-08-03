@@ -24,7 +24,9 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 |   |-- background/
 |   |   `-- background.js
 |   |-- content/
-|   |   `-- content.js
+|   |   |-- content.js
+|   |   |-- live-player-bridge.js
+|   |   `-- live-start-controller.js
 |   `-- shared/
 |       `-- settings.js
 |-- tests/
@@ -51,6 +53,7 @@ Time hiding is always active while protection is on. Available settings:
 
 - **Hide progress bar** - hides the player timeline and preview progress bars. Enabled by default.
 - **Blur previews** - applies a strong blur to video thumbnails/previews. Disabled by default.
+- **Protect live streams** - when a live stream opens, immediately blurs and mutes the player, pauses it, and shows a choice: **Start from beginning** (earliest DVR point) or **Continue live** (jump to the live edge). Live chat is blurred behind a **Show comments** overlay. Recordings of finished streams are not affected. Enabled by default.
 
 ## Development
 

@@ -1,4 +1,11 @@
 (function initContent(root, factory) {
+  if (typeof module !== "undefined" && module.exports) {
+    // In Node (tests) the shared namespace is not pre-populated by the browser's
+    // script load order, so pull in the dependencies content.js relies on.
+    require("../shared/settings.js");
+    require("./live-start-controller.js");
+  }
+
   const shared = root.YouTubeAntiSpoiler || {};
   const api = factory(root, shared);
 
@@ -12,12 +19,22 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createContent(root, shared) {
   const STYLE_ID = "youtube-anti-spoiler-style";
   const REFRESH_EVENT = "youtube-anti-spoiler-locationchange";
+  const CHAT_GUARD_OBSCURED_CLASS = "yas-chat-spoiler-protection";
+  const CHAT_GUARD_OVERLAY_ID = "youtube-anti-spoiler-chat-guard";
+
+  // Live-start identifiers and behaviour are owned by the live-start controller
+  // module; content.js only needs the few it references for CSS and chat retry.
+  const LIVE_START_OBSCURED_CLASS = shared.LIVE_START_OBSCURED_CLASS;
+  const LIVE_GUARD_OVERLAY_ID = shared.LIVE_GUARD_OVERLAY_ID;
+  const LIVE_START_POLL_MS = shared.LIVE_START_POLL_MS;
+  const createLiveStartController = shared.createLiveStartController;
 
   const CLASS_BY_SETTING = Object.freeze({
     extensionEnabled: "yas-extension-enabled",
     hideTime: "yas-hide-time",
     hidePlayerProgressBar: "yas-hide-player-progress-bar",
     hideVideoPreviews: "yas-hide-video-previews",
+    startLiveFromBeginning: "yas-start-live-from-beginning",
   });
 
   const SETTING_KEYS = Object.freeze(Object.keys(CLASS_BY_SETTING));
@@ -153,6 +170,131 @@ ${scopeSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, PROGRESS_SELECTORS)} {
 ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
   filter: blur(24px) !important;
 }
+
+html.${LIVE_START_OBSCURED_CLASS} #movie_player,
+html.${LIVE_START_OBSCURED_CLASS} ytd-player,
+html.${LIVE_START_OBSCURED_CLASS} #player-container {
+  background: #0f0f0f !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+html.${LIVE_START_OBSCURED_CLASS} #movie_player video,
+html.${LIVE_START_OBSCURED_CLASS} ytd-player video {
+  filter: blur(32px) saturate(0.65) !important;
+  transform: scale(1.04) !important;
+}
+
+html.${CHAT_GUARD_OBSCURED_CLASS} ytd-live-chat-frame,
+html.${CHAT_GUARD_OBSCURED_CLASS} #chat {
+  position: relative !important;
+}
+
+html.${CHAT_GUARD_OBSCURED_CLASS} ytd-live-chat-frame iframe,
+html.${CHAT_GUARD_OBSCURED_CLASS} #chat iframe,
+html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #items,
+html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
+  filter: blur(18px) !important;
+  pointer-events: none !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} {
+  position: absolute !important;
+  z-index: 2147483647 !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  padding: 24px !important;
+  background: rgba(15, 15, 15, 0.82) !important;
+  color: #f8f8f8 !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  text-align: center !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  background: rgba(15, 15, 15, 0.72) !important;
+  color: #f8f8f8 !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  text-align: center !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-panel {
+  display: grid !important;
+  gap: 12px !important;
+  justify-items: center !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} button {
+  min-height: 34px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 6px !important;
+  padding: 0 12px !important;
+  background: #f8f8f8 !important;
+  color: #0f0f0f !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-panel {
+  width: min(420px, calc(100vw - 48px)) !important;
+  display: grid !important;
+  gap: 14px !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-title {
+  margin: 0 !important;
+  font-size: 22px !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-copy {
+  margin: 0 !important;
+  color: #d9d9d9 !important;
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} button {
+  min-height: 40px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 6px !important;
+  padding: 0 14px !important;
+  background: #f8f8f8 !important;
+  color: #0f0f0f !important;
+  font: inherit !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} button[data-live-guard-action="continue"] {
+  background: transparent !important;
+  color: #f8f8f8 !important;
+}
 `.trim();
   }
 
@@ -161,26 +303,22 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
       return shared.normalizeSettings(settings);
     }
 
-    const defaults = {
-      extensionEnabled: true,
-      hideTime: true,
-      hidePlayerProgressBar: true,
-      hideVideoPreviews: false,
-    };
-
-    const raw = settings || {};
-
-    return Object.keys(defaults).reduce((normalized, key) => {
-      if (key === "hideTime") {
-        normalized[key] = true;
-        return normalized;
-      }
-
-      normalized[key] =
-        typeof raw[key] === "boolean" ? raw[key] : defaults[key];
-      return normalized;
-    }, {});
+    // settings.js owns the canonical defaults; this only guards the mandatory
+    // time-hiding invariant if that module ever fails to load.
+    return Object.assign({}, settings, { hideTime: true });
   }
+
+  const liveStartController = createLiveStartController(root);
+  // The chat overlay can mount only once the chat frame exists, which happens
+  // well after navigation — hence the retry loop. The budget stops it from
+  // polling forever on pages that never get a chat (regular videos, home page).
+  const CHAT_GUARD_MAX_RETRIES = Math.ceil(
+    (shared.LIVE_START_TIMEOUT_MS || 10000) / (LIVE_START_POLL_MS || 100),
+  );
+  let chatGuardDisabled = false;
+  let chatGuardRetryTimer = null;
+  let chatGuardVideoId = null;
+  let chatGuardRetriesLeft = 0;
 
   function ensureStyle(doc) {
     const currentDocument = doc || root.document;
@@ -206,6 +344,152 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
     return style;
   }
 
+  function findChatGuardHost(doc) {
+    if (!doc || typeof doc.querySelector !== "function") {
+      return null;
+    }
+
+    return (
+      doc.querySelector("ytd-live-chat-frame") ||
+      doc.querySelector("#chat") ||
+      doc.querySelector("yt-live-chat-app")
+    );
+  }
+
+  function getChatGuardOverlay(doc) {
+    if (!doc || typeof doc.getElementById !== "function") {
+      return null;
+    }
+
+    return doc.getElementById(CHAT_GUARD_OVERLAY_ID);
+  }
+
+  function removeChatGuardOverlay(doc) {
+    const overlay = getChatGuardOverlay(doc);
+
+    if (overlay && typeof overlay.remove === "function") {
+      overlay.remove();
+    }
+  }
+
+  function removeChatGuardObscuring(doc) {
+    if (doc && doc.documentElement && doc.documentElement.classList) {
+      doc.documentElement.classList.remove(CHAT_GUARD_OBSCURED_CLASS);
+    }
+  }
+
+  function addChatGuardObscuring(doc) {
+    if (doc && doc.documentElement && doc.documentElement.classList) {
+      doc.documentElement.classList.add(CHAT_GUARD_OBSCURED_CLASS);
+    }
+  }
+
+  function clearChatGuardRetry() {
+    if (chatGuardRetryTimer && root.clearTimeout) {
+      root.clearTimeout(chatGuardRetryTimer);
+    }
+
+    chatGuardRetryTimer = null;
+  }
+
+  function renderChatGuardOverlay(doc) {
+    if (!doc || typeof doc.createElement !== "function" || getChatGuardOverlay(doc)) {
+      return true;
+    }
+
+    const host = findChatGuardHost(doc);
+
+    if (!host || typeof host.appendChild !== "function") {
+      return false;
+    }
+
+    const overlay = doc.createElement("div");
+    overlay.id = CHAT_GUARD_OVERLAY_ID;
+    overlay.className = "yas-chat-guard-overlay";
+
+    const panel = doc.createElement("div");
+    panel.className = "yas-chat-guard-panel";
+    overlay.appendChild(panel);
+
+    appendChatGuardElement(doc, panel, "p", "yas-chat-guard-title", "Comments hidden");
+
+    const button = doc.createElement("button");
+    button.type = "button";
+    button.dataset.chatGuardAction = "show";
+    button.textContent = "Show comments";
+    button.addEventListener("click", (event) => {
+      if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+
+      chatGuardDisabled = true;
+      clearChatGuardRetry();
+      removeChatGuardOverlay(doc);
+      removeChatGuardObscuring(doc);
+    });
+    panel.appendChild(button);
+
+    host.appendChild(overlay);
+    return true;
+  }
+
+  function appendChatGuardElement(doc, parent, tagName, className, text) {
+    const element = doc.createElement(tagName);
+    element.className = className;
+    element.textContent = text;
+    parent.appendChild(element);
+    return element;
+  }
+
+  function getChatGuardVideoId() {
+    return typeof shared.getLiveStartVideoId === "function"
+      ? shared.getLiveStartVideoId(root)
+      : null;
+  }
+
+  function syncChatGuard(settings, doc, isRetry) {
+    const normalizedSettings = normalizeSettings(settings);
+
+    clearChatGuardRetry();
+
+    // Chat only exists on watch pages; elsewhere the guard must not run (and
+    // especially must not keep retrying).
+    const videoId = getChatGuardVideoId();
+    const isWatchPage = Boolean(videoId) || !root.location;
+
+    if (videoId !== chatGuardVideoId) {
+      // A new video means a new decision: "Show comments" on the previous
+      // stream must not leave chat unprotected on the next one.
+      chatGuardVideoId = videoId;
+      chatGuardDisabled = false;
+    }
+
+    if (
+      !normalizedSettings.extensionEnabled ||
+      !normalizedSettings.startLiveFromBeginning ||
+      !isWatchPage ||
+      chatGuardDisabled
+    ) {
+      removeChatGuardOverlay(doc);
+      removeChatGuardObscuring(doc);
+      return;
+    }
+
+    addChatGuardObscuring(doc);
+
+    if (!isRetry) {
+      chatGuardRetriesLeft = CHAT_GUARD_MAX_RETRIES;
+    }
+
+    if (!renderChatGuardOverlay(doc) && chatGuardRetriesLeft > 0 && root.setTimeout) {
+      chatGuardRetriesLeft -= 1;
+      chatGuardRetryTimer = root.setTimeout(() => {
+        chatGuardRetryTimer = null;
+        syncChatGuard(normalizedSettings, doc, true);
+      }, LIVE_START_POLL_MS);
+    }
+  }
+
   function applySettings(settings, doc) {
     const currentDocument = doc || root.document;
 
@@ -225,22 +509,30 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
     });
 
     ensureStyle(currentDocument);
+    syncChatGuard(normalizeSettings(settings), currentDocument);
 
     return normalizeSettings(settings);
   }
 
   function loadAndApplySettings(doc) {
     if (typeof shared.readSettings !== "function") {
-      applySettings(undefined, doc);
-      return Promise.resolve(normalizeSettings());
+      const normalizedSettings = applySettings(undefined, doc);
+      liveStartController.sync(normalizedSettings, doc);
+      return Promise.resolve(normalizedSettings);
     }
 
     return shared
       .readSettings()
-      .then((settings) => applySettings(settings, doc))
+      .then((settings) => {
+        const normalizedSettings = applySettings(settings, doc);
+        liveStartController.sync(normalizedSettings, doc);
+        return normalizedSettings;
+      })
       .catch((error) => {
         console.warn("[Anti-Spoiler for YouTube] Could not load settings.", error);
-        return applySettings(undefined, doc);
+        const normalizedSettings = applySettings(undefined, doc);
+        liveStartController.sync(normalizedSettings, doc);
+        return normalizedSettings;
       });
   }
 
@@ -280,9 +572,15 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
     }
 
     // YouTube is a SPA. These events cover its own router and browser history.
-    ["yt-navigate-finish", "yt-page-data-updated", "popstate", REFRESH_EVENT].forEach(
-      (eventName) => currentWindow.addEventListener(eventName, refresh),
-    );
+    // yt-navigate-start matters for the live guard: it fires as the transition
+    // begins, so the eager shield arms before the new stream renders a frame.
+    [
+      "yt-navigate-start",
+      "yt-navigate-finish",
+      "yt-page-data-updated",
+      "popstate",
+      REFRESH_EVENT,
+    ].forEach((eventName) => currentWindow.addEventListener(eventName, refresh));
 
     currentWindow.__youtubeAntiSpoilerNavigationBound = true;
   }
@@ -366,8 +664,26 @@ ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
   return {
     STYLE_ID,
     CLASS_BY_SETTING,
+    LIVE_START_OBSCURED_CLASS,
+    LIVE_GUARD_OVERLAY_ID,
+    CHAT_GUARD_OBSCURED_CLASS,
+    CHAT_GUARD_OVERLAY_ID,
+    LIVE_GUARD_PAUSE_EVENT: shared.LIVE_GUARD_PAUSE_EVENT,
+    LIVE_GUARD_PLAY_EVENT: shared.LIVE_GUARD_PLAY_EVENT,
+    LIVE_GUARD_CONTINUE_EVENT: shared.LIVE_GUARD_CONTINUE_EVENT,
+    LIVE_START_SEEK_EVENT: shared.LIVE_START_SEEK_EVENT,
+    LIVE_START_SEEK_RESULT_EVENT: shared.LIVE_START_SEEK_RESULT_EVENT,
+    LIVE_STATE_REQUEST_EVENT: shared.LIVE_STATE_REQUEST_EVENT,
+    LIVE_STATE_RESULT_EVENT: shared.LIVE_STATE_RESULT_EVENT,
+    LIVE_START_TIMEOUT_MS: shared.LIVE_START_TIMEOUT_MS,
+    LIVE_START_POLL_MS,
     buildSpoilerCss,
     getEnabledClassNames,
+    getLiveStartVideoId: shared.getLiveStartVideoId,
+    getLiveStartTarget: shared.getLiveStartTarget,
+    isLikelyLivePlayback: shared.isLikelyLivePlayback,
+    seekToEarliestSeekablePosition: shared.seekToEarliestSeekablePosition,
+    createLiveStartController,
     ensureStyle,
     applySettings,
     init,

@@ -12,6 +12,7 @@
     hideTime: true,
     hidePlayerProgressBar: true,
     hideVideoPreviews: false,
+    startLiveFromBeginning: true,
   });
 
   const SETTING_KEYS = Object.freeze(Object.keys(DEFAULT_SETTINGS));
@@ -36,6 +37,7 @@
       hideTime: true,
       hidePlayerProgressBar: getBoolean(raw, "hidePlayerProgressBar"),
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
+      startLiveFromBeginning: getBoolean(raw, "startLiveFromBeginning"),
     };
   }
 
