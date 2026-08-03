@@ -12,6 +12,7 @@
     hideTime: true,
     hidePlayerProgressBar: true,
     hideVideoPreviews: false,
+    hideVideoTitles: false,
     startLiveFromBeginning: true,
   });
 
@@ -37,6 +38,7 @@
       hideTime: true,
       hidePlayerProgressBar: getBoolean(raw, "hidePlayerProgressBar"),
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
+      hideVideoTitles: getBoolean(raw, "hideVideoTitles"),
       startLiveFromBeginning: getBoolean(raw, "startLiveFromBeginning"),
     };
   }

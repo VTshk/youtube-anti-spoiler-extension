@@ -4,7 +4,8 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 
 - time in previews, lists, search results, recommendations, and the player;
 - the player progress bar;
-- optional video preview blur.
+- optional video preview blur (including end cards, the post-video suggestion wall, and the autoplay "Up next" screen);
+- optional video title blur in lists, recommendations, and end cards.
 
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
 

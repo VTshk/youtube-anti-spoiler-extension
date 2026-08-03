@@ -34,6 +34,7 @@
     hideTime: "yas-hide-time",
     hidePlayerProgressBar: "yas-hide-player-progress-bar",
     hideVideoPreviews: "yas-hide-video-previews",
+    hideVideoTitles: "yas-hide-video-titles",
     startLiveFromBeginning: "yas-start-live-from-beginning",
   });
 
@@ -109,6 +110,31 @@
     "yt-thumbnail-view-model .yt-core-image",
     "ytm-thumbnail img",
     "ytm-thumbnail video",
+    // Player endscreen suggestions: end cards during the final seconds, the
+    // videowall grid after playback ends, and the autoplay "Up next" screen.
+    // These render thumbnails as background-image divs, so the elements
+    // themselves are blurred.
+    ".ytp-ce-covering-image",
+    ".ytp-ce-expanding-image",
+    ".ytp-videowall-still-image",
+    ".ytp-autonav-endscreen-upnext-thumbnail",
+  ]);
+
+  const VIDEO_TITLE_SELECTORS = Object.freeze([
+    "#video-title",
+    "a#video-title-link",
+    "yt-lockup-metadata-view-model h3",
+    ".yt-lockup-metadata-view-model-wiz__title",
+    ".yt-lockup-metadata-view-model__title",
+    ".media-item-headline",
+    // Player chrome: the title shown over the video (fullscreen, embeds,
+    // miniplayer) plus endscreen card, videowall, and autoplay titles.
+    ".ytp-title-link",
+    ".ytp-title-text",
+    ".ytp-ce-video-title",
+    ".ytp-ce-playlist-title",
+    ".ytp-videowall-still-info-title",
+    ".ytp-autonav-endscreen-upnext-title",
   ]);
 
   function getEnabledClassNames(settings) {
@@ -169,6 +195,12 @@ ${scopeSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, PROGRESS_SELECTORS)} {
 
 ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
   filter: blur(24px) !important;
+}
+
+/* Titles stay clickable: blur hides the text without collapsing layout or
+   blocking the link underneath. */
+${scopeSelectors(CLASS_BY_SETTING.hideVideoTitles, VIDEO_TITLE_SELECTORS)} {
+  filter: blur(8px) !important;
 }
 
 html.${LIVE_START_OBSCURED_CLASS} #movie_player,

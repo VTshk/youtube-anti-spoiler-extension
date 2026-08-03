@@ -273,6 +273,7 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
       hideTime: true,
       hidePlayerProgressBar: true,
       hideVideoPreviews: true,
+      hideVideoTitles: true,
       startLiveFromBeginning: true,
     }),
     [
@@ -280,6 +281,7 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
         "yas-hide-time",
         "yas-hide-player-progress-bar",
         "yas-hide-video-previews",
+        "yas-hide-video-titles",
         "yas-start-live-from-beginning",
       ],
   );
@@ -2298,6 +2300,43 @@ test("buildSpoilerCss targets YouTube thumbnail, player time, and progress selec
   assert.match(css, /\.ytp-time-display/);
   assert.match(css, /\.ytp-progress-bar-container/);
   assert.match(css, /yas-hide-time/);
+});
+
+test("buildSpoilerCss blurs endscreen suggestions together with previews", () => {
+  const css = content.buildSpoilerCss();
+
+  // End cards, the post-playback videowall, and the autoplay "Up next"
+  // screen all belong to the preview blur — they surface other videos'
+  // thumbnails right when a match result is most at risk.
+  [
+    /\.ytp-ce-covering-image/,
+    /\.ytp-ce-expanding-image/,
+    /\.ytp-videowall-still-image/,
+    /\.ytp-autonav-endscreen-upnext-thumbnail/,
+  ].forEach((selector) => {
+    assert.match(css, selector);
+    const scoped = css.match(
+      new RegExp(`html\\.yas-hide-video-previews [^{,]*${selector.source}`),
+    );
+    assert.notEqual(scoped, null, `${selector.source} scoped to preview class`);
+  });
+});
+
+test("buildSpoilerCss blurs video titles under the title-hiding class", () => {
+  const css = content.buildSpoilerCss();
+  const titleRule = css.match(
+    /html\.yas-hide-video-titles #video-title[\s\S]+?\{[\s\S]+?\}/,
+  );
+
+  assert.notEqual(titleRule, null);
+  assert.match(titleRule[0], /filter:\s*blur/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-videowall-still-info-title/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-ce-video-title/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-autonav-endscreen-upnext-title/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-title-link/);
+  assert.match(css, /html\.yas-hide-video-titles yt-lockup-metadata-view-model h3/);
+  // Titles must stay clickable — no pointer-events lockout in the title rule.
+  assert.doesNotMatch(titleRule[0], /pointer-events/);
 });
 
 test("buildSpoilerCss obscures the live player and live chat during live start", () => {

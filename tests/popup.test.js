@@ -48,6 +48,7 @@ async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
   const settingToggles = [
     createPopupElement({ setting: "hidePlayerProgressBar" }),
     createPopupElement({ setting: "hideVideoPreviews" }),
+    createPopupElement({ setting: "hideVideoTitles" }),
     createPopupElement({ setting: "startLiveFromBeginning" }),
   ];
   const setIconCalls = [];
@@ -146,6 +147,8 @@ test("popup contains the English power control and configurable checkbox setting
   assert.match(html, /Hide progress bar/);
   assert.match(html, /data-setting="hideVideoPreviews"/);
   assert.match(html, /Blur previews/);
+  assert.match(html, /data-setting="hideVideoTitles"/);
+  assert.match(html, /Hide video titles/);
   assert.match(html, /data-setting="startLiveFromBeginning"/);
   assert.match(html, /Protect live streams/);
   assert.match(html, /Pause live streams and hide live chat behind a spoiler guard/);
@@ -233,6 +236,27 @@ test("popup goes read-only when settings cannot be loaded", async () => {
     assert.equal(toggle.disabled, true);
   });
   assert.match(status.textContent, /Could not load settings/);
+});
+
+test("popup saves the video title setting when changed", async () => {
+  const { settingToggles, storedSettings } = await loadPopup({
+    extensionEnabled: true,
+    hideTime: true,
+    hidePlayerProgressBar: true,
+    hideVideoPreviews: false,
+    hideVideoTitles: false,
+    startLiveFromBeginning: true,
+  });
+  const titleToggle = settingToggles.find(
+    (toggle) => toggle.dataset.setting === "hideVideoTitles",
+  );
+
+  assert.equal(titleToggle.checked, false);
+
+  titleToggle.checked = true;
+  await titleToggle.listeners.change();
+
+  assert.equal(storedSettings.hideVideoTitles, true);
 });
 
 test("popup saves the live start setting when changed", async () => {
