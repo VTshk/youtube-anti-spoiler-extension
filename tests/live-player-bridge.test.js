@@ -47,6 +47,63 @@ function createRoot(doc, timers) {
   };
 }
 
+test("live player bridge patches page-world history to emit a navigation event", () => {
+  const dispatched = [];
+  let pushStateArgs = null;
+  const win = {
+    Event: function FakeEvent(type) {
+      this.type = type;
+    },
+    dispatchEvent(event) {
+      dispatched.push(event.type);
+      return true;
+    },
+    history: {
+      pushState(...args) {
+        pushStateArgs = args;
+        return "pushed";
+      },
+      replaceState() {
+        return "replaced";
+      },
+    },
+  };
+
+  assert.equal(bridge.patchHistory(win), true);
+  assert.equal(win.history.pushState({ page: 1 }, "", "/watch?v=next"), "pushed");
+  assert.deepEqual(pushStateArgs, [{ page: 1 }, "", "/watch?v=next"]);
+  assert.equal(win.history.replaceState(null, "", "/watch?v=other"), "replaced");
+  assert.deepEqual(dispatched, [bridge.REFRESH_EVENT, bridge.REFRESH_EVENT]);
+});
+
+test("live player bridge history patch requires a dispatch-capable window", () => {
+  assert.equal(bridge.patchHistory(null), false);
+  assert.equal(bridge.patchHistory({ history: {} }), false);
+});
+
+test("live player bridge init patches history alongside its event listeners", () => {
+  const dispatched = [];
+  const doc = createDocument(() => null);
+  const win = {
+    document: doc,
+    Event: function FakeEvent(type) {
+      this.type = type;
+    },
+    dispatchEvent(event) {
+      dispatched.push(event.type);
+      return true;
+    },
+    history: {
+      pushState() {},
+    },
+  };
+
+  bridge.initLivePlayerBridge(win);
+  win.history.pushState({}, "", "/watch?v=spa-nav");
+
+  assert.deepEqual(dispatched, [bridge.REFRESH_EVENT]);
+});
+
 test("live player bridge seeks with the page-world YouTube player API", () => {
   const seekToCalls = [];
   const timers = [];

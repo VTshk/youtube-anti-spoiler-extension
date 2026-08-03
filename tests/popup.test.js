@@ -39,7 +39,7 @@ function getDisabledIconPaths() {
   };
 }
 
-async function loadPopup(storedSettings = {}) {
+async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
   const powerToggle = createPopupElement();
   const powerStatus = createPopupElement();
   const powerNote = createPopupElement();
@@ -67,6 +67,13 @@ async function loadPopup(storedSettings = {}) {
       storage: {
         sync: {
           get(keys, callback) {
+            if (failRead) {
+              context.chrome.runtime.lastError = { message: "storage unavailable" };
+              callback({});
+              context.chrome.runtime.lastError = null;
+              return;
+            }
+
             callback(storedSettings);
           },
           set(nextSettings, callback) {
@@ -116,6 +123,7 @@ async function loadPopup(storedSettings = {}) {
     powerToggle,
     settingToggles,
     setIconCalls,
+    status,
     storedSettings,
   };
 }
@@ -210,6 +218,21 @@ test("popup sets the toolbar action icon to normal after enabling protection", a
   assert.deepEqual(setIconCalls.at(-1), {
     path: getEnabledIconPaths(),
   });
+});
+
+test("popup goes read-only when settings cannot be loaded", async () => {
+  const { powerToggle, settingToggles, status } = await loadPopup(
+    {},
+    { failRead: true },
+  );
+
+  // Saving from this state would overwrite the user's stored settings with
+  // the displayed defaults, so every control must be disabled.
+  assert.equal(powerToggle.disabled, true);
+  settingToggles.forEach((toggle) => {
+    assert.equal(toggle.disabled, true);
+  });
+  assert.match(status.textContent, /Could not load settings/);
 });
 
 test("popup saves the live start setting when changed", async () => {

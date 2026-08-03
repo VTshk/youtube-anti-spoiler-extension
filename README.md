@@ -8,6 +8,8 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
 
+Requires Chrome 111 or newer (the live-stream guard runs a MAIN-world content script).
+
 This extension is not affiliated with, endorsed by, or sponsored by YouTube or Google.
 
 ## Project Structure

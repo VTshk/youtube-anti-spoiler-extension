@@ -1144,6 +1144,61 @@ test("live guard overlay waits instead of mounting when player bounds are unavai
   assert.equal(doc.getElementById(content.LIVE_GUARD_OVERLAY_ID), null);
 });
 
+test("live guard remounts its overlay during a transient live-signal loss", () => {
+  let now = 0;
+  const timers = [];
+  const video = {
+    currentTime: 30,
+    duration: Infinity,
+    seekable: createSeekableRange(0),
+    pause() {},
+  };
+  const doc = createLiveDocument({
+    video,
+    player: createElement("div"),
+    liveBroadcastContent: "True",
+    metadataVideoId: "flaky-signal-live",
+  });
+  const controller = content.createLiveStartController(
+    {
+      location: {
+        href: "https://www.youtube.com/watch?v=flaky-signal-live",
+      },
+    },
+    {
+      now() {
+        return now;
+      },
+      setTimeout(callback) {
+        timers.push(callback);
+        return callback;
+      },
+      clearTimeout() {},
+    },
+  );
+
+  controller.sync(
+    {
+      extensionEnabled: true,
+      startLiveFromBeginning: true,
+    },
+    doc,
+  );
+
+  const overlay = doc.getElementById(content.LIVE_GUARD_OVERLAY_ID);
+  assert.notEqual(overlay, null);
+
+  // A watch-page re-render detaches the overlay and briefly drops every live
+  // signal at once; the heartbeat must bring the buttons back regardless.
+  overlay.remove();
+  doc.liveBroadcastContent = null;
+  doc.metadataVideoId = null;
+  now += 1000;
+  timers.at(-1)();
+
+  assert.notEqual(doc.getElementById(content.LIVE_GUARD_OVERLAY_ID), null);
+});
+
 test("chat spoiler guard keeps live chat blurred until explicitly disabled", () => {
   const chat = createElement("ytd-live-chat-frame");
   const doc = createLiveDocument({ chat });
@@ -1227,6 +1282,62 @@ test("chat spoiler guard re-arms for the next video after being shown", () => {
     assert.notEqual(docB.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
   } finally {
     delete globalThis.location;
+  }
+});
+
+test("chat spoiler guard leaves replay chat visible on finished-stream VODs", () => {
+  const chat = createElement("ytd-live-chat-frame");
+  const doc = createLiveDocument({
+    chat,
+    liveBroadcastContent: "True",
+    endDateContent: "2026-08-01T00:00:00+00:00",
+    metadataVideoId: "finished-vod",
+  });
+
+  globalThis.location = { href: "https://www.youtube.com/watch?v=finished-vod" };
+
+  try {
+    content.applySettings({
+      extensionEnabled: true,
+      startLiveFromBeginning: true,
+    }, doc);
+
+    assert.equal(
+      doc.documentElement.classList.contains(content.CHAT_GUARD_OBSCURED_CLASS),
+      false,
+    );
+    assert.equal(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+  } finally {
+    delete globalThis.location;
+  }
+});
+
+test("chat spoiler guard stays protective while live status is still unknown", () => {
+  const chat = createElement("ytd-live-chat-frame");
+  const doc = createLiveDocument({
+    chat,
+    metadataVideoId: "hydrating-stream",
+  });
+
+  globalThis.location = { href: "https://www.youtube.com/watch?v=hydrating-stream" };
+
+  try {
+    content.applySettings({
+      extensionEnabled: true,
+      startLiveFromBeginning: true,
+    }, doc);
+
+    assert.equal(
+      doc.documentElement.classList.contains(content.CHAT_GUARD_OBSCURED_CLASS),
+      true,
+    );
+    assert.notEqual(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+  } finally {
+    delete globalThis.location;
+    content.applySettings({
+      extensionEnabled: true,
+      startLiveFromBeginning: false,
+    }, doc);
   }
 });
 

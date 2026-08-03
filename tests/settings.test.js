@@ -49,6 +49,35 @@ test("normalizeSettings ignores legacy time settings and keeps hideTime enabled"
   );
 });
 
+test("writeSettings removes legacy setting keys after a successful save", async () => {
+  const removedKeys = [];
+  const storageArea = {
+    set(values, callback) {
+      callback();
+    },
+    remove(keys, callback) {
+      removedKeys.push(...keys);
+      callback();
+    },
+  };
+
+  await settings.writeSettings({ hideVideoPreviews: true }, storageArea);
+
+  assert.deepEqual(removedKeys, [...settings.LEGACY_SETTING_KEYS]);
+});
+
+test("writeSettings resolves without a remove-capable storage area", async () => {
+  const storageArea = {
+    set(values, callback) {
+      callback();
+    },
+  };
+
+  const saved = await settings.writeSettings({ hideVideoPreviews: true }, storageArea);
+
+  assert.equal(saved.hideVideoPreviews, true);
+});
+
 test("readSettings asks storage for current and legacy setting keys", async () => {
   let requestedKeys = [];
   const fakeStorage = {

@@ -1051,8 +1051,15 @@
 
       // Once the guard is on screen, a transient loss of the live signal (common
       // mid SPA re-render) must not tear it down — only an explicit user action
-      // or a real navigation away dismisses it.
+      // or a real navigation away dismisses it. Keep re-asserting the pause,
+      // blur, and overlay meanwhile: the same re-render that dropped the signal
+      // can also have detached the overlay, and without a remount the stream
+      // would sit paused and blurred with no buttons to act on.
       if (activeGuard.guarded) {
+        if (video) {
+          showGuard(doc, video);
+        }
+
         scheduleTick(doc, LIVE_GUARD_HEARTBEAT_MS);
         return;
       }
@@ -1158,6 +1165,7 @@
     LIVE_START_TIMEOUT_MS,
     LIVE_START_POLL_MS,
     LIVE_START_NOT_LIVE_GRACE_MS,
+    documentSaysVideoIsNotLive,
     getLiveStartVideoId,
     getLiveStartTarget,
     isLikelyLivePlayback,

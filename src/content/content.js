@@ -457,6 +457,16 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     const videoId = getChatGuardVideoId();
     const isWatchPage = Boolean(videoId) || !root.location;
 
+    // Finished-stream VODs keep a replay chat frame, but the replay is synced
+    // to playback and spoils nothing — blurring it there would fight the live
+    // guard, which correctly lets those videos play. Only an explicit not-live
+    // marker skips the guard; while live status is unknown the chat stays
+    // protected, and later syncs (yt-page-data-updated) re-check as metadata
+    // hydrates.
+    const documentSaysNotLive =
+      typeof shared.documentSaysVideoIsNotLive === "function" &&
+      shared.documentSaysVideoIsNotLive(doc, videoId);
+
     if (videoId !== chatGuardVideoId) {
       // A new video means a new decision: "Show comments" on the previous
       // stream must not leave chat unprotected on the next one.
@@ -468,7 +478,8 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
       !normalizedSettings.extensionEnabled ||
       !normalizedSettings.startLiveFromBeginning ||
       !isWatchPage ||
-      chatGuardDisabled
+      chatGuardDisabled ||
+      documentSaysNotLive
     ) {
       removeChatGuardOverlay(doc);
       removeChatGuardObscuring(doc);
@@ -536,34 +547,6 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
       });
   }
 
-  function patchHistory(win) {
-    const currentWindow = win || root;
-
-    if (
-      !currentWindow ||
-      !currentWindow.history ||
-      currentWindow.__youtubeAntiSpoilerHistoryPatched
-    ) {
-      return;
-    }
-
-    ["pushState", "replaceState"].forEach((methodName) => {
-      const originalMethod = currentWindow.history[methodName];
-
-      if (typeof originalMethod !== "function") {
-        return;
-      }
-
-      currentWindow.history[methodName] = function patchedHistoryMethod() {
-        const result = originalMethod.apply(this, arguments);
-        currentWindow.dispatchEvent(new Event(REFRESH_EVENT));
-        return result;
-      };
-    });
-
-    currentWindow.__youtubeAntiSpoilerHistoryPatched = true;
-  }
-
   function bindNavigationRefresh(win, refresh) {
     const currentWindow = win || root;
 
@@ -574,6 +557,9 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     // YouTube is a SPA. These events cover its own router and browser history.
     // yt-navigate-start matters for the live guard: it fires as the transition
     // begins, so the eager shield arms before the new stream renders a frame.
+    // REFRESH_EVENT arrives from the MAIN-world bridge, which patches
+    // history.pushState/replaceState — the isolated world cannot see those
+    // calls itself, so this is the router-agnostic navigation fallback.
     [
       "yt-navigate-start",
       "yt-navigate-finish",
@@ -621,8 +607,19 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     }
 
     let refreshQueued = false;
-    const observer = new MutationObserver(() => {
-      if (refreshQueued || currentDocument.getElementById(STYLE_ID)) {
+    const observer = new MutationObserver((mutations) => {
+      if (refreshQueued) {
+        return;
+      }
+
+      // The style can only disappear via a removal; the vast majority of
+      // YouTube's mutations are insertions, so skip them without touching
+      // the DOM at all.
+      const anyNodeRemoved = mutations.some(
+        (mutation) => mutation.removedNodes && mutation.removedNodes.length > 0,
+      );
+
+      if (!anyNodeRemoved || currentDocument.getElementById(STYLE_ID)) {
         return;
       }
 
@@ -654,7 +651,6 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     root.__youtubeAntiSpoilerInitialized = true;
 
     ensureStyle(root.document);
-    patchHistory(root);
     bindNavigationRefresh(root, refresh);
     bindStorageChanges();
     observeStyleRemoval(root.document);

@@ -141,6 +141,16 @@
     });
   }
 
+  function disableControls(toggles, powerToggle) {
+    toggles.forEach((toggle) => {
+      toggle.disabled = true;
+    });
+
+    if (powerToggle) {
+      powerToggle.disabled = true;
+    }
+  }
+
   async function start() {
     const toggles = getToggleElements();
     const powerToggle = getPowerToggle();
@@ -156,11 +166,16 @@
       setStatus("");
     } catch (error) {
       console.error("[Anti-Spoiler for YouTube] Could not read settings.", error);
+      // The displayed defaults may differ from what is actually stored, so a
+      // save from this state would silently overwrite the user's real settings
+      // with defaults. Keep the popup read-only until a reopen reads them.
       currentSettings = namespace.DEFAULT_SETTINGS;
       renderSettings(currentSettings, toggles);
       renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
       await setActionIcon(currentSettings);
-      setStatus("Using default settings");
+      disableControls(toggles, powerToggle);
+      setStatus("Could not load settings — close and reopen the popup");
+      return;
     }
 
     bindToggleSaving(toggles);

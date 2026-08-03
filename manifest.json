@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Anti-Spoiler for YouTube",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Hides spoiler-prone YouTube elements: time, progress bars, and video previews.",
+  "minimum_chrome_version": "111",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*"],
   "icons": {

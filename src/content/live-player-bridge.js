@@ -14,6 +14,7 @@
   const LIVE_GUARD_CONTINUE_EVENT = "youtube-anti-spoiler-live-guard-continue";
   const LIVE_STATE_REQUEST_EVENT = "youtube-anti-spoiler-live-state-request";
   const LIVE_STATE_RESULT_EVENT = "youtube-anti-spoiler-live-state-result";
+  const REFRESH_EVENT = "youtube-anti-spoiler-locationchange";
   const LIVE_START_VERIFY_DELAY_MS = 500;
   const LIVE_START_SEEK_TOLERANCE_SECONDS = 2;
   const BRIDGE_FLAG = "__youtubeAntiSpoilerLivePlayerBridgeInitialized";
@@ -426,6 +427,44 @@
     }, LIVE_START_VERIFY_DELAY_MS);
   }
 
+  function patchHistory(win) {
+    // History must be patched here, in the MAIN world: the page's
+    // pushState/replaceState calls never pass through the isolated-world
+    // binding, so a content-script patch would only see its own (nonexistent)
+    // calls. The dispatched window event crosses worlds, where the content
+    // script listens for it as a navigation fallback besides yt-navigate-*.
+    if (
+      !win ||
+      !win.history ||
+      typeof win.dispatchEvent !== "function" ||
+      typeof win.Event !== "function"
+    ) {
+      return false;
+    }
+
+    ["pushState", "replaceState"].forEach((methodName) => {
+      const originalMethod = win.history[methodName];
+
+      if (typeof originalMethod !== "function") {
+        return;
+      }
+
+      win.history[methodName] = function patchedHistoryMethod() {
+        const result = originalMethod.apply(this, arguments);
+
+        try {
+          win.dispatchEvent(new win.Event(REFRESH_EVENT));
+        } catch (error) {
+          // Navigation refresh is best-effort; never break YouTube's routing.
+        }
+
+        return result;
+      };
+    });
+
+    return true;
+  }
+
   function initLivePlayerBridge(root) {
     const currentWindow = root || {};
     const currentDocument = currentWindow.document;
@@ -439,6 +478,8 @@
     }
 
     currentWindow[BRIDGE_FLAG] = true;
+
+    patchHistory(currentWindow);
 
     currentDocument.addEventListener(LIVE_START_SEEK_EVENT, (event) => {
       const detail = parseSeekDetail(event && event.detail);
@@ -483,6 +524,7 @@
     LIVE_START_SEEK_EVENT,
     LIVE_START_SEEK_RESULT_EVENT,
     LIVE_START_VERIFY_DELAY_MS,
+    REFRESH_EVENT,
     continuePlayer,
     dispatchSeekResult,
     getPlayerCurrentTime,
@@ -492,6 +534,7 @@
     initLivePlayerBridge,
     isNearSeekTarget,
     parseSeekDetail,
+    patchHistory,
     pausePlayer,
     playPlayer,
     scheduleSeekVerification,

@@ -91,6 +91,16 @@
           return;
         }
 
+        // Best-effort cleanup: legacy keys are ignored on read anyway, so a
+        // failed removal must never fail the write that just succeeded.
+        if (typeof syncStorage.remove === "function") {
+          syncStorage.remove(LEGACY_SETTING_KEYS, () => {
+            getLastRuntimeError();
+            resolve(normalizedSettings);
+          });
+          return;
+        }
+
         resolve(normalizedSettings);
       });
     });

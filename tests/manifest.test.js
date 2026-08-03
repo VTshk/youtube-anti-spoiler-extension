@@ -9,6 +9,9 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
 
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.name, "Anti-Spoiler for YouTube");
+  // The MAIN-world content script needs Chrome 111+; without this floor the
+  // bridge silently loads isolated on older Chrome and the live guard degrades.
+  assert.equal(manifest.minimum_chrome_version, "111");
   assert.deepEqual(manifest.permissions, ["storage"]);
   assert.deepEqual(manifest.host_permissions, ["https://www.youtube.com/*"]);
   assert.equal(manifest.action.default_popup, "popup/popup.html");
