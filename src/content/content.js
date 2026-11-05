@@ -105,8 +105,11 @@
     "ytd-video-renderer .metadata-snippet-container",
   ]);
 
-  const LIVE_THUMBNAIL_BADGE_EXCLUSION =
-    ":not(.ytBadgeShapeThumbnailLive):not(.ytBadgeShapeThumbnailLive *):not(:has(.ytBadgeShapeThumbnailLive))";
+  // Live badges carry the word "LIVE", not a duration: keep both the thumbnail
+  // variant and the red pill under titles in search results visible.
+  const LIVE_BADGE_EXCLUSION =
+    ":not(.ytBadgeShapeThumbnailLive):not(.ytBadgeShapeThumbnailLive *):not(:has(.ytBadgeShapeThumbnailLive))" +
+    ":not(.ytBadgeShapeLive):not(.ytBadgeShapeLive *):not(:has(.ytBadgeShapeLive))";
 
   const PLAYER_TIME_SELECTORS = Object.freeze([
     ".ytp-time-display",
@@ -260,7 +263,7 @@
 ${scopeSelectors(
   CLASS_BY_SETTING.hideTime,
   THUMBNAIL_DURATION_SELECTORS,
-  LIVE_THUMBNAIL_BADGE_EXCLUSION,
+  LIVE_BADGE_EXCLUSION,
 )} {
   visibility: hidden !important;
   opacity: 0 !important;

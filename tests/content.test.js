@@ -2920,6 +2920,21 @@ test("buildSpoilerCss keeps live thumbnail badges visible when hiding time", () 
   assert.match(thumbnailTimeRule, /:not\(:has\(\.ytBadgeShapeThumbnailLive\)\)/);
 });
 
+test("buildSpoilerCss keeps the red LIVE badge under search result titles visible when hiding time", () => {
+  const css = content.buildSpoilerCss();
+  const thumbnailTimeRule = css.match(
+    /html\.yas-hide-time[\s\S]+?\{[\s\S]+?\}/,
+  )[0];
+  const badgeTextSelector = thumbnailTimeRule
+    .split(",\n")
+    .find((selector) => selector.includes(".ytBadgeShapeText"));
+
+  assert.ok(badgeTextSelector, "the time rule still hides .ytBadgeShapeText duration badges");
+  assert.match(badgeTextSelector, /:not\(\.ytBadgeShapeLive\)/);
+  assert.match(badgeTextSelector, /:not\(\.ytBadgeShapeLive \*\)/);
+  assert.match(badgeTextSelector, /:not\(:has\(\.ytBadgeShapeLive\)\)/);
+});
+
 test("buildSpoilerCss hides player seek preview time with the time setting", () => {
   const css = content.buildSpoilerCss();
   const playerTimeRule = css.match(
