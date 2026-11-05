@@ -70,16 +70,32 @@ function createElement(tagName) {
       return null;
     },
     findByClass(className) {
+      return this.findAllByClass(className)[0] || null;
+    },
+    findAllByClass(className) {
+      const found = [];
       const queue = [...this.children];
 
       while (queue.length > 0) {
         const candidate = queue.shift();
 
         if (candidate.className === className) {
-          return candidate;
+          found.push(candidate);
         }
 
         queue.push(...candidate.children);
+      }
+
+      return found;
+    },
+    // The two child lookups the comments panel cover makes.
+    querySelector(selector) {
+      if (selector === ":scope > #content") {
+        return this.children.find((child) => child.id === "content") || null;
+      }
+
+      if (selector === `:scope > .${OVERLAY_CLASS}`) {
+        return this.children.find((child) => child.className === OVERLAY_CLASS) || null;
       }
 
       return null;
@@ -87,7 +103,16 @@ function createElement(tagName) {
   };
 }
 
-function createPage({ comments = null, titleElement = null, title = "" } = {}) {
+const OVERLAY_CLASS = "yas-comments-guard-overlay";
+const COMMENTS_PANEL_SELECTOR =
+  'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-comments-section"]';
+
+function createPage({
+  comments = null,
+  panels = [],
+  titleElement = null,
+  title = "",
+} = {}) {
   const body = createElement("body");
   const head = createElement("head");
 
@@ -95,10 +120,13 @@ function createPage({ comments = null, titleElement = null, title = "" } = {}) {
     body.appendChild(comments);
   }
 
+  panels.forEach((commentsPanel) => body.appendChild(commentsPanel));
+
   return {
     body,
     head,
     comments,
+    panels,
     titleElement,
     title,
     documentElement: {
@@ -111,8 +139,17 @@ function createPage({ comments = null, titleElement = null, title = "" } = {}) {
     getElementById(id) {
       return body.findById(id) || head.findById(id);
     },
-    // No hovered or stashed titles in these pages.
-    querySelectorAll() {
+    // Comments panels and comments covers; no hovered or stashed titles in
+    // these pages.
+    querySelectorAll(selector) {
+      if (selector === COMMENTS_PANEL_SELECTOR) {
+        return this.panels;
+      }
+
+      if (selector === `.${OVERLAY_CLASS}`) {
+        return body.findAllByClass(OVERLAY_CLASS);
+      }
+
       return [];
     },
     querySelector(selector) {
@@ -133,6 +170,37 @@ function createComments() {
   const comments = createElement("ytd-comments");
   comments.id = "comments";
   return comments;
+}
+
+// The comments panel as measured live (2026-11-05), on /watch and Shorts:
+// #header (title, sort, Close) and #content with the comment list.
+function createCommentsPanel() {
+  const commentsPanel = createElement("ytd-engagement-panel-section-list-renderer");
+  const header = createElement("div");
+  header.id = "header";
+  const panelContent = createElement("div");
+  panelContent.id = "content";
+  panelContent.appendChild(createElement("ytd-section-list-renderer"));
+  commentsPanel.appendChild(header);
+  commentsPanel.appendChild(panelContent);
+  return commentsPanel;
+}
+
+function getPanelContent(commentsPanel) {
+  return commentsPanel.children.find((child) => child.id === "content");
+}
+
+function getPanelOverlays(commentsPanel) {
+  return getPanelContent(commentsPanel).children.filter(
+    (child) => child.className === OVERLAY_CLASS,
+  );
+}
+
+function clickShowCommentsIn(overlay) {
+  const button = overlay.findByClass("yas-comments-guard-panel")
+    .children.find((child) => child.dataset.commentsGuardAction === "show");
+
+  button.listeners.click({ preventDefault() {} });
 }
 
 function captureTimers() {
@@ -230,7 +298,13 @@ test("comments guard CSS blurs the comment list and the comment teaser only whil
     css,
     /html\.yas-comments-obscured ytd-comments-entry-point-header-renderer \{\n  filter: blur\(18px\) !important;\n\}/,
   );
-  assert.match(css, /#youtube-anti-spoiler-comments-guard \{\n  position: absolute !important;/);
+  // Every cover shares one look; only the one under the video keeps its
+  // button in view while the page scrolls.
+  assert.match(css, /(^|\n)\.yas-comments-guard-overlay \{\n  position: absolute !important;\n  inset: 0 !important;/);
+  assert.match(
+    css,
+    /#youtube-anti-spoiler-comments-guard \.yas-comments-guard-panel \{\n  position: sticky !important;/,
+  );
 });
 
 test("Show comments uncovers this video's comments and stops the checks", () => {
@@ -332,6 +406,163 @@ test("comments guard checks once a second for lazily loaded and re-created comme
     assert.equal(timers.pending().length, 0);
   });
 });
+
+// --- Portion 5: the comments panel on /watch and on Shorts ---
+
+test("comments guard covers the comments panel on a Short", () => {
+  onPage("https://www.youtube.com/shorts/short-1", (timers) => {
+    const commentsPanel = createCommentsPanel();
+    const doc = createPage({ panels: [commentsPanel] });
+
+    content.applySettings(BASE_SETTINGS, doc);
+
+    assert.equal(isCommentsObscured(doc), true);
+    const overlays = getPanelOverlays(commentsPanel);
+    assert.equal(overlays.length, 1);
+    const panel = overlays[0].findByClass("yas-comments-guard-panel");
+    assert.equal(panel.findByClass("yas-comments-guard-title").textContent, "Comments hidden");
+    assert.equal(
+      panel.children.find((child) => child.dataset.commentsGuardAction === "show").textContent,
+      "Show comments",
+    );
+    // The header (title, sort, Close) stays uncovered.
+    assert.equal(commentsPanel.children[0].children.length, 0);
+    assert.deepEqual(timers.pending().map((timer) => timer.delay), [1000]);
+  });
+});
+
+test("comments guard covers every comments panel on /watch once, next to the comments under the video", () => {
+  onPage("https://www.youtube.com/watch?v=match-1", (timers) => {
+    // SPA moves leave a hidden earlier panel in the document.
+    const openPanel = createCommentsPanel();
+    const hiddenPanel = createCommentsPanel();
+    const doc = createPage({ comments: createComments(), panels: [openPanel, hiddenPanel] });
+
+    content.applySettings(BASE_SETTINGS, doc);
+    content.applySettings(BASE_SETTINGS, doc);
+    timers.runPending();
+
+    assert.equal(getCommentsOverlay(doc).parentNode, doc.comments);
+    assert.equal(getPanelOverlays(openPanel).length, 1);
+    assert.equal(getPanelOverlays(hiddenPanel).length, 1);
+    // The cover sits next to the blurred list, not inside it.
+    assert.equal(getPanelOverlays(openPanel)[0].parentNode, getPanelContent(openPanel));
+    assert.equal(getPanelContent(openPanel).children[0].tagName, "YTD-SECTION-LIST-RENDERER");
+    assert.equal(getPanelContent(openPanel).children[0].children.length, 0);
+  });
+});
+
+test("comments guard covers a comments panel that YouTube creates or re-creates later", () => {
+  onPage("https://www.youtube.com/watch?v=match-1", (timers) => {
+    const doc = createPage();
+
+    content.applySettings(BASE_SETTINGS, doc);
+
+    const commentsPanel = createCommentsPanel();
+    doc.panels.push(commentsPanel);
+    doc.body.appendChild(commentsPanel);
+    timers.runPending();
+
+    assert.equal(getPanelOverlays(commentsPanel).length, 1);
+
+    // YouTube re-renders the panel content; the cover went with the old one.
+    const panelContent = getPanelContent(commentsPanel);
+    panelContent.children = panelContent.children.filter(
+      (child) => child.className !== OVERLAY_CLASS,
+    );
+    timers.runPending();
+
+    assert.equal(getPanelOverlays(commentsPanel).length, 1);
+  });
+});
+
+test("Show comments in a panel uncovers every cover of this video; the next Short is covered again", () => {
+  onPage("https://www.youtube.com/shorts/short-1", (timers) => {
+    const commentsPanel = createCommentsPanel();
+    const doc = createPage({ comments: createComments(), panels: [commentsPanel] });
+
+    content.applySettings(BASE_SETTINGS, doc);
+    assert.notEqual(getCommentsOverlay(doc), null);
+
+    clickShowCommentsIn(getPanelOverlays(commentsPanel)[0]);
+
+    assert.equal(isCommentsObscured(doc), false);
+    assert.equal(getPanelOverlays(commentsPanel).length, 0);
+    assert.equal(getCommentsOverlay(doc), null);
+    assert.equal(timers.pending().length, 0);
+
+    // A refresh on the same Short keeps the choice.
+    content.applySettings(BASE_SETTINGS, doc);
+    assert.equal(isCommentsObscured(doc), false);
+    assert.equal(getPanelOverlays(commentsPanel).length, 0);
+
+    // Scrolling to the next Short with the panel open.
+    globalThis.location = { href: "https://www.youtube.com/shorts/short-2" };
+    content.applySettings(BASE_SETTINGS, doc);
+
+    assert.equal(isCommentsObscured(doc), true);
+    assert.equal(getPanelOverlays(commentsPanel).length, 1);
+  });
+});
+
+test("Show comments under a video uncovers the comments panel too", () => {
+  onPage("https://www.youtube.com/watch?v=match-1", () => {
+    const commentsPanel = createCommentsPanel();
+    const doc = createPage({ comments: createComments(), panels: [commentsPanel] });
+
+    content.applySettings(BASE_SETTINGS, doc);
+    clickShowComments(doc);
+
+    assert.equal(isCommentsObscured(doc), false);
+    assert.equal(getPanelOverlays(commentsPanel).length, 0);
+  });
+});
+
+test("comments guard uncovers the comments panels when the setting or protection is off", () => {
+  onPage("https://www.youtube.com/shorts/short-1", (timers) => {
+    const commentsPanel = createCommentsPanel();
+    const doc = createPage({ panels: [commentsPanel] });
+
+    content.applySettings(BASE_SETTINGS, doc);
+    content.applySettings({ ...BASE_SETTINGS, hideComments: false }, doc);
+
+    assert.equal(isCommentsObscured(doc), false);
+    assert.equal(getPanelOverlays(commentsPanel).length, 0);
+    assert.equal(timers.pending().length, 0);
+
+    content.applySettings(BASE_SETTINGS, doc);
+    assert.equal(getPanelOverlays(commentsPanel).length, 1);
+
+    content.applySettings({ ...BASE_SETTINGS, extensionEnabled: false }, doc);
+
+    assert.equal(isCommentsObscured(doc), false);
+    assert.equal(getPanelOverlays(commentsPanel).length, 0);
+    assert.equal(timers.pending().length, 0);
+  });
+});
+
+test("comments guard CSS blurs the panel's comment list under a cover that spans #content", () => {
+  const css = content.buildSpoilerCss();
+  const panel = escapeRegExp(COMMENTS_PANEL_SELECTOR);
+
+  assert.match(
+    css,
+    new RegExp(`html\\.yas-comments-obscured ${panel} > #content \\{\\n  position: relative !important;\\n\\}`),
+  );
+  assert.match(
+    css,
+    new RegExp(
+      `html\\.yas-comments-obscured ${panel} > #content > ytd-section-list-renderer \\{\\n` +
+        "  filter: blur\\(18px\\) !important;\\n  pointer-events: none !important;",
+    ),
+  );
+  // The panel header (title, sort, Close) is not blurred.
+  assert.doesNotMatch(css, new RegExp(`${panel} > #header`));
+});
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 // --- F4: tab title ---
 

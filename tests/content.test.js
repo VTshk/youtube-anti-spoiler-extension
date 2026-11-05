@@ -4628,3 +4628,90 @@ test("switching title hiding on takes the title attribute off a title already un
   assert.equal(hovered.hasAttribute("title"), false);
   assert.equal(hovered.getAttribute("data-yas-title"), "Team A 3-0 Team B");
 });
+
+// --- Portion 5: the open video's title, "Most replayed" ---
+
+function getRuleWithBody(css, firstSelector, body) {
+  const start = css.indexOf(firstSelector);
+  const end = css.indexOf(body, start);
+
+  assert.ok(start >= 0 && end > start, `rule starting with ${firstSelector}`);
+  return css.slice(start, end + body.length);
+}
+
+test("buildSpoilerCss blurs the open video's title and the line under it with titles", () => {
+  const titleRule = getRuleWithBody(
+    content.buildSpoilerCss(),
+    "html.yas-hide-video-titles #video-title,",
+    "{\n  filter: blur(8px) !important;\n}",
+  );
+
+  // Live check 2026-11-05: the h1 above the description, and the line with
+  // views and "Streamed 1mo ago" (the exact date in its tooltip).
+  assert.match(titleRule, /html\.yas-hide-video-titles ytd-watch-metadata h1(,| \{)/);
+  assert.match(titleRule, /html\.yas-hide-video-titles ytd-watch-metadata ytd-watch-info-text(,| \{)/);
+});
+
+test("buildSpoilerCss blurs the description text, not its more / Show less buttons, with titles", () => {
+  const titleRule = getRuleWithBody(
+    content.buildSpoilerCss(),
+    "html.yas-hide-video-titles #video-title,",
+    "{\n  filter: blur(8px) !important;\n}",
+  );
+
+  // Owner decision 2026-11-05: the description often repeats the full title.
+  // Live check: folded text is #snippet-text, unfolded text is #expanded;
+  // the #expand / #collapse buttons are their siblings.
+  assert.match(
+    titleRule,
+    /html\.yas-hide-video-titles ytd-watch-metadata #description-inline-expander #snippet-text(,| \{)/,
+  );
+  assert.match(
+    titleRule,
+    /html\.yas-hide-video-titles ytd-watch-metadata #description-inline-expander #expanded(,| \{)/,
+  );
+  assert.doesNotMatch(titleRule, /#expand(,| \{)|#collapse|#description-inline-expander(,| \{)/);
+});
+
+test("hovering the open video's title takes its title attribute off", () => {
+  // <ytd-watch-metadata><h1><yt-formatted-string title="…">: of the title
+  // selectors only "ytd-watch-metadata h1" matches an ancestor here.
+  const element = createTitledElement({
+    title: "Team A 3-0 Team B | Final",
+    insideVideoTitle: false,
+    rootClasses: ["yas-hide-video-titles"],
+  });
+  const heading = { tagName: "H1" };
+  element.closest = (selector) => {
+    if (selector === "[title]") {
+      return element;
+    }
+
+    return selector.split(", ").includes("ytd-watch-metadata h1") ? heading : null;
+  };
+
+  content.stashHoveredTitleAttribute({ target: element });
+
+  assert.equal(element.hasAttribute("title"), false);
+  assert.equal(element.getAttribute("data-yas-title"), "Team A 3-0 Team B | Final");
+});
+
+test("buildSpoilerCss hides the Most replayed graph with previews and keeps blurring seek-preview frames", () => {
+  const css = content.buildSpoilerCss();
+
+  // A blurred curve would still show where its peaks are.
+  assert.match(
+    css,
+    /html\.yas-hide-video-previews \.ytp-heat-map-container \{\n  visibility: hidden !important;\n  opacity: 0 !important;\n  pointer-events: none !important;\n\}/,
+  );
+
+  const previewRule = getRuleWithBody(
+    css,
+    "html.yas-hide-video-previews a#thumbnail img,",
+    "{\n  filter: blur(24px) !important;\n}",
+  );
+
+  assert.doesNotMatch(previewRule, /heat-map/);
+  assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-tooltip-bg(,| \{)/);
+  assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-storyboard-framepreview-img(,| \{)/);
+});

@@ -24,7 +24,17 @@
 скопировать `manifest.json src popup icons` в новую папку `ext-*`, сделать копию `run.mjs` с этой папкой и своей `out-*`.
 Сценарии: `search watch endscreen hover channel shorts live miniplayer paststream`.
 
-## Решения владельца 2026-11-05 по вопросам отчёта `release-0.3.0-report.md` → порция 5 (не начата)
+## Порция 5 — готова, не закоммичена (2026-11-05)
+
+База `55ffa47` (порции 3–4 и 0.3.0 закоммичены). План — `docs/superpowers/plans/2026-11-05-portion5.md`; код —
+`implementer` (`portion5-report.md`); ревью `[cross]` Astra — 0 находок; `npm test` 219/219. Живьём на `ext-p12`
+(`yas-audit2/live-p5.mjs`, `out-p12live/`) решения 1–4 проверены «до / после», регресс `run-p12.mjs` (29 кадров,
+TIME/PROGRESS/PREVIEW 0) и `live-p2.mjs` (эфиры с DVR и без) зелёные. По решению владельца («Да, размывать»)
+добавлено: текст описания под видео размыт при «Hide video titles» (`npm test` 220/220, живьём `ext-p13`). Итог и
+«Не проверено» — `portion5-owner-report.md`. Найдено вне порции: пустая красная плашка
+«LIVE» в поиске эфиров (давняя, порция 1).
+
+## Решения владельца 2026-11-05 по вопросам отчёта `release-0.3.0-report.md` → порция 5 (сделана, см. выше)
 
 1. Название открытого видео (`h1` над описанием) и «Streamed X ago» — **«Размывать при Hide titles»**: под
    `yas-hide-video-titles` размывать `h1` открытого видео и строку «Streamed X ago».

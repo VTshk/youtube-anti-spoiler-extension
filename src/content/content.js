@@ -24,9 +24,20 @@
   const CHAT_GUARD_OVERLAY_ID = "youtube-anti-spoiler-chat-guard";
   const COMMENTS_GUARD_OBSCURED_CLASS = "yas-comments-obscured";
   const COMMENTS_GUARD_OVERLAY_ID = "youtube-anti-spoiler-comments-guard";
+  // Every comments cover carries this class: the one under the video and
+  // one in each comments panel.
+  const COMMENTS_GUARD_OVERLAY_CLASS = "yas-comments-guard-overlay";
+  // The comments panel beside the video on /watch and on Shorts. SPA moves
+  // leave earlier pages in the document, so there can be several, hidden
+  // ones included.
+  const COMMENTS_PANEL_SELECTOR =
+    'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-comments-section"]';
   const COMMENTS_GUARD_CHECK_MS = 1000;
   const HIDDEN_TAB_TITLE = "YouTube";
   const SKIP_BUTTONS_CLASS = shared.SKIP_BUTTONS_CLASS;
+  // Put on #movie_player by the page-world bridge (live-player-bridge.js)
+  // while the player refuses to seek.
+  const SEEK_BLOCKED_ATTRIBUTE = "data-yas-seek-blocked";
 
   // Live-start identifiers and behaviour are owned by the live-start controller
   // module; content.js only needs the few it references for CSS and chat retry.
@@ -204,6 +215,18 @@
     // because buttons use the same tooltip class for their own names.
     ".ytp-tooltip.ytp-preview .ytp-tooltip-title",
     ".ytp-tooltip-progress-bar-pill-title",
+    // The open video's title above the description and the line under it:
+    // views, "Streamed 1mo ago" / "15h ago", and the exact date in its
+    // tooltip and after "more". The date has no element of its own (a
+    // stream recording shows it in #info together with the views), so the
+    // whole line is blurred.
+    "ytd-watch-metadata h1",
+    "ytd-watch-metadata ytd-watch-info-text",
+    // The description often starts with the full title ("Team A vs Team B
+    // | Final"). Its text is blurred folded and unfolded; the "more" and
+    // "Show less" buttons next to it stay readable.
+    "ytd-watch-metadata #description-inline-expander #snippet-text",
+    "ytd-watch-metadata #description-inline-expander #expanded",
   ]);
 
   const VIDEO_TITLE_SELECTOR_LIST = VIDEO_TITLE_SELECTORS.join(", ");
@@ -272,6 +295,15 @@ ${scopeSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, PROGRESS_SELECTORS)} {
 
 ${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
   filter: blur(24px) !important;
+}
+
+/* The "Most replayed" graph over a visible timeline: its peaks often fall
+   on goals and other key moments. A blurred 40px curve would still show
+   where the peaks are, so it is hidden rather than blurred. */
+html.${CLASS_BY_SETTING.hideVideoPreviews} .ytp-heat-map-container {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Titles stay clickable: blur hides the text without collapsing layout or
@@ -365,12 +397,14 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 }
 
 /* Skip buttons are inserted into every player and shown only while the
-   timeline they stand in for is hidden, and never over the live guard. */
+   timeline they stand in for is hidden, and never over the live guard.
+   On a live stream whose streamer turned rewinding off the player refuses
+   every seek, so the buttons would do nothing and are not shown either. */
 #movie_player .${SKIP_BUTTONS_CLASS} {
   display: none !important;
 }
 
-html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}.${CLASS_BY_SETTING.showSkipButtons}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player .${SKIP_BUTTONS_CLASS} {
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}.${CLASS_BY_SETTING.showSkipButtons}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
   height: 100% !important;
@@ -410,8 +444,21 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
   filter: blur(18px) !important;
 }
 
+/* The comments panel (beside the video on /watch, and on Shorts): its
+   header with the title, sort menu, and Close stays usable; only the list
+   below it is covered. The list scrolls inside #content, which has a fixed
+   height, so a cover over #content spans everything visible. */
+html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content {
+  position: relative !important;
+}
+
+html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > ytd-section-list-renderer {
+  filter: blur(18px) !important;
+  pointer-events: none !important;
+}
+
 /* Above the comments but below YouTube's fixed masthead. */
-#${COMMENTS_GUARD_OVERLAY_ID} {
+.${COMMENTS_GUARD_OVERLAY_CLASS} {
   position: absolute !important;
   inset: 0 !important;
   z-index: 10 !important;
@@ -426,24 +473,28 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
   text-align: center !important;
 }
 
-/* The comments block can be thousands of pixels tall; the button travels
-   down with the page instead of staying at its top. */
-#${COMMENTS_GUARD_OVERLAY_ID} .yas-comments-guard-panel {
-  position: sticky !important;
-  top: 80px !important;
+.${COMMENTS_GUARD_OVERLAY_CLASS} .yas-comments-guard-panel {
   display: grid !important;
   gap: 12px !important;
   justify-items: center !important;
 }
 
-#${COMMENTS_GUARD_OVERLAY_ID} .yas-comments-guard-title {
+/* Under the video the comments block can be thousands of pixels tall; the
+   button travels down with the page instead of staying at its top. In a
+   comments panel only the list scrolls, so there the button stays put. */
+#${COMMENTS_GUARD_OVERLAY_ID} .yas-comments-guard-panel {
+  position: sticky !important;
+  top: 80px !important;
+}
+
+.${COMMENTS_GUARD_OVERLAY_CLASS} .yas-comments-guard-title {
   margin: 0 !important;
   font-size: 16px !important;
   line-height: 1.3 !important;
   font-weight: 700 !important;
 }
 
-#${COMMENTS_GUARD_OVERLAY_ID} button {
+.${COMMENTS_GUARD_OVERLAY_CLASS} button {
   min-height: 34px !important;
   border: 1px solid rgba(255, 255, 255, 0.24) !important;
   border-radius: 6px !important;
@@ -733,10 +784,12 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
     }, delay);
   }
 
-  // Comments under a video are covered like live chat: blurred behind a
-  // "Show comments" button that counts for the current video only. YouTube
-  // loads the comments lazily on scroll and can re-create the section, so
-  // the cover is re-checked once a second while a video page is open.
+  // Comments are covered like live chat: blurred behind a "Show comments"
+  // button that counts for the current video only. That is the comments
+  // under the video and the comments panel (beside the video on /watch, and
+  // on Shorts). YouTube loads comments lazily and can re-create the section
+  // or the panel, so the covers are re-checked once a second while a video
+  // page is open.
   let commentsGuardTimer = null;
   let commentsGuardVideoId = null;
   let commentsGuardShown = false;
@@ -750,15 +803,14 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
   }
 
   function removeCommentsGuard(doc) {
-    const overlay = doc.getElementById(COMMENTS_GUARD_OVERLAY_ID);
-
-    if (overlay) {
+    doc.querySelectorAll(`.${COMMENTS_GUARD_OVERLAY_CLASS}`).forEach((overlay) => {
       overlay.remove();
-    }
+    });
 
     doc.documentElement.classList.remove(COMMENTS_GUARD_OBSCURED_CLASS);
   }
 
+  // The cover under the video: inside the comments section itself.
   function renderCommentsGuardOverlay(doc) {
     if (doc.getElementById(COMMENTS_GUARD_OVERLAY_ID)) {
       return;
@@ -771,8 +823,30 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
       return;
     }
 
-    const overlay = doc.createElement("div");
+    const overlay = createCommentsGuardOverlay(doc);
     overlay.id = COMMENTS_GUARD_OVERLAY_ID;
+    host.appendChild(overlay);
+  }
+
+  // The cover in a comments panel sits next to the blurred list inside the
+  // panel's #content, not inside the list, so it is not blurred with it.
+  function renderCommentsPanelOverlay(doc, commentsPanel) {
+    const content = commentsPanel.querySelector(":scope > #content");
+
+    // Not rendered yet (the next check tries again), or already covered.
+    if (
+      !content ||
+      content.querySelector(`:scope > .${COMMENTS_GUARD_OVERLAY_CLASS}`)
+    ) {
+      return;
+    }
+
+    content.appendChild(createCommentsGuardOverlay(doc));
+  }
+
+  function createCommentsGuardOverlay(doc) {
+    const overlay = doc.createElement("div");
+    overlay.className = COMMENTS_GUARD_OVERLAY_CLASS;
 
     const panel = doc.createElement("div");
     panel.className = "yas-comments-guard-panel";
@@ -789,19 +863,38 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
     button.textContent = "Show comments";
     button.addEventListener("click", (event) => {
       event.preventDefault();
+      // One choice for the whole video: every cover goes, under the video
+      // and in the panels.
       commentsGuardShown = true;
       clearCommentsGuardCheck();
       removeCommentsGuard(doc);
     });
     panel.appendChild(button);
 
-    host.appendChild(overlay);
+    return overlay;
+  }
+
+  // Shorts are not live streams, so getLiveStartVideoId (which the live
+  // guard relies on) does not know /shorts/ pages; their comments can still
+  // name a result.
+  function getCommentsGuardVideoId(doc) {
+    if (root.location) {
+      const shortsMatch = new URL(root.location.href).pathname.match(/^\/shorts\/([^/]+)/);
+
+      if (shortsMatch) {
+        return shortsMatch[1];
+      }
+    }
+
+    return shared.getLiveStartVideoId(root, doc);
   }
 
   function syncCommentsGuard(settings, doc) {
     clearCommentsGuardCheck();
 
-    const videoId = shared.getLiveStartVideoId(root, doc);
+    // Scrolling Shorts with the comments panel open changes this id too, so
+    // the next Short's comments are covered again.
+    const videoId = getCommentsGuardVideoId(doc);
 
     if (videoId !== commentsGuardVideoId) {
       // "Show comments" on one video must not uncover the next one.
@@ -821,6 +914,9 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
 
     doc.documentElement.classList.add(COMMENTS_GUARD_OBSCURED_CLASS);
     renderCommentsGuardOverlay(doc);
+    doc.querySelectorAll(COMMENTS_PANEL_SELECTOR).forEach((commentsPanel) => {
+      renderCommentsPanelOverlay(doc, commentsPanel);
+    });
 
     commentsGuardTimer = root.setTimeout(() => {
       commentsGuardTimer = null;

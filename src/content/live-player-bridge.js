@@ -24,6 +24,12 @@
   const HIDE_VIDEO_TITLES_CLASS = "yas-hide-video-titles";
   const HIDE_VIDEO_PREVIEWS_CLASS = "yas-hide-video-previews";
   const HIDDEN_MEDIA_TITLE = "YouTube video";
+  // Put on #movie_player while the player refuses to seek (a live stream
+  // whose streamer turned rewinding off); content.js hides the skip buttons
+  // then. Only the page world can ask the player, so the bridge keeps the
+  // attribute up to date itself.
+  const SEEK_BLOCKED_ATTRIBUTE = "data-yas-seek-blocked";
+  const SEEK_BLOCKED_CHECK_MS = 1000;
 
   function parseSeekDetail(detail) {
     if (typeof detail !== "string") {
@@ -276,6 +282,19 @@
     } catch (error) {
       return null;
     }
+  }
+
+  // An unknown window (null) counts as seekable: the buttons stay until the
+  // player says otherwise. toggleAttribute changes nothing while the state
+  // holds, so the once-a-second call does not add DOM mutations.
+  function syncSeekBlockedAttribute(doc) {
+    const player = findPlayer(doc);
+
+    if (!player) {
+      return;
+    }
+
+    player.toggleAttribute(SEEK_BLOCKED_ATTRIBUTE, getPlayerCanRewind(player) === false);
   }
 
   function seekPlayer(doc, fallbackSeconds) {
@@ -674,6 +693,13 @@
         getLiveState(currentWindow, currentDocument),
       );
     }, true);
+
+    // Test windows come without timers.
+    if (typeof currentWindow.setInterval === "function") {
+      currentWindow.setInterval(() => {
+        syncSeekBlockedAttribute(currentDocument);
+      }, SEEK_BLOCKED_CHECK_MS);
+    }
   }
 
   return {
@@ -686,6 +712,8 @@
     LIVE_START_SEEK_RESULT_EVENT,
     LIVE_START_VERIFY_DELAY_MS,
     REFRESH_EVENT,
+    SEEK_BLOCKED_ATTRIBUTE,
+    SEEK_BLOCKED_CHECK_MS,
     continuePlayer,
     dispatchSeekResult,
     getPlayerCurrentTime,
@@ -703,6 +731,7 @@
     scheduleSeekVerification,
     seekPlayer,
     seekPlayerToLiveHead,
+    syncSeekBlockedAttribute,
     verifyPlayerSeek,
   };
 });

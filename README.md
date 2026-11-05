@@ -4,9 +4,9 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 
 - time in previews, lists, search results, recommendations, chapters, transcripts, and the player;
 - the player progress bar, with skip buttons in its place;
-- optional video preview blur (including end cards, the post-video suggestion wall, the autoplay "Up next" screen, and the frames shown when hovering the timeline);
-- optional video title blur in lists, recommendations, end cards, the browser tab, and the system media controls;
-- comments under videos and live chat, behind a **Show comments** button;
+- optional video preview blur (including end cards, the post-video suggestion wall, the autoplay "Up next" screen, and the frames shown when hovering the timeline), with the "Most replayed" graph hidden;
+- optional video title blur in lists, recommendations, end cards, above the open video, the browser tab, and the system media controls;
+- comments under videos, in the comments panel, on Shorts, and live chat, behind a **Show comments** button;
 - the live edge of live streams, behind a **Start from beginning** / **Continue live** choice.
 
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
@@ -58,10 +58,10 @@ The popup has a main **Protection is on** toggle. It fully enables or disables t
 Time hiding is always active while protection is on. Available settings:
 
 - **Hide progress bar** - hides the player timeline and preview progress bars. Enabled by default.
-- **Skip buttons** - while the timeline is hidden, adds `−10m −1m −10s +10s +1m +10m` buttons to the player controls. They never show where the video ends up. Enabled by default.
-- **Blur previews** - applies a strong blur to video thumbnails/previews, end screens, and the storyboard frames shown when hovering a visible timeline; removes the video's artwork from Chrome's media controls and the system media overlay. Disabled by default.
-- **Hide video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip; removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. The title of the open video above the description stays visible. Disabled by default.
-- **Hide comments** - blurs comments under a video behind a **Show comments** button. The choice counts for the current video only. Enabled by default.
+- **Skip buttons** - while the timeline is hidden, adds `−10m −1m −10s +10s +1m +10m` buttons to the player controls. They never show where the video ends up. They are not shown on live streams where the player does not allow seeking (the streamer turned rewinding off). Enabled by default.
+- **Blur previews** - applies a strong blur to video thumbnails/previews, end screens, and the storyboard frames shown when hovering a visible timeline; hides the "Most replayed" graph above a visible timeline; removes the video's artwork from Chrome's media controls and the system media overlay. Disabled by default.
+- **Hide video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. Disabled by default.
+- **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
 - **Protect live streams** - see below. Enabled by default.
 
 While protection is on, the extension does not pass the playback position to Chrome's media controls. Settings switched mid-video reach the media controls right away. Chrome may still show a position it reads from the video element itself; this cannot be turned off from an extension.
@@ -75,7 +75,7 @@ When a live stream opens, the player is blacked out and muted right away, before
 
 If the extension can't tell whether the video is live, it offers **Start from beginning** and **Play** (resume where the video is).
 
-If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat stays blurred behind **Show comments** until the choice is made and the user opens it. Recordings of finished streams are not affected.
+If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat stays blurred behind **Show comments** until the choice is made and the user opens it. Recordings of finished streams are not affected.
 
 ## Development
 

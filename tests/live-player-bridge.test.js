@@ -814,3 +814,96 @@ test("live player bridge reports a rewindable stream once its window is known", 
 
   assert.equal(result.canRewind, true);
 });
+
+// --- Portion 5: skip buttons hidden while the player refuses to seek ---
+
+// A player whose progress state the test can change, with the attribute
+// methods the bridge uses.
+function createSeekPlayer(progressState) {
+  const attributes = new Set();
+
+  return {
+    progressState,
+    getProgressState() {
+      return this.progressState;
+    },
+    hasAttribute(name) {
+      return attributes.has(name);
+    },
+    toggleAttribute(name, force) {
+      if (force) {
+        attributes.add(name);
+      } else {
+        attributes.delete(name);
+      }
+
+      return force;
+    },
+  };
+}
+
+function startSeekBlockedCheck(player) {
+  const doc = createDocument(() => player);
+  const intervals = [];
+  const root = Object.assign(createRoot(doc, []), {
+    setInterval(callback, delay) {
+      intervals.push({ callback, delay });
+    },
+  });
+
+  bridge.initLivePlayerBridge(root);
+  return intervals;
+}
+
+test("live player bridge marks the player as seek-blocked once a second while seeking is refused", () => {
+  // Live check 2026-11-05 (uLWEssCrXYc): a stream without rewinding reports
+  // allowSeeking false for a known window.
+  const player = createSeekPlayer({
+    allowSeeking: false,
+    seekableStart: 8498516,
+    seekableEnd: 8541703,
+  });
+  const intervals = startSeekBlockedCheck(player);
+
+  assert.equal(bridge.SEEK_BLOCKED_ATTRIBUTE, "data-yas-seek-blocked");
+  assert.deepEqual(intervals.map((interval) => interval.delay), [1000]);
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), false);
+
+  intervals[0].callback();
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), true);
+
+  // Still refused: the mark stays.
+  intervals[0].callback();
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), true);
+
+  // A stream with rewinding (H2SgImoLMdU) or a regular video.
+  player.progressState = { allowSeeking: true, seekableStart: 0, seekableEnd: 38316 };
+  intervals[0].callback();
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), false);
+});
+
+test("live player bridge does not mark the player while its seek window is unknown", () => {
+  const player = createSeekPlayer({
+    allowSeeking: false,
+    seekableStart: 8498516,
+    seekableEnd: 8541703,
+  });
+
+  bridge.syncSeekBlockedAttribute(createDocument(() => player));
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), true);
+
+  // Before playback the player reports an empty window.
+  player.progressState = { allowSeeking: false, seekableStart: 0, seekableEnd: 0 };
+  bridge.syncSeekBlockedAttribute(createDocument(() => player));
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), false);
+
+  player.progressState = undefined;
+  bridge.syncSeekBlockedAttribute(createDocument(() => player));
+  assert.equal(player.hasAttribute("data-yas-seek-blocked"), false);
+});
+
+test("live player bridge seek-blocked check does nothing without a player", () => {
+  const intervals = startSeekBlockedCheck(null);
+
+  assert.doesNotThrow(() => intervals[0].callback());
+});

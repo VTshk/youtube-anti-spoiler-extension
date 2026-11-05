@@ -222,12 +222,15 @@ test("skipVideo does nothing before the video knows its length", () => {
   assert.equal(video.currentTime, 0);
 });
 
-test("skip buttons are hidden by default and shown only with a hidden timeline and no live guard", () => {
+test("skip buttons are hidden by default and shown only with a hidden timeline, no live guard, and a seekable player", () => {
   const css = content.buildSpoilerCss();
   const containerSelector = `#movie_player .${skipButtons.SKIP_BUTTONS_CLASS}`;
+  // The page-world bridge marks the player when a live stream without
+  // rewinding refuses every seek; the buttons would be dead there.
   const showSelector =
     "html.yas-extension-enabled.yas-hide-player-progress-bar.yas-show-skip-buttons" +
-    `:not(.${content.LIVE_START_OBSCURED_CLASS}) ${containerSelector}`;
+    `:not(.${content.LIVE_START_OBSCURED_CLASS}) ` +
+    `#movie_player:not([data-yas-seek-blocked]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
 
   assert.equal(content.LIVE_START_OBSCURED_CLASS, "yas-live-start-obscured");
   assert.match(
