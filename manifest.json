@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Anti-Spoiler for YouTube",
-  "version": "0.2.0",
-  "description": "Hides spoiler-prone YouTube elements: time, progress bars, and video previews.",
+  "version": "0.3.0",
+  "description": "Hides spoiler-prone YouTube elements: time, progress bars, previews, titles, comments, and live-stream results.",
   "minimum_chrome_version": "111",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*"],
@@ -47,6 +47,7 @@
       "js": [
         "src/shared/settings.js",
         "src/content/live-start-controller.js",
+        "src/content/skip-buttons.js",
         "src/content/content.js"
       ],
       "run_at": "document_start"

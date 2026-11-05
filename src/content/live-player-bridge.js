@@ -18,6 +18,12 @@
   const LIVE_START_VERIFY_DELAY_MS = 500;
   const LIVE_START_SEEK_TOLERANCE_SECONDS = 2;
   const BRIDGE_FLAG = "__youtubeAntiSpoilerLivePlayerBridgeInitialized";
+  // Classes content.js puts on <html>; the MAIN world cannot read
+  // chrome.storage, so they are its only view of the settings.
+  const EXTENSION_ENABLED_CLASS = "yas-extension-enabled";
+  const HIDE_VIDEO_TITLES_CLASS = "yas-hide-video-titles";
+  const HIDE_VIDEO_PREVIEWS_CLASS = "yas-hide-video-previews";
+  const HIDDEN_MEDIA_TITLE = "YouTube video";
 
   function parseSeekDetail(detail) {
     if (typeof detail !== "string") {
@@ -537,6 +543,88 @@
     return true;
   }
 
+  function hasRootClass(win, className) {
+    return win.document.documentElement.classList.contains(className);
+  }
+
+  function hideSpoilersInMetadata(win, metadata) {
+    const hideTitle = hasRootClass(win, HIDE_VIDEO_TITLES_CLASS);
+    const hideArtwork = hasRootClass(win, HIDE_VIDEO_PREVIEWS_CLASS);
+
+    if (!metadata || (!hideTitle && !hideArtwork)) {
+      return metadata;
+    }
+
+    // A new object, so YouTube's own metadata is never changed.
+    return new win.MediaMetadata({
+      title: hideTitle ? HIDDEN_MEDIA_TITLE : metadata.title,
+      artist: metadata.artist,
+      album: metadata.album,
+      artwork: hideArtwork ? [] : metadata.artwork,
+    });
+  }
+
+  // Chrome's media controls (the toolbar media hub, the Windows media
+  // overlay) show the title, artwork, position, and duration the page hands
+  // to navigator.mediaSession. Like the history patch, this has to run in
+  // the MAIN world, before YouTube's own scripts use the API.
+  function patchMediaSession(win) {
+    if (
+      !win.navigator ||
+      !win.navigator.mediaSession ||
+      typeof win.MediaSession !== "function" ||
+      typeof win.MediaMetadata !== "function"
+    ) {
+      return false;
+    }
+
+    const prototype = win.MediaSession.prototype;
+    const originalSetPositionState = prototype.setPositionState;
+    const metadataProperty = Object.getOwnPropertyDescriptor(prototype, "metadata");
+
+    // What YouTube last handed over, so it can be masked or put back when
+    // the settings change mid-video.
+    let youtubeMetadata = null;
+
+    prototype.setPositionState = function patchedSetPositionState() {
+      if (hasRootClass(win, EXTENSION_ENABLED_CLASS)) {
+        // Without arguments the call clears the position state, so a state
+        // set before protection was switched on stops counting too.
+        return originalSetPositionState.call(this);
+      }
+
+      return originalSetPositionState.apply(this, arguments);
+    };
+
+    Object.defineProperty(prototype, "metadata", {
+      configurable: true,
+      enumerable: metadataProperty.enumerable,
+      get: metadataProperty.get,
+      set(metadata) {
+        youtubeMetadata = metadata;
+        metadataProperty.set.call(this, hideSpoilersInMetadata(win, metadata));
+      },
+    });
+
+    // YouTube sets the metadata and position once per video, so a setting
+    // switched mid-video would not reach the media controls until the next
+    // one. content.js switches settings through the classes on <html>.
+    new win.MutationObserver(() => {
+      const session = win.navigator.mediaSession;
+
+      metadataProperty.set.call(session, hideSpoilersInMetadata(win, youtubeMetadata));
+
+      if (hasRootClass(win, EXTENSION_ENABLED_CLASS)) {
+        originalSetPositionState.call(session);
+      }
+    }).observe(win.document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return true;
+  }
+
   function initLivePlayerBridge(root) {
     const currentWindow = root || {};
     const currentDocument = currentWindow.document;
@@ -552,6 +640,7 @@
     currentWindow[BRIDGE_FLAG] = true;
 
     patchHistory(currentWindow);
+    patchMediaSession(currentWindow);
 
     currentDocument.addEventListener(LIVE_START_SEEK_EVENT, (event) => {
       const detail = parseSeekDetail(event && event.detail);
@@ -603,10 +692,12 @@
     getPlayerSeekStart,
     getPlayerSeekableEnd,
     getLiveState,
+    HIDDEN_MEDIA_TITLE,
     initLivePlayerBridge,
     isNearSeekTarget,
     parseSeekDetail,
     patchHistory,
+    patchMediaSession,
     pausePlayer,
     playPlayer,
     scheduleSeekVerification,

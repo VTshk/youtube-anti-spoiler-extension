@@ -52,8 +52,10 @@ async function loadPopup(
   const status = createPopupElement();
   const settingToggles = [
     createPopupElement({ setting: "hidePlayerProgressBar" }),
+    createPopupElement({ setting: "showSkipButtons" }),
     createPopupElement({ setting: "hideVideoPreviews" }),
     createPopupElement({ setting: "hideVideoTitles" }),
+    createPopupElement({ setting: "hideComments" }),
     createPopupElement({ setting: "startLiveFromBeginning" }),
   ];
   const setIconCalls = [];
@@ -190,6 +192,12 @@ test("popup contains the English power control and configurable checkbox setting
   assert.match(html, /data-setting="startLiveFromBeginning"/);
   assert.match(html, /Protect live streams/);
   assert.match(html, /Pause live streams and hide live chat behind a spoiler guard/);
+  assert.match(html, /data-setting="showSkipButtons"/);
+  assert.match(html, /Skip buttons/);
+  assert.match(html, /Jump ±10 s, 1 min, 10 min while the timeline is hidden/);
+  assert.match(html, /data-setting="hideComments"/);
+  assert.match(html, /Hide comments/);
+  assert.match(html, /Blur comments under videos until you choose to show them/);
   assert.match(html, /class="checkbox-input"/);
   assert.doesNotMatch(html, /switch-large/);
   assert.doesNotMatch(html, /data-setting="hideThumbnailDuration"/);
@@ -317,6 +325,27 @@ test("popup saves the live start setting when changed", async () => {
   assert.equal(storedSettings.startLiveFromBeginning, false);
 });
 
+test("popup shows skip buttons and comment hiding on by default and saves them when changed", async () => {
+  const { settingToggles, storedSettings } = await loadPopup({});
+  const skipToggle = settingToggles.find(
+    (toggle) => toggle.dataset.setting === "showSkipButtons",
+  );
+  const commentsToggle = settingToggles.find(
+    (toggle) => toggle.dataset.setting === "hideComments",
+  );
+
+  assert.equal(skipToggle.checked, true);
+  assert.equal(commentsToggle.checked, true);
+
+  skipToggle.checked = false;
+  await skipToggle.listeners.change();
+  commentsToggle.checked = false;
+  await commentsToggle.listeners.change();
+
+  assert.equal(storedSettings.showSkipButtons, false);
+  assert.equal(storedSettings.hideComments, false);
+});
+
 test("popup keeps showing protection off when enabling it fails to save", async () => {
   const { powerToggle, powerStatus, status, storedSettings } = await loadPopup(
     { extensionEnabled: false },
@@ -394,4 +423,25 @@ test("popup explains where to set a shortcut when none is assigned", async () =>
   await flushPromises();
 
   assert.equal(shortcutNote.textContent, "Set a shortcut in chrome://extensions/shortcuts");
+});
+
+test("popup keeps both changes when two checkboxes change before the first save finishes", async () => {
+  const { settingToggles, storedSettings } = await loadPopup({
+    extensionEnabled: true,
+    hideVideoPreviews: false,
+    hideVideoTitles: false,
+  });
+  const toggle = (setting) =>
+    settingToggles.find((candidate) => candidate.dataset.setting === setting);
+
+  toggle("hideVideoTitles").checked = true;
+  const firstSave = toggle("hideVideoTitles").listeners.change();
+  toggle("hideVideoPreviews").checked = true;
+  const secondSave = toggle("hideVideoPreviews").listeners.change();
+  await Promise.all([firstSave, secondSave]);
+
+  assert.equal(storedSettings.hideVideoTitles, true);
+  assert.equal(storedSettings.hideVideoPreviews, true);
+  assert.equal(toggle("hideVideoTitles").checked, true);
+  assert.equal(toggle("hideVideoPreviews").checked, true);
 });

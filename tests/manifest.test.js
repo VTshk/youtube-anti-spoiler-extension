@@ -60,6 +60,7 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
   assert.deepEqual(contentScript.js, [
     "src/shared/settings.js",
     "src/content/live-start-controller.js",
+    "src/content/skip-buttons.js",
     "src/content/content.js",
   ]);
   assert.equal(contentScript.run_at, "document_start");

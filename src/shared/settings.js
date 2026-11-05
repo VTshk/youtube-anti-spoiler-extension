@@ -14,6 +14,8 @@
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
+    showSkipButtons: true,
+    hideComments: true,
   });
 
   const SETTING_KEYS = Object.freeze(Object.keys(DEFAULT_SETTINGS));
@@ -40,6 +42,8 @@
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
       hideVideoTitles: getBoolean(raw, "hideVideoTitles"),
       startLiveFromBeginning: getBoolean(raw, "startLiveFromBeginning"),
+      showSkipButtons: getBoolean(raw, "showSkipButtons"),
+      hideComments: getBoolean(raw, "hideComments"),
     };
   }
 

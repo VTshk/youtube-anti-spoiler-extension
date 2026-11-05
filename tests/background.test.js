@@ -148,3 +148,16 @@ test("background ignores unknown commands", async () => {
 
   assert.equal(storedSettings.extensionEnabled, true);
 });
+
+test("background keyboard shortcut pressed twice quickly ends where it started", async () => {
+  const storedSettings = { extensionEnabled: true };
+  const { commandListeners } = loadBackground(storedSettings);
+
+  // The second press arrives before the first one has written.
+  await Promise.all([
+    commandListeners[0]("toggle-protection"),
+    commandListeners[0]("toggle-protection"),
+  ]);
+
+  assert.equal(storedSettings.extensionEnabled, true);
+});

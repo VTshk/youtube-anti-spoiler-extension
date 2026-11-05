@@ -69,7 +69,16 @@
 
   // Keyboard shortcut (manifest "commands"): flip protection on or off. The
   // toolbar icon and open YouTube tabs follow through storage.onChanged.
-  async function toggleProtection() {
+  // Presses are handled one after another, so a second press reads what the
+  // first one wrote instead of flipping the same old value.
+  let toggleQueue = Promise.resolve();
+
+  function toggleProtection() {
+    toggleQueue = toggleQueue.then(flipProtection);
+    return toggleQueue;
+  }
+
+  async function flipProtection() {
     try {
       const settings = await namespace.readSettings();
       await namespace.writeSettings(

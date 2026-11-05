@@ -11,6 +11,8 @@ test("settings defaults hide spoiler-prone time by default", () => {
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
+    showSkipButtons: true,
+    hideComments: true,
   });
 });
 
@@ -23,6 +25,8 @@ test("normalizeSettings keeps known boolean settings and fills missing defaults"
       hideVideoPreviews: true,
       hideVideoTitles: true,
       startLiveFromBeginning: false,
+      showSkipButtons: false,
+      hideComments: false,
       unrelated: true,
     }),
     {
@@ -32,6 +36,8 @@ test("normalizeSettings keeps known boolean settings and fills missing defaults"
       hideVideoPreviews: true,
       hideVideoTitles: true,
       startLiveFromBeginning: false,
+      showSkipButtons: false,
+      hideComments: false,
     },
   );
 });
@@ -49,6 +55,8 @@ test("normalizeSettings ignores legacy time settings and keeps hideTime enabled"
       hideVideoPreviews: false,
       hideVideoTitles: false,
       startLiveFromBeginning: true,
+      showSkipButtons: true,
+      hideComments: true,
     },
   );
 });
@@ -104,6 +112,8 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     "hideVideoPreviews",
     "hideVideoTitles",
     "startLiveFromBeginning",
+    "showSkipButtons",
+    "hideComments",
     "hideThumbnailDuration",
     "hidePlayerTime",
   ]);
@@ -114,5 +124,7 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
+    showSkipButtons: true,
+    hideComments: true,
   });
 });

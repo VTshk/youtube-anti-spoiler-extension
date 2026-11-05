@@ -1,0 +1,259 @@
+const assert = require("node:assert/strict");
+const test = require("node:test");
+
+const skipButtons = require("../src/content/skip-buttons.js");
+const content = require("../src/content/content.js");
+
+function createElement(tagName) {
+  return {
+    tagName: tagName.toUpperCase(),
+    attributes: {},
+    children: [],
+    className: "",
+    dataset: {},
+    listeners: {},
+    textContent: "",
+    title: "",
+    type: "",
+    appendChild(child) {
+      this.children.push(child);
+      return child;
+    },
+    addEventListener(eventName, listener) {
+      this.listeners[eventName] = listener;
+    },
+    setAttribute(name, value) {
+      this.attributes[name] = value;
+    },
+    querySelector(selector) {
+      assert.equal(selector.startsWith("."), true, `class selector expected, got ${selector}`);
+      const className = selector.slice(1);
+      const queue = [...this.children];
+
+      while (queue.length > 0) {
+        const candidate = queue.shift();
+
+        if (candidate.className.split(" ").includes(className)) {
+          return candidate;
+        }
+
+        queue.push(...candidate.children);
+      }
+
+      return null;
+    },
+  };
+}
+
+function createPlayerDocument({ controls = createElement("div"), video = null } = {}) {
+  return {
+    controls,
+    video,
+    createElement,
+    querySelector(selector) {
+      if (selector === "#movie_player .ytp-left-controls") {
+        return this.controls;
+      }
+
+      if (selector === "#movie_player video") {
+        return this.video;
+      }
+
+      return null;
+    },
+  };
+}
+
+function createVideo({ currentTime, duration = NaN, seekable = { length: 0 } }) {
+  return { currentTime, duration, seekable };
+}
+
+function createSeekable(start, end) {
+  return {
+    length: 1,
+    start(index) {
+      assert.equal(index, 0);
+      return start;
+    },
+    end(index) {
+      assert.equal(index, 0);
+      return end;
+    },
+  };
+}
+
+function clickButton(button) {
+  const calls = { preventDefault: 0, stopPropagation: 0 };
+
+  button.listeners.click({
+    preventDefault() {
+      calls.preventDefault += 1;
+    },
+    stopPropagation() {
+      calls.stopPropagation += 1;
+    },
+  });
+
+  return calls;
+}
+
+function findButton(doc, seconds) {
+  const container = doc.controls.querySelector(`.${skipButtons.SKIP_BUTTONS_CLASS}`);
+  return container.children.find(
+    (button) => button.dataset.skipSeconds === String(seconds),
+  );
+}
+
+test("skip buttons are inserted once into the player's left controls", () => {
+  const doc = createPlayerDocument();
+
+  assert.equal(skipButtons.ensureSkipButtons(doc), true);
+  assert.equal(skipButtons.ensureSkipButtons(doc), true);
+
+  assert.equal(doc.controls.children.length, 1);
+  const container = doc.controls.children[0];
+  assert.equal(container.className, skipButtons.SKIP_BUTTONS_CLASS);
+  assert.deepEqual(
+    container.children.map((button) => button.textContent),
+    ["−10m", "−1m", "−10s", "+10s", "+1m", "+10m"],
+  );
+  assert.deepEqual(
+    container.children.map((button) => button.dataset.skipSeconds),
+    ["-600", "-60", "-10", "10", "60", "600"],
+  );
+  container.children.forEach((button) => {
+    assert.equal(button.type, "button");
+    assert.equal(typeof button.attributes["aria-label"], "string");
+  });
+});
+
+test("skip buttons wait for the player controls to exist", () => {
+  const doc = createPlayerDocument({ controls: null });
+
+  assert.equal(skipButtons.ensureSkipButtons(doc), false);
+});
+
+test("skip buttons come back after YouTube rebuilds the player controls", () => {
+  const doc = createPlayerDocument();
+
+  skipButtons.ensureSkipButtons(doc);
+  doc.controls = createElement("div");
+  skipButtons.ensureSkipButtons(doc);
+
+  assert.equal(doc.controls.children.length, 1);
+  assert.equal(doc.controls.children[0].className, skipButtons.SKIP_BUTTONS_CLASS);
+});
+
+test("skip button click seeks the player's video and does not reach the player", () => {
+  const video = createVideo({ currentTime: 100, duration: 1000 });
+  const doc = createPlayerDocument({ video });
+
+  skipButtons.ensureSkipButtons(doc);
+
+  const calls = clickButton(findButton(doc, 60));
+
+  assert.equal(video.currentTime, 160);
+  assert.deepEqual(calls, { preventDefault: 1, stopPropagation: 1 });
+
+  clickButton(findButton(doc, -10));
+  assert.equal(video.currentTime, 150);
+});
+
+test("skip button click without a video does nothing", () => {
+  const doc = createPlayerDocument({ video: null });
+
+  skipButtons.ensureSkipButtons(doc);
+
+  const calls = clickButton(findButton(doc, 10));
+
+  assert.deepEqual(calls, { preventDefault: 1, stopPropagation: 1 });
+});
+
+test("skipVideo keeps a regular video between 0 and its duration", () => {
+  const video = createVideo({ currentTime: 30, duration: 500 });
+
+  assert.equal(skipButtons.skipVideo(video, -600), true);
+  assert.equal(video.currentTime, 0);
+
+  video.currentTime = 450;
+  skipButtons.skipVideo(video, 600);
+  assert.equal(video.currentTime, 500);
+});
+
+test("skipVideo keeps a live stream inside its seekable window", () => {
+  const video = createVideo({
+    currentTime: 1000,
+    duration: Infinity,
+    seekable: createSeekable(400, 1200),
+  });
+
+  skipButtons.skipVideo(video, -600);
+  assert.equal(video.currentTime, 400);
+
+  skipButtons.skipVideo(video, 600);
+  assert.equal(video.currentTime, 1000);
+
+  skipButtons.skipVideo(video, 600);
+  assert.equal(video.currentTime, 1200);
+});
+
+test("getSkipBounds uses the last seekable range end", () => {
+  const video = createVideo({
+    currentTime: 0,
+    duration: 900,
+    seekable: {
+      length: 2,
+      start(index) {
+        return [5, 300][index];
+      },
+      end(index) {
+        return [200, 880][index];
+      },
+    },
+  });
+
+  assert.deepEqual(skipButtons.getSkipBounds(video), { start: 5, end: 880 });
+});
+
+test("skipVideo does nothing before the video knows its length", () => {
+  const video = createVideo({ currentTime: 0, duration: NaN });
+
+  assert.equal(skipButtons.skipVideo(video, 10), false);
+  assert.equal(video.currentTime, 0);
+});
+
+test("skip buttons are hidden by default and shown only with a hidden timeline and no live guard", () => {
+  const css = content.buildSpoilerCss();
+  const containerSelector = `#movie_player .${skipButtons.SKIP_BUTTONS_CLASS}`;
+  const showSelector =
+    "html.yas-extension-enabled.yas-hide-player-progress-bar.yas-show-skip-buttons" +
+    `:not(.${content.LIVE_START_OBSCURED_CLASS}) ${containerSelector}`;
+
+  assert.equal(content.LIVE_START_OBSCURED_CLASS, "yas-live-start-obscured");
+  assert.match(
+    css,
+    new RegExp(`(^|\\n)${escapeRegExp(containerSelector)} \\{\\n  display: none !important;`),
+  );
+  assert.match(
+    css,
+    new RegExp(`${escapeRegExp(showSelector)} \\{\\n  display: inline-flex !important;`),
+  );
+});
+
+test("skip button classes follow the settings and protection switch", () => {
+  assert.equal(content.CLASS_BY_SETTING.showSkipButtons, "yas-show-skip-buttons");
+  assert.equal(
+    content.getEnabledClassNames({ extensionEnabled: true }).includes("yas-show-skip-buttons"),
+    true,
+  );
+  assert.equal(
+    content.getEnabledClassNames({ extensionEnabled: true, showSkipButtons: false })
+      .includes("yas-show-skip-buttons"),
+    false,
+  );
+  assert.deepEqual(content.getEnabledClassNames({ extensionEnabled: false }), []);
+});
+
+function escapeRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}

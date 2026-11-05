@@ -65,3 +65,31 @@
   включённой защите, метаданные подменяются по классам).
 - Отчёт `docs/research/2026-11-05/portion4-report.md`: «сделано / не сделано» по пунктам + имена тестов, итог `npm test`
   числами, изменённые файлы, «Не сделано» с причинами, «Что проверить живьём».
+
+## Уточнения главной сессии перед запуском F2–F5 (2026-11-05)
+
+- F1 уже сделан и проверен — не трогать. Порция 3 тоже легла в `content.js`: селекторы раскадровки/глав в
+  `VIDEO_PREVIEW_SELECTORS` / `VIDEO_TITLE_SELECTORS`, `stashHoveredTitleAttribute` / `restoreStashedTitleAttributes`
+  и слушатель `mouseover` в `init()`. Сохранить как есть. Исходная точка: `npm test` — 169/169.
+- Настройки: новые ключи `showSkipButtons` и `hideComments` (оба по умолчанию `true`) — в `DEFAULT_SETTINGS` и
+  `normalizeSettings` (`src/shared/settings.js`), в `CLASS_BY_SETTING` (`content.js`) с классами
+  `yas-show-skip-buttons` и `yas-hide-comments` (классы на `<html>` ставятся только при включённой защите — как сейчас),
+  и чекбоксами в `popup/popup.html` по образцу соседних строк (`data-setting`). Обновить тесты `settings`/`popup`,
+  которые перечисляют ключи.
+- F2: кнопки — внутри плеера `#movie_player .ytp-left-controls`; клик не должен всплывать в плеер (иначе YouTube
+  ставит паузу/перематывает по своему обработчику) — `stopPropagation`. Условие показа проверять по классам на
+  `<html>`: `yas-extension-enabled` + `yas-hide-player-progress-bar` + `yas-show-skip-buttons` и нет
+  `yas-live-start-obscured`. Проще всего: кнопки вставлять всегда, когда есть плеер, а видимость задать CSS по этим
+  классам. Под live-guard кнопки не показываются.
+- F3: `#comments` на `/watch`. Оверлей с кнопкой «Show comments» — по образцу чат-гарда (`renderChatGuardOverlay`),
+  отдельный id `youtube-anti-spoiler-comments-guard`, класс-признак на `<html>` `yas-comments-obscured`. Нажатие —
+  только для текущего видео (id из `shared.getLiveStartVideoId`). Повторная проверка раз в 1 с только на странице
+  просмотра; вне `/watch` таймеров нет.
+- F4: `MutationObserver` только на `<title>` (`childList`, `characterData`, `subtree`); свою запись не принимать за
+  запись YouTube (сравнивать с подставленным значением). Shorts — `/shorts/…`.
+- F5: в `live-player-bridge.js` (MAIN world). Если `setPositionState` без аргументов в Chrome бросает или ломает
+  плеер — не вызывать оригинал вовсе. Позицию, которую Chrome берёт прямо из `<video>`, убрать нельзя — записать в
+  отчёт как ограничение, не обходить.
+- Порция примерно на 150k контекста; на 250k — сдать итог и остаток работы, не дочитывать. Файлы читать разделами
+  (`content.test.js` — 4600 строк: читать только хелперы в начале и пару тестов чат-гарда как образец).
+- Довести все пункты до конца; неготовое — в разделе «Не сделано» отчёта с причиной.

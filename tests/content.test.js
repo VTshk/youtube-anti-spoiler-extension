@@ -199,6 +199,10 @@ function createLiveDocument({
     getElementById(id) {
       return body.querySelector(`#${id}`);
     },
+    // No hovered or stashed titles in these pages.
+    querySelectorAll() {
+      return [];
+    },
     querySelector(selector) {
       if (selector === "video") {
         return this.video;
@@ -486,6 +490,8 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
       hideVideoPreviews: true,
       hideVideoTitles: true,
       startLiveFromBeginning: true,
+      showSkipButtons: true,
+      hideComments: true,
     }),
     [
         "yas-extension-enabled",
@@ -494,6 +500,8 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
         "yas-hide-video-previews",
         "yas-hide-video-titles",
         "yas-start-live-from-beginning",
+        "yas-show-skip-buttons",
+        "yas-hide-comments",
       ],
   );
 });
@@ -519,6 +527,8 @@ test("getEnabledClassNames keeps time hiding enabled when stored setting is fals
       hidePlayerProgressBar: true,
       hideVideoPreviews: false,
       startLiveFromBeginning: true,
+      showSkipButtons: false,
+      hideComments: false,
     }),
     [
       "yas-extension-enabled",
@@ -1712,7 +1722,9 @@ test("chat spoiler guard keeps checking once a second after the quick retries", 
   globalThis.location = { href: "https://www.youtube.com/watch?v=late-chat" };
 
   try {
-    content.applySettings(LIVE_SETTINGS, doc);
+    // The comments guard keeps its own once-a-second check; this test
+    // counts only the chat guard's.
+    content.applySettings({ ...LIVE_SETTINGS, hideComments: false }, doc);
 
     // No chat frame yet: quick retries, within the budget.
     let quickRetries = 0;
@@ -4491,4 +4503,128 @@ test("live guard confirms a jump that YouTube completes by reloading the media",
   assert.equal(getLiveOverlay(doc), null);
   assert.equal(isLiveObscured(doc), false);
   assert.deepEqual([...controller.getAttemptedVideoIds()], ["reload-jump"]);
+});
+
+test("buildSpoilerCss blurs seek-preview frames with previews and chapter names with titles", () => {
+  const css = content.buildSpoilerCss();
+
+  // With the timeline visible, hovering it shows storyboard frames from later
+  // in the video and the chapter name there.
+  assert.match(css, /html\.yas-hide-video-previews \.ytp-tooltip-bg/);
+  assert.match(css, /html\.yas-hide-video-previews \.ytp-storyboard-framepreview-img/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-tooltip\.ytp-preview \.ytp-tooltip-title/);
+  assert.match(css, /html\.yas-hide-video-titles \.ytp-tooltip-progress-bar-pill-title/);
+  // Button tooltips share .ytp-tooltip-title; they must stay readable.
+  assert.doesNotMatch(css, /html\.yas-hide-video-titles \.ytp-tooltip-title/);
+});
+
+function createTitledElement({ title, insideVideoTitle, rootClasses }) {
+  const attributes = { title };
+  const rootElement = { classList: createClassList() };
+  rootClasses.forEach((className) => rootElement.classList.add(className));
+
+  const element = {
+    ownerDocument: { documentElement: rootElement },
+    closest(selector) {
+      if (selector === "[title]") {
+        return "title" in attributes ? element : null;
+      }
+
+      return insideVideoTitle ? element : null;
+    },
+    getAttribute: (name) => (name in attributes ? attributes[name] : null),
+    hasAttribute: (name) => name in attributes,
+    setAttribute: (name, value) => {
+      attributes[name] = String(value);
+    },
+    removeAttribute: (name) => {
+      delete attributes[name];
+    },
+    attributes,
+  };
+
+  return element;
+}
+
+test("hovering a hidden video title takes its title attribute off before the tooltip shows", () => {
+  const element = createTitledElement({
+    title: "Team A 3-0 Team B | Highlights",
+    insideVideoTitle: true,
+    rootClasses: ["yas-hide-video-titles"],
+  });
+
+  content.stashHoveredTitleAttribute({ target: element });
+
+  assert.equal(element.hasAttribute("title"), false);
+  assert.equal(element.getAttribute("data-yas-title"), "Team A 3-0 Team B | Highlights");
+});
+
+test("hovering keeps the title attribute when titles are shown or it is not a video title", () => {
+  const shownTitles = createTitledElement({
+    title: "Team A 3-0 Team B",
+    insideVideoTitle: true,
+    rootClasses: ["yas-extension-enabled"],
+  });
+  const logo = createTitledElement({
+    title: "YouTube Home",
+    insideVideoTitle: false,
+    rootClasses: ["yas-hide-video-titles"],
+  });
+
+  content.stashHoveredTitleAttribute({ target: shownTitles });
+  content.stashHoveredTitleAttribute({ target: logo });
+
+  assert.equal(shownTitles.getAttribute("title"), "Team A 3-0 Team B");
+  assert.equal(logo.getAttribute("title"), "YouTube Home");
+});
+
+test("stashed title attributes come back when title hiding is switched off", () => {
+  const stashed = createTitledElement({
+    title: "Team A 3-0 Team B",
+    insideVideoTitle: true,
+    rootClasses: ["yas-hide-video-titles"],
+  });
+  const reused = createTitledElement({
+    title: "Old video",
+    insideVideoTitle: true,
+    rootClasses: ["yas-hide-video-titles"],
+  });
+  content.stashHoveredTitleAttribute({ target: stashed });
+  content.stashHoveredTitleAttribute({ target: reused });
+  // YouTube reused this list item for another video meanwhile.
+  reused.setAttribute("title", "New video");
+
+  const doc = createLiveDocument({});
+  doc.querySelectorAll = (selector) =>
+    selector === "[data-yas-title]" ? [stashed, reused] : [];
+
+  content.applySettings(
+    { extensionEnabled: true, hideVideoTitles: false, startLiveFromBeginning: false },
+    doc,
+  );
+
+  assert.equal(stashed.getAttribute("title"), "Team A 3-0 Team B");
+  assert.equal(stashed.hasAttribute("data-yas-title"), false);
+  assert.equal(reused.getAttribute("title"), "New video");
+  assert.equal(reused.hasAttribute("data-yas-title"), false);
+});
+
+test("switching title hiding on takes the title attribute off a title already under the cursor", () => {
+  // Protection was off while the cursor rested on a title, so the mouseover
+  // happened before the hiding class existed.
+  const hovered = createTitledElement({
+    title: "Team A 3-0 Team B",
+    insideVideoTitle: true,
+    rootClasses: [],
+  });
+  const doc = createLiveDocument({});
+  doc.querySelectorAll = (selector) => (selector === "[title]:hover" ? [hovered] : []);
+
+  content.applySettings(
+    { extensionEnabled: true, hideVideoTitles: true, startLiveFromBeginning: false },
+    doc,
+  );
+
+  assert.equal(hovered.hasAttribute("title"), false);
+  assert.equal(hovered.getAttribute("data-yas-title"), "Team A 3-0 Team B");
 });

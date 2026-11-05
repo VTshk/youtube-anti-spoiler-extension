@@ -96,10 +96,19 @@
     }
   }
 
-  // Saves only the changed keys on top of the last confirmed settings.
+  // Saves run one after another: each one applies its changes on top of
+  // what the previous one stored, so two quick clicks cannot undo each other.
+  let saveQueue = Promise.resolve(true);
+
+  function saveSettings(changes) {
+    saveQueue = saveQueue.then(() => writeChanges(changes));
+    return saveQueue;
+  }
+
+  // Applies the changed keys on top of the last confirmed settings.
   // currentSettings changes only after a successful write, so after a failure
   // the UI is re-rendered from what is really stored.
-  async function saveSettings(changes) {
+  async function writeChanges(changes) {
     const nextSettings = namespace.normalizeSettings(
       Object.assign({}, currentSettings, changes),
     );

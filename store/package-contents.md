@@ -26,6 +26,6 @@ The Chrome Web Store ZIP package should contain only runtime extension files.
 
 The release script creates:
 
-`dist/youtube-anti-spoiler-extension-0.1.0.zip`
+`dist/youtube-anti-spoiler-extension-<version>.zip`
 
 The ZIP must have `manifest.json` at the root.

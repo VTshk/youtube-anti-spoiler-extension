@@ -4,6 +4,7 @@
     // script load order, so pull in the dependencies content.js relies on.
     require("../shared/settings.js");
     require("./live-start-controller.js");
+    require("./skip-buttons.js");
   }
 
   const shared = root.YouTubeAntiSpoiler || {};
@@ -21,6 +22,11 @@
   const REFRESH_EVENT = "youtube-anti-spoiler-locationchange";
   const CHAT_GUARD_OBSCURED_CLASS = "yas-chat-spoiler-protection";
   const CHAT_GUARD_OVERLAY_ID = "youtube-anti-spoiler-chat-guard";
+  const COMMENTS_GUARD_OBSCURED_CLASS = "yas-comments-obscured";
+  const COMMENTS_GUARD_OVERLAY_ID = "youtube-anti-spoiler-comments-guard";
+  const COMMENTS_GUARD_CHECK_MS = 1000;
+  const HIDDEN_TAB_TITLE = "YouTube";
+  const SKIP_BUTTONS_CLASS = shared.SKIP_BUTTONS_CLASS;
 
   // Live-start identifiers and behaviour are owned by the live-start controller
   // module; content.js only needs the few it references for CSS and chat retry.
@@ -36,6 +42,8 @@
     hideVideoPreviews: "yas-hide-video-previews",
     hideVideoTitles: "yas-hide-video-titles",
     startLiveFromBeginning: "yas-start-live-from-beginning",
+    showSkipButtons: "yas-show-skip-buttons",
+    hideComments: "yas-hide-comments",
   });
 
   const SETTING_KEYS = Object.freeze(Object.keys(CLASS_BY_SETTING));
@@ -158,6 +166,11 @@
     "ytd-watch-card-hero-video-renderer #hero-image img",
     // Upcoming Shorts are pre-rendered as background-image frames.
     ".reel-video-in-sequence-thumbnail",
+    // Seek-preview frames of the current video: the hover tooltip over a
+    // visible timeline and the large frame while dragging. They show what
+    // happens later in the video, so they go with the other previews.
+    ".ytp-tooltip-bg",
+    ".ytp-storyboard-framepreview-img",
   ]);
 
   const VIDEO_TITLE_SELECTORS = Object.freeze([
@@ -186,7 +199,15 @@
     ".ytp-modern-videowall-still-info-title",
     ".ytPlayerOverlayVideoDetailsRendererTitle",
     ".ytp-autonav-endscreen-upnext-title",
+    // Chapter name in the tooltip over a visible timeline: hovering ahead
+    // reads out later chapters ("Goal 89'"). Scoped to the seek preview,
+    // because buttons use the same tooltip class for their own names.
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-title",
+    ".ytp-tooltip-progress-bar-pill-title",
   ]);
+
+  const VIDEO_TITLE_SELECTOR_LIST = VIDEO_TITLE_SELECTORS.join(", ");
+  const STASHED_TITLE_ATTRIBUTE = "data-yas-title";
 
   function getEnabledClassNames(settings) {
     const normalizedSettings = normalizeSettings(settings);
@@ -331,6 +352,98 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 }
 
 #${CHAT_GUARD_OVERLAY_ID} button {
+  min-height: 34px !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  border-radius: 6px !important;
+  padding: 0 12px !important;
+  background: #f8f8f8 !important;
+  color: #0f0f0f !important;
+  font: inherit !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+/* Skip buttons are inserted into every player and shown only while the
+   timeline they stand in for is hidden, and never over the live guard. */
+#movie_player .${SKIP_BUTTONS_CLASS} {
+  display: none !important;
+}
+
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}.${CLASS_BY_SETTING.showSkipButtons}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player .${SKIP_BUTTONS_CLASS} {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+#movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 6px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #fff !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  opacity: 0.9 !important;
+  cursor: pointer !important;
+}
+
+#movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button:hover {
+  opacity: 1 !important;
+}
+
+html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments#comments {
+  position: relative !important;
+}
+
+html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments#comments #contents {
+  filter: blur(18px) !important;
+  pointer-events: none !important;
+}
+
+/* The comment teaser under the video quotes a comment. It stays clickable:
+   opening the comments panel from it is the user's choice to see them. */
+html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments-entry-point-header-renderer {
+  filter: blur(18px) !important;
+}
+
+/* Above the comments but below YouTube's fixed masthead. */
+#${COMMENTS_GUARD_OVERLAY_ID} {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 10 !important;
+  display: grid !important;
+  align-content: start !important;
+  justify-items: center !important;
+  padding: 24px 16px !important;
+  box-sizing: border-box !important;
+  background: rgba(15, 15, 15, 0.72) !important;
+  color: #f8f8f8 !important;
+  font-family: Roboto, Arial, sans-serif !important;
+  text-align: center !important;
+}
+
+/* The comments block can be thousands of pixels tall; the button travels
+   down with the page instead of staying at its top. */
+#${COMMENTS_GUARD_OVERLAY_ID} .yas-comments-guard-panel {
+  position: sticky !important;
+  top: 80px !important;
+  display: grid !important;
+  gap: 12px !important;
+  justify-items: center !important;
+}
+
+#${COMMENTS_GUARD_OVERLAY_ID} .yas-comments-guard-title {
+  margin: 0 !important;
+  font-size: 16px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+#${COMMENTS_GUARD_OVERLAY_ID} button {
   min-height: 34px !important;
   border: 1px solid rgba(255, 255, 255, 0.24) !important;
   border-radius: 6px !important;
@@ -620,6 +733,178 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     }, delay);
   }
 
+  // Comments under a video are covered like live chat: blurred behind a
+  // "Show comments" button that counts for the current video only. YouTube
+  // loads the comments lazily on scroll and can re-create the section, so
+  // the cover is re-checked once a second while a video page is open.
+  let commentsGuardTimer = null;
+  let commentsGuardVideoId = null;
+  let commentsGuardShown = false;
+
+  function clearCommentsGuardCheck() {
+    if (commentsGuardTimer) {
+      root.clearTimeout(commentsGuardTimer);
+    }
+
+    commentsGuardTimer = null;
+  }
+
+  function removeCommentsGuard(doc) {
+    const overlay = doc.getElementById(COMMENTS_GUARD_OVERLAY_ID);
+
+    if (overlay) {
+      overlay.remove();
+    }
+
+    doc.documentElement.classList.remove(COMMENTS_GUARD_OBSCURED_CLASS);
+  }
+
+  function renderCommentsGuardOverlay(doc) {
+    if (doc.getElementById(COMMENTS_GUARD_OVERLAY_ID)) {
+      return;
+    }
+
+    const host = doc.querySelector("ytd-comments#comments");
+
+    // Not rendered yet; the next check tries again.
+    if (!host) {
+      return;
+    }
+
+    const overlay = doc.createElement("div");
+    overlay.id = COMMENTS_GUARD_OVERLAY_ID;
+
+    const panel = doc.createElement("div");
+    panel.className = "yas-comments-guard-panel";
+    overlay.appendChild(panel);
+
+    const title = doc.createElement("p");
+    title.className = "yas-comments-guard-title";
+    title.textContent = "Comments hidden";
+    panel.appendChild(title);
+
+    const button = doc.createElement("button");
+    button.type = "button";
+    button.dataset.commentsGuardAction = "show";
+    button.textContent = "Show comments";
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      commentsGuardShown = true;
+      clearCommentsGuardCheck();
+      removeCommentsGuard(doc);
+    });
+    panel.appendChild(button);
+
+    host.appendChild(overlay);
+  }
+
+  function syncCommentsGuard(settings, doc) {
+    clearCommentsGuardCheck();
+
+    const videoId = shared.getLiveStartVideoId(root, doc);
+
+    if (videoId !== commentsGuardVideoId) {
+      // "Show comments" on one video must not uncover the next one.
+      commentsGuardVideoId = videoId;
+      commentsGuardShown = false;
+    }
+
+    if (
+      !settings.extensionEnabled ||
+      !settings.hideComments ||
+      !videoId ||
+      commentsGuardShown
+    ) {
+      removeCommentsGuard(doc);
+      return;
+    }
+
+    doc.documentElement.classList.add(COMMENTS_GUARD_OBSCURED_CLASS);
+    renderCommentsGuardOverlay(doc);
+
+    commentsGuardTimer = root.setTimeout(() => {
+      commentsGuardTimer = null;
+      syncCommentsGuard(settings, doc);
+    }, COMMENTS_GUARD_CHECK_MS);
+  }
+
+  // With video titles hidden, the browser tab would still show the title of
+  // the video being watched. YouTube rewrites document.title on every
+  // navigation, so the <title> element is watched and its text replaced.
+  // The title YouTube set while ours was showing, to put back when title
+  // hiding is switched off; null while the tab shows YouTube's own title.
+  let youtubeTabTitle = null;
+  let tabTitleObserver = null;
+  let observedTitleElement = null;
+
+  function isOnVideoPage() {
+    if (!root.location) {
+      return false;
+    }
+
+    const pathname = new URL(root.location.href).pathname;
+
+    return (
+      pathname === "/watch" ||
+      pathname.startsWith("/live/") ||
+      pathname.startsWith("/shorts/")
+    );
+  }
+
+  function observeTabTitle(doc, titleElement) {
+    if (titleElement === observedTitleElement) {
+      return;
+    }
+
+    if (tabTitleObserver) {
+      tabTitleObserver.disconnect();
+    }
+
+    tabTitleObserver = new MutationObserver(() => syncTabTitle(doc));
+    tabTitleObserver.observe(titleElement, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    observedTitleElement = titleElement;
+  }
+
+  function syncTabTitle(doc) {
+    if (!isOnVideoPage()) {
+      // YouTube gives every other page its own title. The stashed one
+      // belongs to the video just left and must not come back.
+      youtubeTabTitle = null;
+      return;
+    }
+
+    if (!doc.documentElement.classList.contains(CLASS_BY_SETTING.hideVideoTitles)) {
+      if (youtubeTabTitle !== null && doc.title === HIDDEN_TAB_TITLE) {
+        doc.title = youtubeTabTitle;
+      }
+
+      youtubeTabTitle = null;
+      return;
+    }
+
+    const titleElement = doc.querySelector("title");
+
+    // At document_start <head> is not parsed yet. Until <title> exists the
+    // whole document is watched, so the video's title is replaced the moment
+    // the parser adds it; after that only <title> itself is watched.
+    observeTabTitle(doc, titleElement || doc.documentElement);
+
+    if (!titleElement) {
+      return;
+    }
+
+    // Our own write comes back through the observer with exactly this text,
+    // so it is never mistaken for a title from YouTube.
+    if (doc.title !== HIDDEN_TAB_TITLE) {
+      youtubeTabTitle = doc.title;
+      doc.title = HIDDEN_TAB_TITLE;
+    }
+  }
+
   function applySettings(settings, doc) {
     const currentDocument = doc || root.document;
 
@@ -638,10 +923,62 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
       rootElement.classList.add(className);
     });
 
+    if (enabledClassNames.includes(CLASS_BY_SETTING.hideVideoTitles)) {
+      // A title already under the cursor gets no new mouseover when title
+      // hiding is switched on, so it is handled here.
+      currentDocument.querySelectorAll("[title]:hover").forEach(stashTitleAttribute);
+    } else {
+      restoreStashedTitleAttributes(currentDocument);
+    }
+
     ensureStyle(currentDocument);
     syncChatGuard(normalizeSettings(settings), currentDocument);
+    syncCommentsGuard(normalizeSettings(settings), currentDocument);
+    syncTabTitle(currentDocument);
 
     return normalizeSettings(settings);
+  }
+
+  // The blur hides a title on screen, but the browser's own tooltip would
+  // still show its `title` attribute in full on hover. The attribute is taken
+  // off the hovered title before the tooltip appears and put back when title
+  // hiding is switched off.
+  function stashHoveredTitleAttribute(event) {
+    const target = event.target;
+
+    if (!target || typeof target.closest !== "function") {
+      return;
+    }
+
+    const rootElement = target.ownerDocument.documentElement;
+
+    if (rootElement.classList.contains(CLASS_BY_SETTING.hideVideoTitles)) {
+      stashTitleAttribute(target);
+    }
+  }
+
+  // Takes the `title` off the video title the element belongs to, if any.
+  function stashTitleAttribute(element) {
+    const titled = element.closest("[title]");
+
+    if (!titled || !titled.closest(VIDEO_TITLE_SELECTOR_LIST)) {
+      return;
+    }
+
+    titled.setAttribute(STASHED_TITLE_ATTRIBUTE, titled.getAttribute("title"));
+    titled.removeAttribute("title");
+  }
+
+  function restoreStashedTitleAttributes(doc) {
+    doc.querySelectorAll(`[${STASHED_TITLE_ATTRIBUTE}]`).forEach((element) => {
+      // YouTube reuses list items for other videos and sets a fresh title;
+      // that one wins over the stashed copy.
+      if (!element.hasAttribute("title")) {
+        element.setAttribute("title", element.getAttribute(STASHED_TITLE_ATTRIBUTE));
+      }
+
+      element.removeAttribute(STASHED_TITLE_ATTRIBUTE);
+    });
   }
 
   // Last settings read from storage. Until the first read answers, the
@@ -778,6 +1115,7 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 
     const refresh = () => {
       refreshProtection(root.document);
+      shared.ensureSkipButtons(root.document);
     };
 
     root.__youtubeAntiSpoilerInitialized = true;
@@ -785,6 +1123,11 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     bindNavigationRefresh(root, refresh);
     bindStorageChanges();
     observeStyleRemoval(root.document);
+    root.document.addEventListener("mouseover", stashHoveredTitleAttribute, true);
+    // YouTube rebuilds the player now and then, dropping the skip buttons.
+    root.setInterval(() => {
+      shared.ensureSkipButtons(root.document);
+    }, shared.SKIP_BUTTONS_CHECK_MS);
     refresh();
   }
 
@@ -795,6 +1138,10 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     LIVE_GUARD_OVERLAY_ID,
     CHAT_GUARD_OBSCURED_CLASS,
     CHAT_GUARD_OVERLAY_ID,
+    COMMENTS_GUARD_OBSCURED_CLASS,
+    COMMENTS_GUARD_OVERLAY_ID,
+    COMMENTS_GUARD_CHECK_MS,
+    HIDDEN_TAB_TITLE,
     LIVE_GUARD_PAUSE_EVENT: shared.LIVE_GUARD_PAUSE_EVENT,
     LIVE_GUARD_PLAY_EVENT: shared.LIVE_GUARD_PLAY_EVENT,
     LIVE_GUARD_CONTINUE_EVENT: shared.LIVE_GUARD_CONTINUE_EVENT,
@@ -813,6 +1160,8 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     createLiveStartController,
     ensureStyle,
     applySettings,
+    stashHoveredTitleAttribute,
+    restoreStashedTitleAttributes,
     refreshProtection,
     init,
   };

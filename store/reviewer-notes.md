@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, including durations, progress bars, and optional video previews.
+Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, including durations, progress bars, comments, live-stream positions, and optional video previews and titles.
 
 ## Test Instructions
 
@@ -16,6 +16,10 @@ Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, includi
 8. Turn protection back on.
 9. Confirm that the hiding behavior returns and the toolbar icon switches back to the normal colored variant.
 10. Enable **Blur previews** and confirm that YouTube video previews are blurred.
+11. Open any video: with **Hide progress bar** on, the player controls show `−10m … +10m` skip buttons; scroll down and confirm that comments are blurred behind **Show comments**.
+12. Enable **Hide video titles** and confirm that titles are blurred and the browser tab shows `YouTube` on the video page.
+13. Open a live stream that is currently live: the player is covered and muted until **Start from beginning** or **Continue live** is chosen.
+14. Press **Alt+Shift+S** to turn protection off and on.
 
 No login credentials are required.
 

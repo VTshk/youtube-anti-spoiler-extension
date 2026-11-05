@@ -6,7 +6,7 @@ Anti-Spoiler for YouTube
 
 ## Short Description
 
-Hide YouTube durations, progress bars, and previews that can spoil match results.
+Hide YouTube durations, progress bars, titles, comments, and live results that can spoil a match.
 
 ## Detailed Description
 
@@ -16,10 +16,13 @@ The extension can hide YouTube time indicators, player progress bars, and previe
 
 Features:
 
-- Hide video duration in YouTube lists, search results, recommendations, and the player.
-- Hide player and preview progress bars.
-- Optionally blur YouTube video previews.
-- Turn all protection on or off from a simple popup.
+- Hide video duration in YouTube lists, search results, recommendations, chapters, transcripts, and the player.
+- Hide player and preview progress bars, with skip buttons (±10 s, 1 min, 10 min) in place of the timeline.
+- Protect live streams: the player is covered and muted until you choose to start from the beginning or continue live.
+- Hide comments and live chat behind a "Show comments" button.
+- Optionally blur video previews, end screens, and timeline preview frames.
+- Optionally hide video titles, including the browser tab title and Chrome's media controls.
+- Turn all protection on or off from a simple popup or with Alt+Shift+S.
 - Keep your settings synced with Chrome profile storage.
 
 Anti-Spoiler for YouTube works locally in your browser. It does not send your YouTube activity, settings, or browsing data to any server.
@@ -32,7 +35,7 @@ Productivity
 
 ## Keywords
 
-YouTube, anti-spoiler, spoilers, sports, match, progress bar, duration, video preview
+YouTube, anti-spoiler, spoilers, sports, match, progress bar, duration, video preview, live stream, comments
 
 ## Support
 
