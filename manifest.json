@@ -25,6 +25,14 @@
       "128": "icons/icon128.png"
     }
   },
+  "commands": {
+    "toggle-protection": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Turn spoiler protection on or off"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],

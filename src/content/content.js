@@ -47,16 +47,43 @@
     ".ytd-thumbnail-overlay-time-status-renderer",
     ".ytm-thumbnail-overlay-time-status-renderer",
     ".ytp-videowall-still-info-duration",
+    // The post-playback grid YouTube shipped in 2026 (also used in fullscreen)
+    // and the autoplay "Up next" duration.
+    ".ytp-modern-videowall-still-info-duration",
+    ".ytp-autonav-timestamp",
     ".ytp-ce-video-duration",
     ".video-time",
     '[class*="thumbnail-overlay-time-status"]',
     ".badge-shape-wiz--thumbnail-overlay-time-status",
     ".badge-shape-wiz--thumbnail-overlay-badge",
     "yt-thumbnail-overlay-badge-view-model",
-    ".ytBadgeShapeText",
+    // Shorts carry no duration; their "New" badge must not turn into an
+    // empty pill.
+    ".ytBadgeShapeText:not(.shortsLockupViewModelHost *)",
     "ytd-compact-video-renderer .badge-shape-wiz--thumbnail-overlay-badge",
     "yt-lockup-view-model .badge-shape-wiz--thumbnail-overlay-badge",
     "ytm-video-with-context-renderer .badge-shape-wiz--thumbnail-overlay-badge",
+    // The whole badge, not only its text: an empty dark pill still shows by its
+    // width whether the video is m:ss or h:mm:ss long.
+    "yt-thumbnail-badge-view-model",
+  ]);
+
+  // Timestamps outside the player give the video length away just as well:
+  // the last chapter in a description or transcript is close to the end.
+  const TIMESTAMP_TEXT_SELECTORS = Object.freeze([
+    // Description and comment timestamps are links to "&t=<seconds>s".
+    'a.ytAttributedStringLink[href*="&t="]',
+    'a.ytAttributedStringLink[href*="?t="]',
+    '#content-text a[href*="&t="]',
+    // "Key moments" / chapters panel and its search-result variant.
+    "ytd-macro-markers-list-item-renderer #time",
+    // Transcript panel (current and legacy markup).
+    ".ytwTranscriptSegmentViewModelTimestamp",
+    "ytd-transcript-segment-renderer .segment-timestamp",
+    // Search results show a description snippet that lists chapter times
+    // inline with the text, so the snippet can only be hidden as a whole.
+    "ytd-video-renderer .metadata-snippet-container-one-line",
+    "ytd-video-renderer .metadata-snippet-container",
   ]);
 
   const LIVE_THUMBNAIL_BADGE_EXCLUSION =
@@ -117,7 +144,20 @@
     ".ytp-ce-covering-image",
     ".ytp-ce-expanding-image",
     ".ytp-videowall-still-image",
+    ".ytp-modern-videowall-still-image",
     ".ytp-autonav-endscreen-upnext-thumbnail",
+    // The current video's cover before playback starts.
+    ".ytp-cued-thumbnail-overlay-image",
+    // Hovering a thumbnail plays the video inline in a separate player.
+    "ytd-video-preview video",
+    "#inline-preview-player video",
+    // Chapter thumbnails ("Key moments") and the big tournament/team card
+    // at the top of search results.
+    "ytd-macro-markers-list-item-renderer #thumbnail img",
+    "ytd-expandable-metadata-renderer #thumbnail img",
+    "ytd-watch-card-hero-video-renderer #hero-image img",
+    // Upcoming Shorts are pre-rendered as background-image frames.
+    ".reel-video-in-sequence-thumbnail",
   ]);
 
   const VIDEO_TITLE_SELECTORS = Object.freeze([
@@ -126,7 +166,16 @@
     "yt-lockup-metadata-view-model h3",
     ".yt-lockup-metadata-view-model-wiz__title",
     ".yt-lockup-metadata-view-model__title",
+    ".ytLockupMetadataViewModelTitle",
     ".media-item-headline",
+    // Shorts shelves, the Shorts player, and the big search card title
+    // (often "Team A 3 vs 0 Team B").
+    ".shortsLockupViewModelHostMetadataTitle",
+    "yt-shorts-video-title-view-model",
+    "ytd-watch-card-hero-video-renderer #watch-card-title",
+    // Chapter names in "Key moments" ("Goal 89'", "Penalty shootout").
+    "ytd-macro-markers-list-item-renderer h4",
+    "ytd-macro-markers-list-item-renderer h3",
     // Player chrome: the title shown over the video (fullscreen, embeds,
     // miniplayer) plus endscreen card, videowall, and autoplay titles.
     ".ytp-title-link",
@@ -134,6 +183,8 @@
     ".ytp-ce-video-title",
     ".ytp-ce-playlist-title",
     ".ytp-videowall-still-info-title",
+    ".ytp-modern-videowall-still-info-title",
+    ".ytPlayerOverlayVideoDetailsRendererTitle",
     ".ytp-autonav-endscreen-upnext-title",
   ]);
 
@@ -169,6 +220,11 @@ ${scopeSelectors(
 )} {
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+${scopeSelectors(CLASS_BY_SETTING.hideTime, TIMESTAMP_TEXT_SELECTORS)} {
+  visibility: hidden !important;
   pointer-events: none !important;
 }
 
@@ -211,10 +267,14 @@ html.${LIVE_START_OBSCURED_CLASS} #player-container {
   position: relative !important;
 }
 
+/* No pixels of the stream under the live guard: while it loads its rewind
+   window the stream plays behind the overlay, and a blur would still let
+   colours and motion through. Its captions play along, so they go too. */
 html.${LIVE_START_OBSCURED_CLASS} #movie_player video,
-html.${LIVE_START_OBSCURED_CLASS} ytd-player video {
-  filter: blur(32px) saturate(0.65) !important;
-  transform: scale(1.04) !important;
+html.${LIVE_START_OBSCURED_CLASS} ytd-player video,
+html.${LIVE_START_OBSCURED_CLASS} #movie_player .ytp-cued-thumbnail-overlay-image,
+html.${LIVE_START_OBSCURED_CLASS} #movie_player .ytp-caption-window-container {
+  opacity: 0 !important;
 }
 
 html.${CHAT_GUARD_OBSCURED_CLASS} ytd-live-chat-frame,
@@ -342,11 +402,14 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 
   const liveStartController = createLiveStartController(root);
   // The chat overlay can mount only once the chat frame exists, which happens
-  // well after navigation — hence the retry loop. The budget stops it from
-  // polling forever on pages that never get a chat (regular videos, home page).
+  // well after navigation — hence the quick retries. After this budget the
+  // guard keeps checking once a second (CHAT_GUARD_SLOW_CHECK_MS) while it is
+  // still needed: chat can appear later, and YouTube can re-create the chat
+  // frame, dropping the overlay with it. Off watch pages nothing is scheduled.
   const CHAT_GUARD_MAX_RETRIES = Math.ceil(
     (shared.LIVE_START_TIMEOUT_MS || 10000) / (LIVE_START_POLL_MS || 100),
   );
+  const CHAT_GUARD_SLOW_CHECK_MS = 1000;
   let chatGuardDisabled = false;
   let chatGuardRetryTimer = null;
   let chatGuardVideoId = null;
@@ -473,9 +536,9 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     return element;
   }
 
-  function getChatGuardVideoId() {
+  function getChatGuardVideoId(doc) {
     return typeof shared.getLiveStartVideoId === "function"
-      ? shared.getLiveStartVideoId(root)
+      ? shared.getLiveStartVideoId(root, doc)
       : null;
   }
 
@@ -486,18 +549,25 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 
     // Chat only exists on watch pages; elsewhere the guard must not run (and
     // especially must not keep retrying).
-    const videoId = getChatGuardVideoId();
+    const videoId = getChatGuardVideoId(doc);
     const isWatchPage = Boolean(videoId) || !root.location;
 
     // Finished-stream VODs keep a replay chat frame, but the replay is synced
     // to playback and spoils nothing — blurring it there would fight the live
     // guard, which correctly lets those videos play. Only an explicit not-live
     // marker skips the guard; while live status is unknown the chat stays
-    // protected, and later syncs (yt-page-data-updated) re-check as metadata
-    // hydrates.
+    // protected, and the slow check below re-checks as the data hydrates. The
+    // page-world player data counts too: the DOM microdata is not refreshed
+    // on SPA moves.
+    // Exception: while the live guard for this video waits for the user's
+    // choice, a stream that has just ended reports "not live" too, and its
+    // chat would reveal the result, so the chat stays covered until then.
     const documentSaysNotLive =
       typeof shared.documentSaysVideoIsNotLive === "function" &&
       shared.documentSaysVideoIsNotLive(doc, videoId);
+    const knownNotLive =
+      (documentSaysNotLive || liveStartController.isKnownNotLive(videoId)) &&
+      !liveStartController.isWaitingForChoice(videoId);
 
     if (videoId !== chatGuardVideoId) {
       // A new video means a new decision: "Show comments" on the previous
@@ -510,27 +580,44 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
       !normalizedSettings.extensionEnabled ||
       !normalizedSettings.startLiveFromBeginning ||
       !isWatchPage ||
-      chatGuardDisabled ||
-      documentSaysNotLive
+      chatGuardDisabled
     ) {
       removeChatGuardOverlay(doc);
       removeChatGuardObscuring(doc);
       return;
     }
 
-    addChatGuardObscuring(doc);
-
     if (!isRetry) {
       chatGuardRetriesLeft = CHAT_GUARD_MAX_RETRIES;
     }
 
-    if (!renderChatGuardOverlay(doc) && chatGuardRetriesLeft > 0 && root.setTimeout) {
-      chatGuardRetriesLeft -= 1;
-      chatGuardRetryTimer = root.setTimeout(() => {
-        chatGuardRetryTimer = null;
-        syncChatGuard(normalizedSettings, doc, true);
-      }, LIVE_START_POLL_MS);
+    let delay = CHAT_GUARD_SLOW_CHECK_MS;
+
+    if (knownNotLive) {
+      // Uncovered, but still checked once a second: the same video can still
+      // turn out to be live, with the live guard waiting for a choice, and
+      // then the chat is covered again.
+      removeChatGuardOverlay(doc);
+      removeChatGuardObscuring(doc);
+    } else {
+      addChatGuardObscuring(doc);
+
+      const mounted = renderChatGuardOverlay(doc);
+
+      if (!mounted && chatGuardRetriesLeft > 0) {
+        chatGuardRetriesLeft -= 1;
+        delay = LIVE_START_POLL_MS;
+      }
     }
+
+    if (!root.setTimeout) {
+      return;
+    }
+
+    chatGuardRetryTimer = root.setTimeout(() => {
+      chatGuardRetryTimer = null;
+      syncChatGuard(normalizedSettings, doc, true);
+    }, delay);
   }
 
   function applySettings(settings, doc) {
@@ -557,26 +644,40 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     return normalizeSettings(settings);
   }
 
+  // Last settings read from storage. Until the first read answers, the
+  // defaults stand in: protection is on, so a page never renders unprotected
+  // while chrome.storage is still busy. A user who turned protection off sees
+  // it lift a moment later, which is the safe direction for a spoiler blocker.
+  let lastKnownSettings = normalizeSettings(undefined);
+
+  function applyAndSync(settings, doc) {
+    lastKnownSettings = applySettings(settings, doc);
+    liveStartController.sync(lastKnownSettings, doc);
+    return lastKnownSettings;
+  }
+
   function loadAndApplySettings(doc) {
     if (typeof shared.readSettings !== "function") {
-      const normalizedSettings = applySettings(undefined, doc);
-      liveStartController.sync(normalizedSettings, doc);
-      return Promise.resolve(normalizedSettings);
+      return Promise.resolve(applyAndSync(undefined, doc));
     }
 
     return shared
       .readSettings()
-      .then((settings) => {
-        const normalizedSettings = applySettings(settings, doc);
-        liveStartController.sync(normalizedSettings, doc);
-        return normalizedSettings;
-      })
+      .then((settings) => applyAndSync(settings, doc))
       .catch((error) => {
         console.warn("[Anti-Spoiler for YouTube] Could not load settings.", error);
-        const normalizedSettings = applySettings(undefined, doc);
-        liveStartController.sync(normalizedSettings, doc);
-        return normalizedSettings;
+        return applyAndSync(lastKnownSettings, doc);
       });
+  }
+
+  // Runs on start and on every navigation: protect synchronously with the
+  // last known settings, then re-read storage in case it changed meanwhile.
+  function refreshProtection(doc) {
+    const currentDocument = doc || root.document;
+
+    ensureStyle(currentDocument);
+    applyAndSync(lastKnownSettings, currentDocument);
+    return loadAndApplySettings(currentDocument);
   }
 
   function bindNavigationRefresh(win, refresh) {
@@ -676,13 +777,11 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     }
 
     const refresh = () => {
-      ensureStyle(root.document);
-      loadAndApplySettings(root.document);
+      refreshProtection(root.document);
     };
 
     root.__youtubeAntiSpoilerInitialized = true;
 
-    ensureStyle(root.document);
     bindNavigationRefresh(root, refresh);
     bindStorageChanges();
     observeStyleRemoval(root.document);
@@ -714,6 +813,7 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
     createLiveStartController,
     ensureStyle,
     applySettings,
+    refreshProtection,
     init,
   };
 });

@@ -380,6 +380,7 @@ test("live player bridge reports current live state from page-world player data"
 
   assert.equal(doc.dispatchedEvents[0].type, bridge.LIVE_STATE_RESULT_EVENT);
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
+    canRewind: null,
     isLive: true,
     requestId: 12,
     signals: {
@@ -431,6 +432,7 @@ test("live player bridge reports a finished-stream VOD as not live", () => {
   }));
 
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
+    canRewind: null,
     isLive: false,
     requestId: 13,
     signals: {},
@@ -469,6 +471,7 @@ test("live player bridge trusts live-now markers in the player response", () => 
   }));
 
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
+    canRewind: null,
     isLive: true,
     requestId: 14,
     signals: {
@@ -476,4 +479,338 @@ test("live player bridge trusts live-now markers in the player response", () => 
     },
     videoId: "live-now",
   });
+});
+
+function requestLiveState(player, rootExtras) {
+  const doc = createDocument(() => player);
+  const root = Object.assign(createRoot(doc, []), rootExtras || {});
+
+  bridge.initLivePlayerBridge(root);
+  doc.dispatch(bridge.LIVE_STATE_REQUEST_EVENT, JSON.stringify({
+    requestId: 21,
+  }));
+
+  return JSON.parse(doc.dispatchedEvents[0].detail);
+}
+
+test("live player bridge reports an unknown live state while no source names a video", () => {
+  assert.deepEqual(requestLiveState(null), {
+    canRewind: null,
+    isLive: null,
+    requestId: 21,
+    signals: {},
+    videoId: null,
+  });
+});
+
+test("live player bridge keeps a bare videoData isLive:false as unknown", () => {
+  // videoData.isLive is false for a stream whose data has not hydrated yet,
+  // so on its own it must not read as "not live".
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "hydrating",
+        isLive: false,
+      };
+    },
+  });
+
+  assert.equal(result.isLive, null);
+  assert.equal(result.videoId, "hydrating");
+});
+
+test("live player bridge reports a regular video as not live from isLiveContent:false", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "regular",
+        isLive: false,
+      };
+    },
+    getPlayerResponse() {
+      return {
+        videoDetails: {
+          videoId: "regular",
+          isLiveContent: false,
+        },
+      };
+    },
+  });
+
+  assert.equal(result.isLive, false);
+  assert.equal(result.videoId, "regular");
+});
+
+test("live player bridge ignores a stale initial player response for another video", () => {
+  // Full page load on live stream A, SPA navigation to VOD B: the player
+  // response is not ready yet and ytInitialPlayerResponse still describes A.
+  const result = requestLiveState(
+    {
+      getVideoData() {
+        return {
+          video_id: "vod-b",
+          isLive: false,
+        };
+      },
+      getPlayerResponse() {
+        return null;
+      },
+    },
+    {
+      ytInitialPlayerResponse: {
+        videoDetails: {
+          videoId: "live-a",
+          isLive: true,
+        },
+      },
+    },
+  );
+
+  assert.deepEqual(result, {
+    canRewind: null,
+    isLive: null,
+    requestId: 21,
+    signals: {},
+    videoId: "vod-b",
+  });
+});
+
+test("live player bridge ignores player response markers for another video", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "current-live",
+        isLive: false,
+      };
+    },
+    getPlayerResponse() {
+      return {
+        videoDetails: {
+          videoId: "previous-vod",
+          isLiveContent: false,
+        },
+      };
+    },
+  });
+
+  assert.equal(result.isLive, null);
+  assert.equal(result.videoId, "current-live");
+});
+
+test("live player bridge ignores a player response that names no video", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "named",
+      };
+    },
+    getPlayerResponse() {
+      return {
+        microformat: {
+          playerMicroformatRenderer: {
+            liveBroadcastDetails: {
+              isLiveNow: true,
+            },
+          },
+        },
+      };
+    },
+  });
+
+  assert.equal(result.isLive, null);
+  assert.deepEqual(result.signals, {});
+});
+
+test("live player bridge takes the video id from the player response when videoData has none", () => {
+  const result = requestLiveState(
+    {
+      getPlayerResponse() {
+        return {
+          videoDetails: {
+            videoId: "from-response",
+            isLive: true,
+          },
+        };
+      },
+    },
+  );
+
+  assert.equal(result.isLive, true);
+  assert.equal(result.videoId, "from-response");
+});
+
+test("live player bridge lets a live-now marker win over a not-live marker of the same video", () => {
+  const result = requestLiveState(
+    {
+      getVideoData() {
+        return {
+          video_id: "same-video",
+        };
+      },
+      getPlayerResponse() {
+        return {
+          videoDetails: {
+            videoId: "same-video",
+            isLive: true,
+          },
+        };
+      },
+    },
+    {
+      ytInitialPlayerResponse: {
+        videoDetails: {
+          videoId: "same-video",
+        },
+        microformat: {
+          playerMicroformatRenderer: {
+            liveBroadcastDetails: {
+              endTimestamp: "2026-07-29T20:00:00+00:00",
+            },
+          },
+        },
+      },
+    },
+  );
+
+  assert.equal(result.isLive, true);
+});
+
+// R13 I5: playabilityStatus.liveStreamability stays on finished broadcasts,
+// so it is not a "live right now" marker (the R8 table is the contract).
+
+test("live player bridge does not take liveStreamability for a live-now marker", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "ended-stream",
+      };
+    },
+    getPlayerResponse() {
+      return {
+        videoDetails: {
+          videoId: "ended-stream",
+        },
+        microformat: {
+          playerMicroformatRenderer: {
+            liveBroadcastDetails: {
+              isLiveNow: false,
+            },
+          },
+        },
+        playabilityStatus: {
+          liveStreamability: {},
+        },
+      };
+    },
+  });
+
+  assert.equal(result.isLive, false);
+  assert.deepEqual(result.signals, {});
+});
+
+test("live player bridge reports liveStreamability alone as unknown", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return {
+        video_id: "streamability-only",
+      };
+    },
+    getPlayerResponse() {
+      return {
+        videoDetails: {
+          videoId: "streamability-only",
+        },
+        playabilityStatus: {
+          liveStreamability: {},
+        },
+      };
+    },
+  });
+
+  assert.equal(result.isLive, null);
+  assert.equal(result.videoId, "streamability-only");
+});
+
+// R13 I4: without the player API the bridge falls back to the player's own
+// <video>, never to the first <video> on the page (a hover preview).
+
+test("live player bridge falls back only to the player's own <video>", () => {
+  const createMedia = () => ({
+    pauseCalls: 0,
+    playCalls: 0,
+    pause() {
+      this.pauseCalls += 1;
+    },
+    play() {
+      this.playCalls += 1;
+    },
+  });
+  const playerVideo = createMedia();
+  const preview = createMedia();
+  const doc = createDocument(() => ({}));
+
+  doc.querySelector = (selector) => {
+    if (selector === "#movie_player") {
+      return {};
+    }
+
+    if (selector === "#movie_player video") {
+      return playerVideo;
+    }
+
+    return selector === "video" ? preview : null;
+  };
+
+  bridge.initLivePlayerBridge(createRoot(doc, []));
+  doc.dispatch(bridge.LIVE_GUARD_PAUSE_EVENT);
+  doc.dispatch(bridge.LIVE_GUARD_PLAY_EVENT);
+
+  assert.equal(playerVideo.pauseCalls, 1);
+  assert.equal(playerVideo.playCalls, 1);
+  assert.equal(preview.pauseCalls, 0);
+  assert.equal(preview.playCalls, 0);
+});
+
+function createRewindPlayer(progressState) {
+  return {
+    getVideoData() {
+      return { video_id: "dvr-live", isLive: true };
+    },
+    getProgressState() {
+      return progressState;
+    },
+  };
+}
+
+test("live player bridge reports a stream whose streamer turned rewinding off", () => {
+  // Live check 2026-11-05: allowSeeking false with a known 12 h window, while
+  // <video>.seekable still claimed 0–8533306.
+  const result = requestLiveState(createRewindPlayer({
+    allowSeeking: false,
+    seekableStart: 8486511,
+    seekableEnd: 8529711,
+  }));
+
+  assert.equal(result.canRewind, false);
+});
+
+test("live player bridge reports rewinding as unknown before the player knows its window", () => {
+  // Before playback starts the player says allowSeeking: true for an empty window.
+  const result = requestLiveState(createRewindPlayer({
+    allowSeeking: true,
+    seekableStart: 0,
+    seekableEnd: 0,
+  }));
+
+  assert.equal(result.canRewind, null);
+});
+
+test("live player bridge reports a rewindable stream once its window is known", () => {
+  const result = requestLiveState(createRewindPlayer({
+    allowSeeking: true,
+    seekableStart: 0,
+    seekableEnd: 26333,
+  }));
+
+  assert.equal(result.canRewind, true);
 });

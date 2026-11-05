@@ -53,13 +53,6 @@
     }
   }
 
-  function getFormSettings(toggles, baseSettings) {
-    return toggles.reduce((settings, toggle) => {
-      settings[toggle.dataset.setting] = toggle.checked;
-      return settings;
-    }, Object.assign({}, baseSettings));
-  }
-
   async function setActionIcon(settings) {
     if (!root.chrome || !root.chrome.action || !root.chrome.action.setIcon) {
       return;
@@ -103,11 +96,17 @@
     }
   }
 
-  async function saveSettings(nextSettings) {
-    currentSettings = namespace.normalizeSettings(nextSettings);
+  // Saves only the changed keys on top of the last confirmed settings.
+  // currentSettings changes only after a successful write, so after a failure
+  // the UI is re-rendered from what is really stored.
+  async function saveSettings(changes) {
+    const nextSettings = namespace.normalizeSettings(
+      Object.assign({}, currentSettings, changes),
+    );
 
     try {
-      currentSettings = await namespace.writeSettings(currentSettings);
+      currentSettings = await namespace.writeSettings(nextSettings);
+      setStatus("");
       await setActionIcon(currentSettings);
       return true;
     } catch (error) {
@@ -120,25 +119,70 @@
   function bindToggleSaving(toggles) {
     toggles.forEach((toggle) => {
       toggle.addEventListener("change", async () => {
-        await saveSettings(getFormSettings(toggles, currentSettings));
+        await saveSettings({ [toggle.dataset.setting]: toggle.checked });
+        renderSettings(currentSettings, toggles);
       });
     });
   }
 
-  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, toggles) {
+  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel) {
     if (!powerToggle) {
       return;
     }
 
     powerToggle.addEventListener("change", async () => {
-      const nextSettings = getFormSettings(toggles, currentSettings);
-      nextSettings.extensionEnabled = powerToggle.checked;
-
-      // currentSettings reflects the attempted state whether or not the write
-      // succeeds, so the power UI is rendered the same way either way.
-      await saveSettings(nextSettings);
+      await saveSettings({ extensionEnabled: powerToggle.checked });
       renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
     });
+  }
+
+  // Another popup or Chrome sync may change settings while this popup is
+  // open; keep the form current so the next save does not undo that change.
+  function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanel) {
+    if (!root.chrome || !root.chrome.storage || !root.chrome.storage.onChanged) {
+      return;
+    }
+
+    root.chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "sync") {
+        return;
+      }
+
+      const changedValues = {};
+      namespace.SETTING_KEYS.forEach((key) => {
+        if (changes[key]) {
+          changedValues[key] = changes[key].newValue;
+        }
+      });
+
+      if (Object.keys(changedValues).length === 0) {
+        return;
+      }
+
+      currentSettings = namespace.normalizeSettings(
+        Object.assign({}, currentSettings, changedValues),
+      );
+      renderSettings(currentSettings, toggles);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
+    });
+  }
+
+  // Shows the shortcut the user actually has (it can be changed or cleared
+  // in chrome://extensions/shortcuts).
+  async function renderShortcut() {
+    const note = root.document.querySelector("[data-shortcut-note]");
+
+    if (!note || !root.chrome || !root.chrome.commands || !root.chrome.commands.getAll) {
+      return;
+    }
+
+    const commands = await root.chrome.commands.getAll();
+    const toggle = commands.find((command) => command.name === "toggle-protection");
+
+    note.textContent = toggle && toggle.shortcut
+      ? `Shortcut: ${toggle.shortcut}`
+      : "Set a shortcut in chrome://extensions/shortcuts";
+    note.hidden = false;
   }
 
   function disableControls(toggles, powerToggle) {
@@ -157,6 +201,10 @@
     const powerStatus = getPowerStatus();
     const powerNote = getPowerNote();
     const settingsPanel = getSettingsPanel();
+
+    renderShortcut().catch((error) => {
+      console.error("[Anti-Spoiler for YouTube] Could not read the shortcut.", error);
+    });
 
     try {
       currentSettings = await namespace.readSettings();
@@ -179,7 +227,8 @@
     }
 
     bindToggleSaving(toggles);
-    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel, toggles);
+    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel);
+    bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanel);
   }
 
   if (root.document.readyState === "loading") {

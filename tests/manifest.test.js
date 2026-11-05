@@ -64,3 +64,10 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
   ]);
   assert.equal(contentScript.run_at, "document_start");
 });
+
+test("manifest declares the protection shortcut without new permissions", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "manifest.json"), "utf8"));
+
+  assert.deepEqual(manifest.commands["toggle-protection"].suggested_key, { default: "Alt+Shift+S" });
+  assert.deepEqual(manifest.permissions, ["storage"]);
+});

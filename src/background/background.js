@@ -67,6 +67,34 @@
     });
   }
 
+  // Keyboard shortcut (manifest "commands"): flip protection on or off. The
+  // toolbar icon and open YouTube tabs follow through storage.onChanged.
+  async function toggleProtection() {
+    try {
+      const settings = await namespace.readSettings();
+      await namespace.writeSettings(
+        Object.assign({}, settings, { extensionEnabled: !settings.extensionEnabled }),
+      );
+    } catch (error) {
+      console.error("[Anti-Spoiler for YouTube] Could not toggle protection.", error);
+    }
+  }
+
+  function bindCommands() {
+    if (!root.chrome.commands || !root.chrome.commands.onCommand) {
+      return;
+    }
+
+    root.chrome.commands.onCommand.addListener((command) => {
+      if (command === "toggle-protection") {
+        return toggleProtection();
+      }
+
+      return undefined;
+    });
+  }
+
   refreshActionIcon();
   bindStorageChanges();
+  bindCommands();
 })(globalThis);

@@ -39,7 +39,12 @@ function getDisabledIconPaths() {
   };
 }
 
-async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
+async function loadPopup(
+  storedSettings = {},
+  { failRead = false, failWrite = false, shortcut = "Alt+Shift+S" } = {},
+) {
+  const storageChangeListeners = [];
+  const shortcutNote = createPopupElement();
   const powerToggle = createPopupElement();
   const powerStatus = createPopupElement();
   const powerNote = createPopupElement();
@@ -62,6 +67,11 @@ async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
           return Promise.resolve();
         },
       },
+      commands: {
+        getAll() {
+          return Promise.resolve([{ name: "toggle-protection", shortcut }]);
+        },
+      },
       runtime: {
         lastError: null,
       },
@@ -78,8 +88,20 @@ async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
             callback(storedSettings);
           },
           set(nextSettings, callback) {
+            if (failWrite) {
+              context.chrome.runtime.lastError = { message: "quota exceeded" };
+              callback();
+              context.chrome.runtime.lastError = null;
+              return;
+            }
+
             Object.assign(storedSettings, nextSettings);
             callback();
+          },
+        },
+        onChanged: {
+          addListener(listener) {
+            storageChangeListeners.push(listener);
           },
         },
       },
@@ -93,6 +115,7 @@ async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
           "[data-power-note]": powerNote,
           "[data-settings-panel]": settingsPanel,
           "[data-status]": status,
+          "[data-shortcut-note]": shortcutNote,
         }[selector] || null;
       },
       querySelectorAll(selector) {
@@ -122,11 +145,26 @@ async function loadPopup(storedSettings = {}, { failRead = false } = {}) {
 
   return {
     powerToggle,
+    powerStatus,
     settingToggles,
     setIconCalls,
+    shortcutNote,
     status,
     storedSettings,
+    emitStorageChange(changes) {
+      storageChangeListeners.forEach((listener) => listener(changes, "sync"));
+    },
   };
+}
+
+async function flushPromises() {
+  for (let index = 0; index < 6; index++) {
+    await Promise.resolve();
+  }
+}
+
+function findToggle(settingToggles, setting) {
+  return settingToggles.find((toggle) => toggle.dataset.setting === setting);
 }
 
 test("popup contains the English power control and configurable checkbox settings", () => {
@@ -277,4 +315,83 @@ test("popup saves the live start setting when changed", async () => {
   await liveStartToggle.listeners.change();
 
   assert.equal(storedSettings.startLiveFromBeginning, false);
+});
+
+test("popup keeps showing protection off when enabling it fails to save", async () => {
+  const { powerToggle, powerStatus, status, storedSettings } = await loadPopup(
+    { extensionEnabled: false },
+    { failWrite: true },
+  );
+
+  powerToggle.checked = true;
+  await powerToggle.listeners.change();
+  await flushPromises();
+
+  assert.equal(storedSettings.extensionEnabled, false);
+  assert.equal(powerToggle.checked, false);
+  assert.equal(powerStatus.textContent, "Protection is off");
+  assert.equal(status.textContent, "Could not save settings");
+});
+
+test("popup reverts a checkbox whose change failed to save", async () => {
+  const { settingToggles } = await loadPopup(
+    { hideVideoPreviews: false },
+    { failWrite: true },
+  );
+  const previewToggle = findToggle(settingToggles, "hideVideoPreviews");
+
+  previewToggle.checked = true;
+  await previewToggle.listeners.change();
+  await flushPromises();
+
+  assert.equal(previewToggle.checked, false);
+});
+
+test("popup does not undo a setting changed elsewhere while it is open", async () => {
+  const { settingToggles, storedSettings, emitStorageChange } = await loadPopup({
+    hideVideoTitles: false,
+    hideVideoPreviews: false,
+  });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+  const previewToggle = findToggle(settingToggles, "hideVideoPreviews");
+
+  // Another popup turns title hiding on.
+  storedSettings.hideVideoTitles = true;
+  emitStorageChange({ hideVideoTitles: { oldValue: false, newValue: true } });
+
+  assert.equal(titleToggle.checked, true);
+
+  previewToggle.checked = true;
+  await previewToggle.listeners.change();
+  await flushPromises();
+
+  assert.equal(storedSettings.hideVideoPreviews, true);
+  assert.equal(storedSettings.hideVideoTitles, true);
+});
+
+test("popup clears the save error after the next successful save", async () => {
+  const { settingToggles, status } = await loadPopup({ hideVideoTitles: false });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+
+  status.textContent = "Could not save settings";
+  titleToggle.checked = true;
+  await titleToggle.listeners.change();
+  await flushPromises();
+
+  assert.equal(status.textContent, "");
+});
+
+test("popup shows the protection shortcut the user has set", async () => {
+  const { shortcutNote } = await loadPopup({});
+  await flushPromises();
+
+  assert.equal(shortcutNote.textContent, "Shortcut: Alt+Shift+S");
+  assert.equal(shortcutNote.hidden, false);
+});
+
+test("popup explains where to set a shortcut when none is assigned", async () => {
+  const { shortcutNote } = await loadPopup({}, { shortcut: "" });
+  await flushPromises();
+
+  assert.equal(shortcutNote.textContent, "Set a shortcut in chrome://extensions/shortcuts");
 });

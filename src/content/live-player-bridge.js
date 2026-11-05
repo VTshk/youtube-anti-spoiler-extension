@@ -135,14 +135,27 @@
       playerResponse,
       ["microformat", "playerMicroformatRenderer", "liveBroadcastDetails"],
     );
-    const playabilityStatus = getObject(playerResponse.playabilityStatus);
 
-    // Only "live right now" markers count. isLiveContent and a bare
-    // liveBroadcastDetails object persist on VODs of finished broadcasts.
+    // Only "live right now" markers count. isLiveContent, a bare
+    // liveBroadcastDetails object and playabilityStatus.liveStreamability
+    // persist on VODs of finished broadcasts.
     return Boolean(
       (videoDetails && videoDetails.isLive === true) ||
-      (liveBroadcastDetails && liveBroadcastDetails.isLiveNow === true) ||
-      (playabilityStatus && playabilityStatus.liveStreamability)
+      (liveBroadcastDetails && liveBroadcastDetails.isLiveNow === true)
+    );
+  }
+
+  function getPlayerResponseNotLiveSignal(playerResponse) {
+    const videoDetails = getObject(playerResponse.videoDetails);
+    const liveBroadcastDetails = getNestedObject(
+      playerResponse,
+      ["microformat", "playerMicroformatRenderer", "liveBroadcastDetails"],
+    );
+
+    return Boolean(
+      (liveBroadcastDetails && liveBroadcastDetails.isLiveNow === false) ||
+      (liveBroadcastDetails && liveBroadcastDetails.endTimestamp) ||
+      (videoDetails && videoDetails.isLiveContent === false)
     );
   }
 
@@ -162,45 +175,101 @@
     }
   }
 
-  function getPlayerResponse(root, player) {
-    if (player && typeof player.getPlayerResponse === "function") {
-      try {
-        const playerResponse = player.getPlayerResponse();
-
-        if (playerResponse) {
-          return playerResponse;
-        }
-      } catch (error) {
-        // Fall through to ytInitialPlayerResponse.
-      }
+  function getPlayerApiResponse(player) {
+    if (!player || typeof player.getPlayerResponse !== "function") {
+      return null;
     }
 
-    return root && root.ytInitialPlayerResponse
-      ? root.ytInitialPlayerResponse
-      : null;
+    try {
+      return getObject(player.getPlayerResponse());
+    } catch (error) {
+      return null;
+    }
   }
 
+  // isLive is true (some source says "live right now"), false (no source says
+  // live and one explicitly says it is not) or null (nothing known yet). Only
+  // sources that name the current video count: after an SPA navigation the
+  // player response or ytInitialPlayerResponse can still describe the previous
+  // video, and mixing them up either blocks a VOD or unblocks a live stream.
   function getLiveState(root, doc) {
     const player = findPlayer(doc);
     const videoData = getPlayerVideoData(player);
-    const playerResponse = getPlayerResponse(root, player);
+    const playerResponse = getPlayerApiResponse(player);
+    const initialPlayerResponse = getObject(root && root.ytInitialPlayerResponse);
+    const videoId =
+      getVideoDataVideoId(videoData) ||
+      getPlayerResponseVideoId(playerResponse) ||
+      getPlayerResponseVideoId(initialPlayerResponse);
     const signals = {};
-    const videoDataVideoId = getVideoDataVideoId(videoData);
-    const playerResponseVideoId = getPlayerResponseVideoId(playerResponse);
 
-    if (getVideoDataLiveSignal(videoData)) {
+    if (!videoId) {
+      return {
+        isLive: null,
+        signals,
+        videoId: null,
+      };
+    }
+
+    const matchingResponses = [playerResponse, initialPlayerResponse].filter(
+      (response) => response && getPlayerResponseVideoId(response) === videoId,
+    );
+
+    if (
+      getVideoDataVideoId(videoData) === videoId &&
+      getVideoDataLiveSignal(videoData)
+    ) {
       signals.videoDataLive = true;
     }
 
-    if (getPlayerResponseLiveSignal(playerResponse)) {
+    if (matchingResponses.some(getPlayerResponseLiveSignal)) {
       signals.playerResponseLive = true;
     }
 
+    let isLive = null;
+
+    if (signals.videoDataLive || signals.playerResponseLive) {
+      isLive = true;
+    } else if (matchingResponses.some(getPlayerResponseNotLiveSignal)) {
+      isLive = false;
+    }
+
     return {
-      isLive: Boolean(signals.videoDataLive || signals.playerResponseLive),
+      // The player's progress state describes the video it holds, so it only
+      // counts when that is the video reported here.
+      canRewind: getVideoDataVideoId(videoData) === videoId ? getPlayerCanRewind(player) : null,
+      isLive,
       signals,
-      videoId: videoDataVideoId || playerResponseVideoId,
+      videoId,
     };
+  }
+
+  // Whether the streamer allows rewinding (DVR). null until the player knows
+  // its DVR window: before playback starts it reports allowSeeking: true with
+  // an empty 0–0 window (live check 2026-11-05).
+  function getPlayerCanRewind(player) {
+    if (!player || typeof player.getProgressState !== "function") {
+      return null;
+    }
+
+    try {
+      const progressState = player.getProgressState();
+      const seekableStart = getFiniteNumber(progressState && progressState.seekableStart);
+      const seekableEnd = getFiniteNumber(progressState && progressState.seekableEnd);
+
+      if (
+        typeof progressState.allowSeeking !== "boolean" ||
+        seekableStart === null ||
+        seekableEnd === null ||
+        seekableEnd <= seekableStart
+      ) {
+        return null;
+      }
+
+      return progressState.allowSeeking;
+    } catch (error) {
+      return null;
+    }
   }
 
   function seekPlayer(doc, fallbackSeconds) {
@@ -247,7 +316,9 @@
       return false;
     }
 
-    const video = doc.querySelector("video");
+    // Only the player's own <video>: a hover preview elsewhere on the page is
+    // not the guarded stream.
+    const video = doc.querySelector("#movie_player video");
 
     if (!video || typeof video.pause !== "function") {
       return false;
@@ -266,7 +337,7 @@
       return false;
     }
 
-    const video = doc.querySelector("video");
+    const video = doc.querySelector("#movie_player video");
 
     if (!video || typeof video.play !== "function") {
       return false;
@@ -395,6 +466,7 @@
         bubbles: true,
         composed: true,
         detail: JSON.stringify({
+          canRewind: result.canRewind === undefined ? null : result.canRewind,
           isLive: result.isLive,
           requestId,
           signals: result.signals,
