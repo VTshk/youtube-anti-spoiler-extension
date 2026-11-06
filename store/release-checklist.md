@@ -11,7 +11,7 @@
 
 ## Package
 
-- Upload `dist/youtube-anti-spoiler-extension-0.1.0.zip`.
+- Upload `dist/youtube-anti-spoiler-extension-<version>.zip`, where `<version>` is the `version` in `manifest.json`.
 - Confirm `manifest.json` is at the ZIP root.
 - Confirm the uploaded version matches `manifest.json`.
 

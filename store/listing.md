@@ -23,6 +23,7 @@ Features:
 - Optionally blur video previews, end screens, and timeline preview frames, and hide the "Most replayed" graph.
 - Optionally hide video titles, including the open video's title, date line, and description text, the browser tab title, and Chrome's media controls.
 - Turn all protection on or off from a simple popup or with Alt+Shift+S.
+- Uncover one video when you want it with "Show spoilers for this video": Alt+Shift+V, the eye button in the player, or the popup button. Other videos stay protected.
 - Pick one of 10 interface languages and a light, dark, or automatic theme right in the popup.
 - Keep your settings synced with Chrome profile storage.
 

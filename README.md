@@ -9,6 +9,8 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 - comments under videos, in the comments panel, on Shorts, and live chat, behind a **Show comments** button;
 - the live edge of live streams, behind a **Start from beginning** / **Continue live** choice.
 
+One video can be uncovered at a time with **Show spoilers for this video** (the eye button in the player, the popup, or **Alt+Shift+V**); other videos stay protected.
+
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
 
 The popup and the in-page buttons are available in 10 languages: English, Russian, Spanish, Portuguese (Brazil), German, French, Japanese, Korean, Indonesian, and Turkish.
@@ -36,6 +38,7 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 |   |   |-- content.js
 |   |   |-- live-player-bridge.js
 |   |   |-- live-start-controller.js
+|   |   |-- reveal-button.js
 |   |   `-- skip-buttons.js
 |   `-- shared/
 |       |-- i18n.js
@@ -73,12 +76,26 @@ Time hiding is always active while protection is on. The main settings:
 
 Under **Advanced settings**:
 
-- **Blur video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. Disabled by default.
+- **Blur video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip and in the player bar; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. Disabled by default.
 - **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
 
 At the bottom of the popup is a contact line with the support email.
 
 While protection is on, the extension does not pass the playback position to Chrome's media controls. Settings switched mid-video reach the media controls right away. Chrome may still show a position it reads from the video element itself; this cannot be turned off from an extension.
+
+### Show spoilers for this video
+
+To watch one video with nothing hidden - say, a match whose result you already know - uncover it with any of these:
+
+- the eye button in the player controls, after the skip buttons;
+- **Show spoilers for this video** in the popup, under the status line (shown only on a YouTube video page while protection is on);
+- the keyboard shortcut **Alt+Shift+V**; change it at `chrome://extensions/shortcuts`.
+
+For the open video this shows the player time, the timeline with its chapters (the skip buttons give way to it), the time, frames, and chapter names in the timeline preview, the "Most replayed" graph, the title in the player and above the video, the line under it, the description, Key moments and the chapter list, transcript timestamps, the comments (also in the comments panel and on Shorts) and live chat, the browser tab title, and the title, artwork, and position in Chrome's media controls. A live stream gets no **Start from beginning** / **Continue live** choice and plays from where it is once you press play.
+
+Everything about other videos stays protected: thumbnails, durations, and titles on the home page, in search, and in recommendations, end cards, the post-video suggestion wall, and the autoplay "Up next" screen. Time links in the description and comments (for example `1:23:45`) stay hidden too: a link does not say which video it opens, and it may point to another match.
+
+The same button or shortcut hides the video again (**Hide spoilers again**); its comments and live chat are covered again unless you had opened them with **Show comments** yourself, and a live stream asks again how to start, even if you had already chosen **Start from beginning** or **Continue live**. The video stays uncovered until you open another video or a page without a video. Reloading the page keeps it uncovered; leaving YouTube and coming back covers it again. While protection is off, the button is hidden and the shortcut does nothing.
 
 ### Live streams
 
@@ -89,7 +106,7 @@ When a live stream opens, the player is blacked out and muted right away, before
 
 If the extension can't tell whether the video is live, it offers **Start from beginning** and **Play** (resume where the video is).
 
-If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat stays blurred behind **Show comments** until the choice is made and the user opens it. Recordings of finished streams are not affected.
+If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat is blurred behind **Show comments**; the user can open it with that button at any time, also before making the choice. Recordings of finished streams are not affected.
 
 ## Development
 
@@ -99,7 +116,7 @@ Run the tests:
 npm test
 ```
 
-Tests cover setting defaults, legacy key compatibility, content script selectors, the live-stream guard and its page-world bridge, skip buttons, the comments guard, the tab title, the media session patch, the MV3 manifest, the keyboard shortcut, toolbar icon state, popup behavior, the language picker and translations, the popup theme, and release packaging.
+Tests cover setting defaults, legacy key compatibility, content script selectors, the live-stream guard and its page-world bridge, skip buttons, the comments guard, the tab title, the media session patch, "Show spoilers for this video", the MV3 manifest, the keyboard shortcuts, toolbar icon state, popup behavior, the language picker and translations, the popup theme, and release packaging.
 
 ## Chrome Web Store Preparation
 

@@ -32,6 +32,12 @@
         "default": "Alt+Shift+S"
       },
       "description": "__MSG_manifestToggleCommand__"
+    },
+    "reveal-video": {
+      "suggested_key": {
+        "default": "Alt+Shift+V"
+      },
+      "description": "__MSG_manifestRevealCommand__"
     }
   },
   "content_scripts": [
@@ -50,6 +56,7 @@
         "src/shared/i18n.js",
         "src/content/live-start-controller.js",
         "src/content/skip-buttons.js",
+        "src/content/reveal-button.js",
         "src/content/content.js"
       ],
       "run_at": "document_start"

@@ -27,6 +27,7 @@ Funktionen:
 - Macht auf Wunsch Videovorschauen, den Abspann und die Vorschaubilder auf der Zeitleiste unscharf und blendet die Grafik der am häufigsten wiederholten Stellen aus.
 - Blendet auf Wunsch Videotitel aus, auch den Titel des geöffneten Videos, die Datumszeile und den Beschreibungstext, den Titel des Browsertabs und die Mediensteuerung von Chrome.
 - Schaltet den gesamten Schutz in einem einfachen Fenster oder mit Alt+Shift+S ein und aus.
+- Zeigt bei Bedarf die Spoiler für ein einzelnes Video („Spoiler in diesem Video zeigen“): mit Alt+Shift+V, der Augen-Schaltfläche im Player oder der Schaltfläche im Fenster. Andere Videos bleiben geschützt.
 - Wähle direkt im Fenster der Erweiterung eine von 10 Oberflächensprachen und ein helles, dunkles oder automatisches Design.
 - Synchronisiert deine Einstellungen über dein Chrome-Profil.
 

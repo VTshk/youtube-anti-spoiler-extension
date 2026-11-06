@@ -23,6 +23,9 @@
   const EXTENSION_ENABLED_CLASS = "yas-extension-enabled";
   const HIDE_VIDEO_TITLES_CLASS = "yas-hide-video-titles";
   const HIDE_VIDEO_PREVIEWS_CLASS = "yas-hide-video-previews";
+  // "Show spoilers for this video": the media controls show the open video
+  // as it is.
+  const REVEAL_VIDEO_CLASS = "yas-reveal-video";
   // The MAIN world has no chrome.i18n either: content.js writes the hidden
   // media title, in the user's language, into this attribute on <html>.
   const MEDIA_TITLE_ATTRIBUTE = "data-yas-media-title";
@@ -608,9 +611,16 @@
     return win.document.documentElement.getAttribute(MEDIA_TITLE_ATTRIBUTE) || HIDDEN_MEDIA_TITLE;
   }
 
+  // Media controls show only the open video, so an uncovered one is passed
+  // through as YouTube hands it over.
+  function protectsMediaSession(win) {
+    return hasRootClass(win, EXTENSION_ENABLED_CLASS) && !hasRootClass(win, REVEAL_VIDEO_CLASS);
+  }
+
   function hideSpoilersInMetadata(win, metadata) {
-    const hideTitle = hasRootClass(win, HIDE_VIDEO_TITLES_CLASS);
-    const hideArtwork = hasRootClass(win, HIDE_VIDEO_PREVIEWS_CLASS);
+    const revealed = hasRootClass(win, REVEAL_VIDEO_CLASS);
+    const hideTitle = hasRootClass(win, HIDE_VIDEO_TITLES_CLASS) && !revealed;
+    const hideArtwork = hasRootClass(win, HIDE_VIDEO_PREVIEWS_CLASS) && !revealed;
 
     if (!metadata || (!hideTitle && !hideArtwork)) {
       return metadata;
@@ -648,7 +658,7 @@
     let youtubeMetadata = null;
 
     prototype.setPositionState = function patchedSetPositionState() {
-      if (hasRootClass(win, EXTENSION_ENABLED_CLASS)) {
+      if (protectsMediaSession(win)) {
         // Without arguments the call clears the position state, so a state
         // set before protection was switched on stops counting too.
         return originalSetPositionState.call(this);
@@ -676,7 +686,9 @@
 
       metadataProperty.set.call(session, hideSpoilersInMetadata(win, youtubeMetadata));
 
-      if (hasRootClass(win, EXTENSION_ENABLED_CLASS)) {
+      // A position cleared earlier cannot be put back from here; YouTube's
+      // next setPositionState call fills it in once the video is uncovered.
+      if (protectsMediaSession(win)) {
         originalSetPositionState.call(session);
       }
     }).observe(win.document.documentElement, {

@@ -11,6 +11,10 @@
     "message": "ネタバレ防止のオンとオフを切り替える",
     "description": "Keyboard shortcut description in chrome://extensions/shortcuts."
   },
+  "manifestRevealCommand": {
+    "message": "開いている動画のネタバレを表示/非表示にする",
+    "description": "Keyboard shortcut description in chrome://extensions/shortcuts. Uncovers the open video, or covers it again."
+  },
   "popupName": {
     "message": "Anti-Spoiler",
     "description": "Brand name at the top of the popup. Usually left untranslated."
@@ -190,5 +194,21 @@
   "mediaHiddenTitle": {
     "message": "YouTube 動画",
     "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
+  },
+  "popupRevealVideo": {
+    "message": "この動画のネタバレを表示",
+    "description": "Popup button under the status line, shown on a YouTube video page. Uncovers the open video only."
+  },
+  "popupHideVideo": {
+    "message": "ネタバレを再び隠す",
+    "description": "Popup button under the status line while the open video is uncovered. Covers it again."
+  },
+  "revealShowButton": {
+    "message": "この動画のネタバレを表示",
+    "description": "Tooltip and screen reader label of the eye button in the YouTube player. Uncovers the open video only."
+  },
+  "revealHideButton": {
+    "message": "ネタバレを再び隠す",
+    "description": "Tooltip and screen reader label of the eye button in the YouTube player while the open video is uncovered. Covers it again."
   }
 }

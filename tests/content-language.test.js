@@ -94,9 +94,16 @@ function startContentScripts() {
     setInterval() {},
     setTimeout() {},
     clearTimeout() {},
+    // A fresh page load, not a reload.
+    performance: {
+      getEntriesByType: () => [{ type: "navigate" }],
+    },
     chrome: {
       i18n: createChromeI18n(),
-      runtime: { lastError: null },
+      runtime: {
+        lastError: null,
+        onMessage: { addListener() {} },
+      },
       storage: {
         sync: {
           get(keys, callback) {

@@ -64,12 +64,13 @@ function listSourceFiles() {
     "src/content/content.js",
     "src/content/live-start-controller.js",
     "src/content/skip-buttons.js",
+    "src/content/reveal-button.js",
     "src/background/background.js",
   ];
 }
 
 // Message keys are quoted strings with one of the agreed prefixes.
-const KEY_PATTERN = /"((?:popup|liveGuard|comments|skip|manifest|media)[A-Z][A-Za-z0-9]*)"/g;
+const KEY_PATTERN = /"((?:popup|liveGuard|comments|skip|reveal|manifest|media)[A-Z][A-Za-z0-9]*)"/g;
 
 test("every locale has exactly the English keys, with texts and no placeholders", () => {
   const englishKeys = Object.keys(EN_MESSAGES_FILE).sort();
@@ -109,6 +110,7 @@ test("manifest texts come from the English messages", () => {
     "manifestDescription",
     "manifestName",
     "manifestName",
+    "manifestRevealCommand",
     "manifestToggleCommand",
   ]);
   keys.forEach((key) => assert.ok(EN_MESSAGES_FILE[key], key));

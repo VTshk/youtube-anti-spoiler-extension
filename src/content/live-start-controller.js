@@ -1755,9 +1755,18 @@
       runTick(currentDocument);
     }
 
+    // "Hide spoilers again" on a stream: the owner wants the choice every
+    // time (2026-11-06), so an earlier Start from beginning / Continue live
+    // for this video no longer counts. The next sync arms the guard again.
+    function forgetChoice(videoId) {
+      attemptedVideoIds.delete(videoId);
+      shieldAttemptedVideoIds.delete(videoId);
+    }
+
     return {
       sync,
       cancel,
+      forgetChoice,
       getAttemptedVideoIds() {
         return new Set(attemptedVideoIds);
       },
@@ -1798,6 +1807,7 @@
     LIVE_START_SEEK_CONFIRM_TIMEOUT_MS,
     LIVE_START_SEEK_FRAME_FALLBACK_MS,
     LIVE_GUARD_PLAYER_GONE_MS,
+    CHANNEL_LIVE_PATH_PATTERN,
     documentSaysVideoIsNotLive,
     getLiveStartVideoId,
     getLiveStartTarget,

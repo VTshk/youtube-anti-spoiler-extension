@@ -27,6 +27,7 @@ Fitur:
 - Bila diinginkan, memburamkan pratinjau video, layar akhir, dan bingkai pratinjau di linimasa, serta menyembunyikan grafik "Paling sering di-replay".
 - Bila diinginkan, menyembunyikan judul video, termasuk judul video yang sedang dibuka, baris tanggal dan teks deskripsi, judul tab browser, dan kontrol media Chrome.
 - Mengaktifkan atau menonaktifkan semua perlindungan dari popup sederhana atau dengan Alt+Shift+S.
+- Menampilkan spoiler untuk satu video saat Anda mau dengan "Tampilkan spoiler video ini": melalui Alt+Shift+V, tombol mata di pemutar, atau tombol di popup. Video lain tetap terlindungi.
 - Pilih salah satu dari 10 bahasa antarmuka dan tema terang, gelap, atau otomatis langsung di popup.
 - Menyinkronkan setelan Anda melalui penyimpanan profil Chrome.
 

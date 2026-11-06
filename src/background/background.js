@@ -89,14 +89,33 @@
     }
   }
 
+  // Keyboard shortcut: "Show spoilers for this video" in the tab where it
+  // was pressed. The tab's content script does the work and knows whether
+  // a video is open. A tab without our content script (another site, a
+  // YouTube tab opened before the extension was installed) has nobody to
+  // answer; that is not an error.
+  function toggleRevealInTab(tab) {
+    if (!tab || tab.id === undefined) {
+      return undefined;
+    }
+
+    return root.chrome.tabs
+      .sendMessage(tab.id, { type: "yas-toggle-reveal" })
+      .catch(() => undefined);
+  }
+
   function bindCommands() {
     if (!root.chrome.commands || !root.chrome.commands.onCommand) {
       return;
     }
 
-    root.chrome.commands.onCommand.addListener((command) => {
+    root.chrome.commands.onCommand.addListener((command, tab) => {
       if (command === "toggle-protection") {
         return toggleProtection();
+      }
+
+      if (command === "reveal-video") {
+        return toggleRevealInTab(tab);
       }
 
       return undefined;
