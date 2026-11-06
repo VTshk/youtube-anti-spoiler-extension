@@ -1332,7 +1332,8 @@ test("popup ends with a contact line outside the capsule and every settings pane
   assert.match(POPUP_HTML, /<\/details>\s*<!--[\s\S]*?-->\s*<footer class="contact">/);
   assert.equal(en("popupContactLabel"), "Questions or ideas?");
 
-  assert.match(POPUP_CSS, /\.contact\s*\{[^}]*margin-top:\s*8px;[^}]*color:\s*color-mix\(in srgb, var\(--muted\) 85%, var\(--bg\)\);[^}]*font-size:\s*9px;[^}]*text-align:\s*center;[^}]*overflow-wrap:\s*anywhere;/);
+  assert.match(POPUP_CSS, /\.contact::before\s*\{[^}]*left:\s*24px;[^}]*right:\s*24px;[^}]*border-top:\s*1px solid var\(--line\);/);
+  assert.match(POPUP_CSS, /\.contact\s*\{[^}]*margin-top:\s*14px;[^}]*padding-top:\s*10px;[^}]*color:\s*color-mix\(in srgb, var\(--muted\) 85%, var\(--bg\)\);[^}]*font-size:\s*9px;[^}]*text-align:\s*center;[^}]*overflow-wrap:\s*anywhere;/);
   assert.match(POPUP_CSS, /\.contact span\s*\{[^}]*font-size:\s*8px;/);
   assert.match(POPUP_CSS, /\.contact a\s*\{[^}]*color:\s*inherit;[^}]*text-decoration:\s*underline;/);
   assert.match(POPUP_CSS, /\.contact a:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);

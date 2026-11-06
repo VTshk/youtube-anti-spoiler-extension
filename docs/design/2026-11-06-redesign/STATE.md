@@ -271,3 +271,45 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
 - **Changed by another session during the checks:** a "Beta" badge next to "Protect live streams" (`popup/popup.html`,
   `popup.css`, `tests/popup.test.js`). The `ext-040` copy was taken before it, so the live popup checks above do
   **not** cover the badge.
+
+## Next idea: a third mode for title blur (2026-11-06, under discussion)
+
+The owner, on how title blur relates to preview blur: «а если нам добавить третий режим к названиям - auto?»
+("what if titles get a third mode, auto?").
+
+Proposed design, not yet approved or built:
+- **Setting:** a new setting `blurTitlesMode` with the values `"auto"`, `"always"` and `"never"`. The default is
+  `"auto"`, which blurs titles exactly when "Blur previews" is on. The effective value is
+  `mode === "auto" ? hideVideoPreviews : mode === "always"`.
+- **Popup:** the "Blur video titles" row in Advanced gets a native `<select>` with "Auto (with previews)", "Always" and
+  "Never", in place of its switch.
+- **Migration:** the old boolean `hideVideoTitles` moves to `LEGACY_SETTING_KEYS`. A stored `true` becomes `"always"`.
+  A stored `false` is ignored, so the setting becomes `"auto"`: the popup saved `false` for everyone who never touched
+  it.
+- **When:** after the "show for this video" branch (`claude/improve-quality-convenience-dce7b1`) is merged, because
+  it edits `popup/*`, `src/content/content.js` and `_locales/*` too.
+
+### Owner's variant G: a link button next to the titles switch (2026-11-06): APPROVED («Да, G»)
+
+The owner: «можем кнопочку привязки просто добавить рядом с чекбоксом в доп настройках. с тултипом. и если она
+включена (по умолчанию включена) то чекбокс задисейблен» ("just add a link button next to the switch in Advanced, with
+a tooltip; when it is on, which is the default, the switch is disabled").
+
+Mockups:
+- G: `board-titles-link.png`.
+- Earlier options, A–F, with Codex's and Argon's ranking: `board-titles-mode.png`, `board-titles-icons.png`,
+  `board-titles-more.png`.
+
+Design (approved):
+- **Settings:** `blurTitlesLinked`, a boolean, default `true`. Titles are blurred when
+  `blurTitlesLinked ? hideVideoPreviews : hideVideoTitles`. This replaces the `blurTitlesMode` idea above: two booleans
+  are simpler.
+- **The link button:** `<button aria-pressed>` with a chain icon and a tooltip (`title` and `aria-label`).
+  - Linked: "Linked to preview blur. Click to set separately." The switch is disabled and shows the previews value.
+  - Unlinked: "Set separately. Click to link to previews." The switch works on its own.
+- **Notes:**
+  - While linked, the note under "Blur previews" says "…and titles", because Advanced is closed by default. Argon
+    flagged that hidden side effect.
+  - The titles note says "With preview blur" when linked.
+- **Migration:** a stored `hideVideoTitles: true` keeps working, as unlinked and on. Everyone else starts linked.
+- **When:** after the "show for this video" branch is merged.
