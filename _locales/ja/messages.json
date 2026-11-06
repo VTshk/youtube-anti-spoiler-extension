@@ -79,6 +79,10 @@
     "message": "開始時に一時停止し、ライブチャットを隠す",
     "description": "Note under the \"Protect live streams\" setting."
   },
+  "popupBetaNote": {
+    "message": "テスト中の機能です。うまく動作しない場合があります",
+    "description": "Tooltip on the English \"Beta\" badge next to the \"Protect live streams\" setting."
+  },
   "popupAdvancedSettings": {
     "message": "詳細設定",
     "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
@@ -174,14 +178,6 @@
   "skipBack1Minute": {
     "message": "1分戻る",
     "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
-  },
-  "skipBack10Seconds": {
-    "message": "10秒戻る",
-    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
-  },
-  "skipForward10Seconds": {
-    "message": "10秒進む",
-    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
   },
   "skipForward1Minute": {
     "message": "1分進む",

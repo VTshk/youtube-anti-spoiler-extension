@@ -79,6 +79,10 @@
     "message": "Пауза в начале и скрытый чат",
     "description": "Note under the \"Protect live streams\" setting."
   },
+  "popupBetaNote": {
+    "message": "Функция ещё тестируется и иногда может работать нестабильно",
+    "description": "Tooltip on the English \"Beta\" badge next to the \"Protect live streams\" setting."
+  },
   "popupAdvancedSettings": {
     "message": "Дополнительные настройки",
     "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
@@ -174,14 +178,6 @@
   "skipBack1Minute": {
     "message": "Назад на 1 минуту",
     "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
-  },
-  "skipBack10Seconds": {
-    "message": "Назад на 10 секунд",
-    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
-  },
-  "skipForward10Seconds": {
-    "message": "Вперёд на 10 секунд",
-    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
   },
   "skipForward1Minute": {
     "message": "Вперёд на 1 минуту",

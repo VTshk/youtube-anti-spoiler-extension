@@ -21,7 +21,7 @@ Die Erweiterung kann Zeitangaben auf YouTube, Fortschrittsbalken im Player und V
 Funktionen:
 
 - Blendet die Videolänge in YouTube-Listen, Suchergebnissen, Empfehlungen, Kapiteln, Transkripten und im Player aus.
-- Blendet die Fortschrittsbalken im Player und in Vorschauen aus und zeigt stattdessen Sprungschaltflächen (±10 s, 1 min, 10 min).
+- Blendet die Fortschrittsbalken im Player und in Vorschauen aus und zeigt stattdessen Sprungschaltflächen (±1 min, ±10 min).
 - Schützt Livestreams: Der Player bleibt verdeckt und stumm, bis du entscheidest, von Anfang an zu schauen oder live weiterzuschauen.
 - Blendet Kommentare (unter Videos, im Kommentarbereich und bei Shorts) und den Livechat hinter einer Schaltfläche „Kommentare anzeigen“ aus.
 - Macht auf Wunsch Videovorschauen, den Abspann und die Vorschaubilder auf der Zeitleiste unscharf und blendet die Grafik der am häufigsten wiederholten Stellen aus.

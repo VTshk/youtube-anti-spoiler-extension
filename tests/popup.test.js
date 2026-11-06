@@ -1163,7 +1163,7 @@ test("the language chip and the theme button sit in the capsule, outside its lab
 test("the labels written in the popup HTML match the English messages", () => {
   const labels = [...POPUP_HTML.matchAll(/data-yas-i18n-label="([A-Za-z0-9]+)"\s+aria-label="([^"]+)"/g)];
 
-  assert.equal(labels.length, 3);
+  assert.equal(labels.length, 4);
   labels.forEach(([, key, text]) => {
     assert.equal(text, en(key), key);
   });
@@ -1359,7 +1359,24 @@ test("every locale has the theme and contact texts", () => {
 test("the live-stream setting carries an English Beta badge in the logo red", () => {
   assert.match(
     POPUP_HTML,
-    /<span class="row-title"><span data-yas-i18n="popupProtectLive">Protect live streams<\/span> <span class="badge">Beta<\/span><\/span>/,
+    /<span class="row-title"><span data-yas-i18n="popupProtectLive">Protect live streams<\/span> <span class="badge" data-yas-i18n-label="popupBetaNote" aria-label="Still being tested: it may not always work as expected" title="Still being tested: it may not always work as expected">Beta<\/span><\/span>/,
   );
   assert.match(POPUP_CSS, /\.badge\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--accent\) 16%, var\(--surface\)\);[^}]*color:\s*color-mix\(in srgb, var\(--accent\) 75%, var\(--text\)\);/);
+});
+
+// The badge text itself is checked in the markup test above: the test
+// document does not read element text from the HTML.
+test("the Beta badge's hover tooltip is translated", async () => {
+  const { elements, emitStorageChange } = await loadPopup({});
+  const badge = elements.find((element) => element.dataset.yasI18nLabel === "popupBetaNote");
+
+  assert.equal(badge.attributes.title, "Still being tested: it may not always work as expected");
+
+  emitStorageChange(
+    { uiLanguage: { newValue: createTestLanguage("de", { popupBetaNote: "TEST BETA" }) } },
+    "local",
+  );
+
+  assert.equal(badge.attributes.title, "TEST BETA");
+  assert.equal(badge.attributes["aria-label"], "TEST BETA");
 });

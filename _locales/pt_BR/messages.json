@@ -79,6 +79,10 @@
     "message": "Pausa no início e oculta o chat ao vivo",
     "description": "Note under the \"Protect live streams\" setting."
   },
+  "popupBetaNote": {
+    "message": "Ainda em testes: pode nem sempre funcionar como esperado",
+    "description": "Tooltip on the English \"Beta\" badge next to the \"Protect live streams\" setting."
+  },
   "popupAdvancedSettings": {
     "message": "Configurações avançadas",
     "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
@@ -174,14 +178,6 @@
   "skipBack1Minute": {
     "message": "Voltar 1 minuto",
     "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
-  },
-  "skipBack10Seconds": {
-    "message": "Voltar 10 segundos",
-    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
-  },
-  "skipForward10Seconds": {
-    "message": "Avançar 10 segundos",
-    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
   },
   "skipForward1Minute": {
     "message": "Avançar 1 minuto",

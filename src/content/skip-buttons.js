@@ -20,11 +20,10 @@
   const SKIP_BUTTONS_CLASS = "yas-skip-buttons";
   const SKIP_BUTTONS_CHECK_MS = 1000;
 
+  // No ±10 s: the player's own arrow keys already skip short steps.
   const SKIP_STEPS = Object.freeze([
     { label: "−10m", seconds: -600, labelKey: "skipBack10Minutes" },
     { label: "−1m", seconds: -60, labelKey: "skipBack1Minute" },
-    { label: "−10s", seconds: -10, labelKey: "skipBack10Seconds" },
-    { label: "+10s", seconds: 10, labelKey: "skipForward10Seconds" },
     { label: "+1m", seconds: 60, labelKey: "skipForward1Minute" },
     { label: "+10m", seconds: 600, labelKey: "skipForward10Minutes" },
   ]);
@@ -112,12 +111,44 @@
     return true;
   }
 
+  // On a narrow player YouTube simply cuts off whatever does not fit in the
+  // left controls. Our buttons give way step by step instead, and the CSS
+  // in content.js reads the steps from this attribute on the player:
+  // tighter pills, then no eye button, then only ±1m, then no skip buttons.
+  const FIT_ATTRIBUTE = "data-yas-fit";
+  const FIT_STEPS = Object.freeze(["compact", "no-eye", "short", "no-skip"]);
+
+  // Measures with nothing taken away, then adds steps until the controls
+  // fit. All in one go, so the page never paints the in-between states.
+  function fitPlayerButtons(doc) {
+    const player = doc.querySelector("#movie_player");
+    const controls = player && player.querySelector(".ytp-left-controls");
+
+    if (!controls) {
+      return;
+    }
+
+    player.removeAttribute(FIT_ATTRIBUTE);
+    const appliedSteps = [];
+
+    for (const step of FIT_STEPS) {
+      if (controls.scrollWidth <= controls.clientWidth) {
+        break;
+      }
+
+      appliedSteps.push(step);
+      player.setAttribute(FIT_ATTRIBUTE, appliedSteps.join(" "));
+    }
+  }
+
   return {
     SKIP_BUTTONS_CLASS,
     SKIP_BUTTONS_CHECK_MS,
     SKIP_STEPS,
+    FIT_ATTRIBUTE,
     getSkipBounds,
     skipVideo,
     ensureSkipButtons,
+    fitPlayerButtons,
   };
 });

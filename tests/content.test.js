@@ -5089,7 +5089,7 @@ test("buildSpoilerCss shows the reveal button only while protection is on and co
   assert.match(css, /(^|\n)#movie_player \.yas-reveal-button \{\n  display: none !important;/);
   assert.match(
     css,
-    /(^|\n)html\.yas-extension-enabled #movie_player \.yas-reveal-button:not\(\[hidden\]\) \{\n  display: inline-flex !important;/,
+    /(^|\n)html\.yas-extension-enabled #movie_player:not\(\[data-yas-fit~="no-eye"\]\) \.yas-reveal-button:not\(\[hidden\]\) \{\n  display: inline-flex !important;/,
   );
   // The slash over the eye only while the video is uncovered.
   assert.match(
