@@ -34,26 +34,3 @@ range read too early.
 **Done when.** Ten openings in a row of a ~12 h stream all play from the beginning with the extension, with the
 same stream checked once without it, plus a unit test for a seekable range whose start the player can't reach.
 
-## Title blur is not linked to preview blur yet (option G)
-
-Recorded 2026-11-06. Owner: «давай потом это сделаем. запиши как техдолг».
-
-**What happens.** "Blur video titles" (Advanced) and "Blur previews" are two separate switches. The owner wants titles
-to follow preview blur by default, with a way to set them separately.
-
-**Approved design** (owner, «Да, G»; full text in `docs/design/2026-11-06-redesign/STATE.md`, "Owner's variant G";
-mockup `board-titles-link.png`):
-- new setting `blurTitlesLinked`, default `true`; titles are blurred when
-  `blurTitlesLinked ? hideVideoPreviews : hideVideoTitles`;
-- a chain `<button aria-pressed>` next to the titles switch with a tooltip (`title` + `aria-label`); while linked the
-  switch is disabled and shows the previews value; the "Blur previews" note says "…and titles" while linked;
-- migration: a stored `hideVideoTitles: true` becomes unlinked and on; everyone else starts linked.
-
-**Where to look.** `src/shared/settings.js` (defaults, `normalizeSettings`), `src/content/content.js` `applySettings`
-(~1331: classes from settings) and the startup cache `readStartupSettings` / `saveStartupSettings` (~1415–1451, must
-store the effective titles value), `popup/popup.html` Advanced (~100–111), `popup/popup.js`, `popup/popup.css`, 10
-locales, tests. After it ships: store screenshot 4 ("+ Blur titles" as a separate step) and the texts that say title
-blur is off by default need an update.
-
-**Done when.** Unit tests for the effective value and the migration; live check in Chrome: linked/unlinked, previews
-on/off, protection off, settings off do not break YouTube.
