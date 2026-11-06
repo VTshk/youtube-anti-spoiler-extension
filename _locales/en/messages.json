@@ -35,18 +35,6 @@
     "message": "Spoiler protection",
     "description": "Screen reader label and tooltip of the main on/off switch in the popup."
   },
-  "popupGroupPlayer": {
-    "message": "Player",
-    "description": "Popup heading over the video player settings. Shown in capitals."
-  },
-  "popupGroupAroundVideos": {
-    "message": "Around videos",
-    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
-  },
-  "popupGroupLive": {
-    "message": "Live streams",
-    "description": "Popup heading over the live stream settings. Shown in capitals."
-  },
   "popupHideProgressBar": {
     "message": "Hide progress bar",
     "description": "Popup setting title: hides the video timeline."
@@ -54,18 +42,6 @@
   "popupHideProgressBarNote": {
     "message": "In the player and in previews",
     "description": "Note under the \"Hide progress bar\" setting."
-  },
-  "popupSkipButtons": {
-    "message": "Skip buttons",
-    "description": "Popup setting title: buttons that jump back or forward in the video."
-  },
-  "popupSkipButtonsNote": {
-    "message": "Jump 10 s, 1 min or 10 min",
-    "description": "Note under the \"Skip buttons\" setting."
-  },
-  "popupSkipButtonsRequires": {
-    "message": "Requires \"Hide progress bar\"",
-    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
   },
   "popupBlurPreviews": {
     "message": "Blur previews",
@@ -99,21 +75,13 @@
     "message": "Pause at the start and hide live chat",
     "description": "Note under the \"Protect live streams\" setting."
   },
-  "popupShortcutLabel": {
-    "message": "Shortcut:",
-    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
-  },
-  "popupShortcutNotSet": {
-    "message": "Set a shortcut in chrome://extensions/shortcuts",
-    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  "popupAdvancedSettings": {
+    "message": "Advanced settings",
+    "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
   },
   "popupLanguageLabel": {
     "message": "Language",
-    "description": "Popup footer label of the language list."
-  },
-  "popupLanguageBrowser": {
-    "message": "Browser language",
-    "description": "First choice in the popup language list: follow the browser's language."
+    "description": "Label of the language list under \"Advanced settings\" in the popup."
   },
   "popupSaveError": {
     "message": "Could not save settings",

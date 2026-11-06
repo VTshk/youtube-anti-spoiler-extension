@@ -130,3 +130,36 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
 - Report with the Russian table and "Not checked": `docs/research/2026-11-06/r2-report.md`.
 - The owner approved the Russian strings; committed as `f46df69`.
 - Next: 0.4.0, README, the postponed live checks of 0.3.0 / portion 5.
+
+## R3 and live-guard fixes, 2026-11-06 (evening): uncommitted at the time of writing
+
+- **Owner feedback**, plan `docs/superpowers/plans/2026-11-06-r3-owner-feedback.md`, report
+  `docs/research/2026-11-06/r3-report.md`:
+  - no "Browser language" option; the select shows the browser's language, and picking it removes the override;
+  - no shortcut hint;
+  - no skip-buttons setting; the buttons show whenever the timeline is hidden (main-session assumption);
+  - the skip buttons sit in one gray pill measured from YouTube's own controls;
+  - the main card holds progress bar, previews and live streams; "Advanced settings" (`<details>`) holds titles,
+    comments and language.
+- **Owner bug: "Protect live streams breaks the stream, no buttons".**
+  - The cause: `content.js` forced `position: relative` on `#player-container` while the guard waited. After an
+    in-site click the player collapsed to 0 px, and the panel never rendered.
+  - Fixed: the rule is removed, `findLiveGuardBoundsTarget` skips 0×0 elements, and there is a CSS regression test.
+- **Second live bug: "Start from beginning" never finished on 12-hour windows (Sky News).**
+  - Fixed: the bridge reports `rewindStart`, the jump targets it, and the confirm window is −10 s / +30 s. See plan
+    `2026-11-06-live-guard-long-window.md` and report `docs/research/2026-11-06/live-guard-long-window-report.md`.
+- `npm test`: 267/267.
+- **Real Chrome 156 matrix** (headful, CDP `loadUnpacked`, rig `yas-audit2/r3fix-accept.mjs`, outputs in `out-r3fix`):
+  - A: 34/34;
+  - C: 6/6;
+  - B: settings off pass. URL + reload cells fail the same way without the extension, because of YouTube's autoplay
+    after reload;
+  - D: 2/2, with rewinding off;
+  - errors: 0.
+- **Not checked:** mini-player; an ad during the guard; a rewind window under 30 s; a `<video>` swap during a long jump;
+  a signed-in account.
+- **Doc leftovers:** README lines ~56 and ~61 and `store/permissions.md:13` still describe the old skip toggle and popup
+  layout; `store/listing.*.md` may too.
+- **The owner's rule from now on** («смотрите в браузере все проверяйте свою работу. и обязательно проверяйте что и
+  отключенные настройки никак не ломают ютуб»): every change is checked live in real Chrome, with each setting on and
+  off.

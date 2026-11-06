@@ -121,7 +121,6 @@ async function loadPopup(
   {
     failRead = false,
     failWrite = false,
-    shortcut = "Alt+Shift+S",
     storedLanguage = undefined,
     failLanguageRead = false,
     delayLanguageRead = false,
@@ -168,11 +167,6 @@ async function loadPopup(
           assert.equal(arguments.length, 1);
           setIconCalls.push(JSON.parse(JSON.stringify(details)));
           return Promise.resolve();
-        },
-      },
-      commands: {
-        getAll() {
-          return Promise.resolve([{ name: "toggle-protection", shortcut }]);
         },
       },
       i18n: createChromeI18n(uiLanguage),
@@ -272,13 +266,9 @@ async function loadPopup(
     powerToggle: getElement("[data-power-toggle]"),
     powerStatus: getElement("[data-power-status]"),
     powerNote: getElement("[data-power-note]"),
-    settingsPanel: getElement("[data-settings-panel]"),
+    settingsPanels: document.querySelectorAll("[data-settings-panel]"),
     settingToggles: document.querySelectorAll("[data-setting]"),
-    skipNote: getElement("[data-skip-note]"),
     languageSelect: getElement("[data-language-select]"),
-    shortcutLine: getElement("[data-shortcut-line]"),
-    shortcutKey: getElement("[data-shortcut-key]"),
-    shortcutMissing: getElement("[data-shortcut-missing]"),
     setIconCalls,
     status: getElement("[data-status]"),
     storedSettings,
@@ -339,7 +329,7 @@ function toMessagesFile(messages) {
   return file;
 }
 
-test("popup markup follows design B: the logo capsule, grouped settings and a footer", () => {
+test("popup markup follows design B: the logo capsule, the main settings and Advanced settings", () => {
   assert.match(POPUP_HTML, /<html lang="en">/);
   assert.match(POPUP_HTML, /<section class="hero">/);
   assert.match(POPUP_HTML, /class="hero-top"[\s\S]*class="hero-band"[\s\S]*class="hero-bottom"/);
@@ -350,31 +340,44 @@ test("popup markup follows design B: the logo capsule, grouped settings and a fo
   // The status line sits right under the capsule and is empty until needed.
   assert.match(POPUP_HTML, /<\/section>\s*<p class="status" data-status aria-live="polite"><\/p>/);
 
-  const groupOrder = [
-    "popupGroupPlayer",
+  // The main card first, then "Advanced settings" with the rest and the
+  // language.
+  const order = [
+    '<div class="card" data-settings-panel>',
     'data-setting="hidePlayerProgressBar"',
-    'class="row nested"',
-    'data-setting="showSkipButtons"',
-    "popupGroupAroundVideos",
     'data-setting="hideVideoPreviews"',
+    'data-setting="startLiveFromBeginning"',
+    '<details class="card advanced">',
+    '<summary class="advanced-summary">',
+    'data-yas-i18n="popupAdvancedSettings"',
+    "<div data-settings-panel>",
     'data-setting="hideVideoTitles"',
     'data-setting="hideComments"',
-    "popupGroupLive",
-    'data-setting="startLiveFromBeginning"',
-    "data-shortcut-line",
+    'data-yas-i18n="popupLanguageLabel"',
     "data-language-select",
   ];
-  const positions = groupOrder.map((needle) => POPUP_HTML.indexOf(needle));
+  const positions = order.map((needle) => POPUP_HTML.indexOf(needle));
   positions.forEach((position, index) => {
-    assert.notEqual(position, -1, `${groupOrder[index]} is in the popup`);
+    assert.notEqual(position, -1, `${order[index]} is in the popup`);
   });
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
+  assert.equal(POPUP_HTML.match(/data-setting="/g).length, 5);
+  assert.equal(POPUP_HTML.match(/data-settings-panel/g).length, 2);
 
-  // The settings panel holds the settings only; the footer stays visible
-  // while protection is off.
-  assert.ok(POPUP_HTML.indexOf("</footer>") > POPUP_HTML.lastIndexOf("data-setting="));
-  assert.ok(POPUP_HTML.indexOf("<footer") > POPUP_HTML.lastIndexOf("data-setting="));
-  assert.match(POPUP_HTML, /<option value="auto" data-yas-i18n="popupLanguageBrowser">/);
+  // Closed by default. The language row sits outside the settings that hide
+  // while protection is off, so it stays reachable.
+  assert.doesNotMatch(POPUP_HTML, /<details[^>]*\sopen/);
+  assert.match(
+    POPUP_HTML,
+    /<div data-settings-panel>(?:(?!<\/div>)[\s\S])*<\/div>\s*<label class="row language">/,
+  );
+  // The list has no "browser language" entry; the options come from the script.
+  assert.match(POPUP_HTML, /<select data-language-select><\/select>/);
+
+  // Gone: group headings, the skip buttons row and the shortcut hint.
+  ["popupGroup", "showSkipButtons", "class=\"row nested\"", "data-shortcut", "<kbd", "<footer", "popupLanguageBrowser"].forEach((text) => {
+    assert.doesNotMatch(POPUP_HTML, new RegExp(text), text);
+  });
   assert.match(
     POPUP_HTML,
     /<script src="\.\.\/src\/shared\/settings\.js"><\/script>\s*<script src="\.\.\/src\/shared\/i18n\.js"><\/script>\s*<script src="popup\.js"><\/script>/,
@@ -387,7 +390,7 @@ test("popup markup follows design B: the logo capsule, grouped settings and a fo
 test("popup HTML English texts match the English messages", () => {
   const keyedTexts = [...POPUP_HTML.matchAll(/data-yas-i18n="([A-Za-z0-9]+)"[^>]*>([^<]+)</g)];
 
-  assert.ok(keyedTexts.length >= 17);
+  assert.ok(keyedTexts.length >= 14);
   keyedTexts.forEach(([, key, text]) => {
     assert.equal(text, en(key), key);
   });
@@ -441,38 +444,61 @@ test("popup CSS uses the design B tokens with a dark theme", () => {
   assert.match(POPUP_CSS, /\.language select:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
   assert.match(POPUP_CSS, /:lang\(ja\), :lang\(ko\), :lang\(zh\)\)\s*\{\s*line-height:\s*1\.5;/);
 
+  // "Advanced settings": a full-width row, 14 px 600, with a chevron that
+  // turns when open and a focus ring drawn inside the card.
+  assert.match(POPUP_CSS, /\.advanced-summary\s*\{[^}]*min-height:\s*48px;[^}]*font-size:\s*14px;[^}]*font-weight:\s*600;[^}]*list-style:\s*none;/);
+  assert.match(POPUP_CSS, /\.advanced-summary::after\s*\{[^}]*transform:\s*rotate\(45deg\);/);
+  assert.match(POPUP_CSS, /\.advanced\[open\] > \.advanced-summary::after\s*\{[^}]*transform:\s*rotate\(225deg\);/);
+  assert.match(POPUP_CSS, /\.advanced-summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);[^}]*outline-offset:\s*-2px;/);
+
   // Old design rules are gone.
-  ["\\.lead", "\\.paused-panel", "\\.power-track", "\\.eyebrow", "\\.brand-logo", "#cc0000"].forEach((pattern) => {
+  ["\\.lead", "\\.paused-panel", "\\.power-track", "\\.eyebrow", "\\.brand-logo", "#cc0000", "\\.footer", "kbd", "\\.group-title", "\\.nested", "h2"].forEach((pattern) => {
     assert.doesNotMatch(POPUP_CSS, new RegExp(pattern), pattern);
   });
 });
 
 test("popup script takes every text from the messages", () => {
-  assert.match(POPUP_JS, /settingsPanel\.hidden = !enabled/);
-  ["Protection on", "Protection off", "\"Could not save settings\"", "Shortcut:", "Requires \"Hide"].forEach((text) => {
+  assert.match(POPUP_JS, /panel\.hidden = !enabled/);
+  ["Protection on", "Protection off", "\"Could not save settings\"", "Browser language"].forEach((text) => {
+    assert.doesNotMatch(POPUP_JS, new RegExp(text), text);
+  });
+  // No shortcut hint and no skip buttons setting any more.
+  ["chrome\\.commands", "commands\\.getAll", "shortcut", "showSkipButtons"].forEach((text) => {
     assert.doesNotMatch(POPUP_JS, new RegExp(text), text);
   });
 });
 
 test("popup shows the protection status and notes in English", async () => {
-  const { powerToggle, powerStatus, powerNote, settingsPanel } = await loadPopup({});
+  const { powerToggle, powerStatus, powerNote, settingsPanels } = await loadPopup({});
 
   assert.equal(powerToggle.checked, true);
   assert.equal(powerStatus.textContent, "Protection on");
   assert.equal(powerNote.textContent, "Video time and duration are hidden");
   assert.equal(powerToggle.attributes["aria-label"], "Spoiler protection");
-  assert.equal(settingsPanel.hidden, false);
+  assert.equal(settingsPanels.length, 2);
+  settingsPanels.forEach((panel) => {
+    assert.equal(panel.hidden, false);
+  });
 });
 
-test("popup hides the settings but keeps the footer while protection is off", async () => {
-  const { powerStatus, powerNote, settingsPanel, languageSelect } = await loadPopup({
+test("popup hides the settings but keeps the language while protection is off", async () => {
+  const { powerToggle, powerStatus, powerNote, settingsPanels, languageSelect } = await loadPopup({
     extensionEnabled: false,
   });
 
   assert.equal(powerStatus.textContent, "Protection off");
   assert.equal(powerNote.textContent, "YouTube is shown normally");
-  assert.equal(settingsPanel.hidden, true);
+  settingsPanels.forEach((panel) => {
+    assert.equal(panel.hidden, true);
+  });
   assert.equal(languageSelect.disabled, false);
+
+  powerToggle.checked = true;
+  await powerToggle.listeners.change();
+
+  settingsPanels.forEach((panel) => {
+    assert.equal(panel.hidden, false);
+  });
 });
 
 test("popup sets the toolbar action icon to gray after disabling protection", async () => {
@@ -519,7 +545,7 @@ test("popup goes read-only when settings cannot be loaded", async () => {
   // Saving from this state would overwrite the user's stored settings with
   // the displayed defaults, so every control must be disabled.
   assert.equal(powerToggle.disabled, true);
-  assert.equal(settingToggles.length, 6);
+  assert.equal(settingToggles.length, 5);
   settingToggles.forEach((toggle) => {
     assert.equal(toggle.disabled, true);
   });
@@ -529,8 +555,8 @@ test("popup goes read-only when settings cannot be loaded", async () => {
 });
 
 test("popup in read-only mode still shows the stored language", async () => {
-  const stored = createTestLanguage("en", {
-    popupGroupPlayer: "TEST PLAYER",
+  const stored = createTestLanguage("de", {
+    popupHideProgressBar: "TEST BAR",
     popupLoadError: "TEST LOAD ERROR",
   });
   const { findText, status, languageSelect } = await loadPopup(
@@ -538,9 +564,9 @@ test("popup in read-only mode still shows the stored language", async () => {
     { failRead: true, storedLanguage: stored },
   );
 
-  assert.equal(findText("popupGroupPlayer").textContent, "TEST PLAYER");
+  assert.equal(findText("popupHideProgressBar").textContent, "TEST BAR");
   assert.equal(status.textContent, "TEST LOAD ERROR");
-  assert.equal(languageSelect.value, "en");
+  assert.equal(languageSelect.value, "de");
   assert.equal(languageSelect.disabled, true);
 });
 
@@ -581,49 +607,16 @@ test("popup saves the live start setting when changed", async () => {
   assert.equal(storedSettings.startLiveFromBeginning, false);
 });
 
-test("popup shows skip buttons and comment hiding on by default and saves them when changed", async () => {
+test("popup shows comment hiding on by default and saves it when changed", async () => {
   const { settingToggles, storedSettings } = await loadPopup({});
-  const skipToggle = findToggle(settingToggles, "showSkipButtons");
   const commentsToggle = findToggle(settingToggles, "hideComments");
 
-  assert.equal(skipToggle.checked, true);
-  assert.equal(skipToggle.disabled, false);
   assert.equal(commentsToggle.checked, true);
 
-  skipToggle.checked = false;
-  await skipToggle.listeners.change();
   commentsToggle.checked = false;
   await commentsToggle.listeners.change();
 
-  assert.equal(storedSettings.showSkipButtons, false);
   assert.equal(storedSettings.hideComments, false);
-});
-
-test("popup disables skip buttons while the progress bar is shown, keeping their saved value", async () => {
-  const { settingToggles, skipNote, storedSettings } = await loadPopup({
-    hidePlayerProgressBar: false,
-    showSkipButtons: true,
-  });
-  const progressToggle = findToggle(settingToggles, "hidePlayerProgressBar");
-  const skipToggle = findToggle(settingToggles, "showSkipButtons");
-
-  assert.equal(skipToggle.disabled, true);
-  assert.equal(skipToggle.checked, true);
-  assert.equal(skipNote.textContent, 'Requires "Hide progress bar"');
-
-  progressToggle.checked = true;
-  await progressToggle.listeners.change();
-
-  assert.equal(skipToggle.disabled, false);
-  assert.equal(skipToggle.checked, true);
-  assert.equal(skipNote.textContent, "Jump 10 s, 1 min or 10 min");
-
-  progressToggle.checked = false;
-  await progressToggle.listeners.change();
-
-  assert.equal(skipToggle.disabled, true);
-  assert.equal(skipNote.textContent, 'Requires "Hide progress bar"');
-  assert.equal(storedSettings.showSkipButtons, true);
 });
 
 test("popup keeps showing protection off when enabling it fails to save", async () => {
@@ -693,26 +686,6 @@ test("popup clears the save error after the next successful save", async () => {
   assert.equal(status.dataset.yasI18n, undefined);
 });
 
-test("popup shows the protection shortcut the user has set", async () => {
-  const { shortcutLine, shortcutKey, shortcutMissing, findText } = await loadPopup({});
-  await flushPromises();
-
-  assert.equal(findText("popupShortcutLabel").textContent, "Shortcut:");
-  assert.equal(shortcutKey.tagName, "KBD");
-  assert.equal(shortcutKey.textContent, "Alt+Shift+S");
-  assert.equal(shortcutLine.hidden, false);
-  assert.equal(shortcutMissing.hidden, true);
-});
-
-test("popup explains where to set a shortcut when none is assigned", async () => {
-  const { shortcutLine, shortcutMissing } = await loadPopup({}, { shortcut: "" });
-  await flushPromises();
-
-  assert.equal(shortcutLine.hidden, true);
-  assert.equal(shortcutMissing.hidden, false);
-  assert.equal(shortcutMissing.textContent, "Set a shortcut in chrome://extensions/shortcuts");
-});
-
 test("popup keeps both changes when two checkboxes change before the first save finishes", async () => {
   const { settingToggles, storedSettings } = await loadPopup({
     extensionEnabled: true,
@@ -735,11 +708,29 @@ test("popup keeps both changes when two checkboxes change before the first save 
 
 // --- Language ---
 
-test("popup lists Browser language first, then every language under its own name", async () => {
+// { key: text } of a packaged locale, the shape the popup stores.
+function readPackagedMessages(code) {
+  const file = JSON.parse(
+    fs.readFileSync(path.join(rootPath, "_locales", code, "messages.json"), "utf8"),
+  );
+  const messages = {};
+
+  Object.keys(file).forEach((key) => {
+    messages[key] = file[key].message;
+  });
+
+  return messages;
+}
+
+function hasStoredLanguage(localItems) {
+  return Object.prototype.hasOwnProperty.call(localItems, "uiLanguage");
+}
+
+test("popup lists every language under its own name, with no browser language entry", async () => {
   const { languageSelect, findText, document } = await loadPopup({});
 
-  assert.equal(findText("popupLanguageBrowser").textContent, "Browser language");
   assert.equal(findText("popupLanguageLabel").textContent, "Language");
+  assert.equal(findText("popupAdvancedSettings").textContent, "Advanced settings");
   assert.deepEqual(
     languageSelect.children.map((option) => [option.value, option.textContent]),
     [
@@ -755,36 +746,56 @@ test("popup lists Browser language first, then every language under its own name
       ["tr", "Türkçe"],
     ],
   );
-  assert.equal(languageSelect.value, "auto");
+  // The test browser is in English.
+  assert.equal(languageSelect.value, "en");
   assert.equal(document.documentElement.lang, "en");
 });
 
+test("popup selects the browser language when no language is stored", async () => {
+  const german = await loadPopup({}, { uiLanguage: "de-DE" });
+
+  assert.equal(german.languageSelect.value, "de");
+  assert.equal(german.document.documentElement.lang, "de");
+  assert.deepEqual(german.fetchedUrls, []);
+  assert.equal(hasStoredLanguage(german.localItems), false);
+
+  // A browser language the extension does not have: Chrome shows English.
+  const chinese = await loadPopup({}, { uiLanguage: "zh-CN" });
+
+  assert.equal(chinese.languageSelect.value, "en");
+  assert.equal(chinese.document.documentElement.lang, "en");
+});
+
 test("popup follows the browser language when no language is stored", async () => {
-  const { document, findText, fetchedUrls } = await loadPopup({}, { uiLanguage: "ru" });
+  const { document, findText, fetchedUrls, languageSelect } = await loadPopup(
+    {},
+    { uiLanguage: "ru" },
+  );
 
   // Chrome itself picks the Russian texts, so the popup loads no file.
   // The test chrome.i18n always answers in English.
   assert.equal(document.documentElement.lang, "ru");
-  assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.equal(languageSelect.value, "ru");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
   assert.deepEqual(fetchedUrls, []);
 });
 
 test("popup shows the stored language at startup", async () => {
-  const stored = createTestLanguage("en", {
-    popupGroupPlayer: "TEST PLAYER",
+  const stored = createTestLanguage("de", {
+    popupHideProgressBar: "TEST BAR",
     popupStatusOn: "TEST ON",
     popupMasterSwitchLabel: "TEST SWITCH",
-    popupSkipButtonsNote: "TEST SKIP NOTE",
+    popupAdvancedSettings: "TEST ADVANCED",
   });
-  const { findText, powerStatus, powerToggle, skipNote, languageSelect, document, fetchedUrls } =
+  const { findText, powerStatus, powerToggle, languageSelect, document, fetchedUrls } =
     await loadPopup({}, { storedLanguage: stored });
 
-  assert.equal(findText("popupGroupPlayer").textContent, "TEST PLAYER");
+  assert.equal(findText("popupHideProgressBar").textContent, "TEST BAR");
+  assert.equal(findText("popupAdvancedSettings").textContent, "TEST ADVANCED");
   assert.equal(powerStatus.textContent, "TEST ON");
   assert.equal(powerToggle.attributes["aria-label"], "TEST SWITCH");
-  assert.equal(skipNote.textContent, "TEST SKIP NOTE");
-  assert.equal(languageSelect.value, "en");
-  assert.equal(document.documentElement.lang, "en");
+  assert.equal(languageSelect.value, "de");
+  assert.equal(document.documentElement.lang, "de");
   // The stored texts are used as they are; nothing is fetched at startup.
   assert.deepEqual(fetchedUrls, []);
 });
@@ -795,30 +806,51 @@ test("popup uses the browser language when the stored language cannot be read", 
     { failLanguageRead: true },
   );
 
-  assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
   assert.equal(powerStatus.textContent, "Protection on");
-  assert.equal(languageSelect.value, "auto");
+  assert.equal(languageSelect.value, "en");
   assert.equal(status.textContent, "");
 });
 
-test("popup stores a chosen language with its texts and removes it for Browser language", async () => {
-  const { languageSelect, localItems, fetchedUrls, document } = await loadPopup({});
+test("popup stores a language other than the browser's and removes the choice for the browser's own", async () => {
+  const { languageSelect, localItems, fetchedUrls, document, findText } = await loadPopup({});
+  const german = readPackagedMessages("de");
+
+  await chooseLanguage(languageSelect, "de");
+
+  assert.deepEqual(fetchedUrls, ["chrome-extension://test-id/_locales/de/messages.json"]);
+  // Stored from inside the popup's own realm, so compared as plain data.
+  assert.deepEqual(JSON.parse(JSON.stringify(localItems.uiLanguage)), {
+    code: "de",
+    messages: german,
+  });
+  assert.equal(languageSelect.value, "de");
+  assert.equal(document.documentElement.lang, "de");
+  assert.equal(findText("popupHideProgressBar").textContent, german.popupHideProgressBar);
+
+  // English is the browser language: picking it removes the choice, so the
+  // extension follows the browser again.
+  await chooseLanguage(languageSelect, "en");
+
+  assert.equal(hasStoredLanguage(localItems), false);
+  assert.equal(fetchedUrls.length, 1);
+  assert.equal(languageSelect.value, "en");
+  assert.equal(document.documentElement.lang, "en");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
+});
+
+test("popup stores English when the browser language is another one", async () => {
+  const { languageSelect, localItems } = await loadPopup({}, { uiLanguage: "de-DE" });
 
   await chooseLanguage(languageSelect, "en");
 
-  assert.deepEqual(fetchedUrls, ["chrome-extension://test-id/_locales/en/messages.json"]);
-  // Stored from inside the popup's own realm, so compared as plain data.
-  assert.deepEqual(JSON.parse(JSON.stringify(localItems.uiLanguage)), {
-    code: "en",
-    messages: getEnglishMessages(),
-  });
+  assert.equal(localItems.uiLanguage.code, "en");
   assert.equal(languageSelect.value, "en");
-  assert.equal(document.documentElement.lang, "en");
 
-  await chooseLanguage(languageSelect, "auto");
+  await chooseLanguage(languageSelect, "de");
 
-  assert.equal(Object.prototype.hasOwnProperty.call(localItems, "uiLanguage"), false);
-  assert.equal(languageSelect.value, "auto");
+  assert.equal(hasStoredLanguage(localItems), false);
+  assert.equal(languageSelect.value, "de");
 });
 
 test("popup keeps the latest language choice when two loads finish in reverse order", async () => {
@@ -828,23 +860,42 @@ test("popup keeps the latest language choice when two loads finish in reverse or
     { fetch: deferred.fetch },
   );
 
-  languageSelect.value = "en";
+  languageSelect.value = "de";
   const firstChoice = languageSelect.listeners.change();
   languageSelect.value = "pt_BR";
   const secondChoice = languageSelect.listeners.change();
 
   deferred.pending.pt_BR(toMessagesFile(Object.assign(getEnglishMessages(), {
-    popupGroupPlayer: "Reprodutor",
+    popupHideProgressBar: "Ocultar barra",
   })));
   await secondChoice;
-  deferred.pending.en(toMessagesFile(getEnglishMessages()));
+  deferred.pending.de(toMessagesFile(getEnglishMessages()));
   await firstChoice;
   await flushPromises();
 
   assert.equal(localItems.uiLanguage.code, "pt_BR");
-  assert.equal(findText("popupGroupPlayer").textContent, "Reprodutor");
+  assert.equal(findText("popupHideProgressBar").textContent, "Ocultar barra");
   assert.equal(languageSelect.value, "pt_BR");
   assert.equal(document.documentElement.lang, "pt-BR");
+});
+
+test("popup keeps the browser language when it is picked while another language is still loading", async () => {
+  const deferred = createDeferredFetch();
+  const { languageSelect, localItems, findText } = await loadPopup({}, { fetch: deferred.fetch });
+
+  languageSelect.value = "de";
+  const firstChoice = languageSelect.listeners.change();
+  await chooseLanguage(languageSelect, "en");
+
+  deferred.pending.de(toMessagesFile(Object.assign(getEnglishMessages(), {
+    popupHideProgressBar: "Fortschrittsbalken ausblenden",
+  })));
+  await firstChoice;
+  await flushPromises();
+
+  assert.equal(hasStoredLanguage(localItems), false);
+  assert.equal(languageSelect.value, "en");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
 });
 
 test("popup restores the language list and shows an error when loading the language fails", async () => {
@@ -853,28 +904,29 @@ test("popup restores the language list and shows an error when loading the langu
     { fetch: () => Promise.resolve({ ok: false, status: 404 }) },
   );
 
-  await chooseLanguage(languageSelect, "en");
+  await chooseLanguage(languageSelect, "de");
 
-  assert.equal(languageSelect.value, "auto");
+  assert.equal(languageSelect.value, "en");
   assert.equal(status.textContent, "Could not change the language");
-  assert.equal(Object.prototype.hasOwnProperty.call(localItems, "uiLanguage"), false);
-  assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.equal(hasStoredLanguage(localItems), false);
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
 });
 
 test("popup restores the language list and shows an error when saving the language fails", async () => {
-  const stored = createTestLanguage("en", { popupGroupPlayer: "TEST PLAYER" });
+  const stored = createTestLanguage("de", { popupHideProgressBar: "TEST BAR" });
   const { languageSelect, localItems, status, findText } = await loadPopup(
     {},
     { storedLanguage: stored, failLanguageWrite: true },
   );
 
-  await chooseLanguage(languageSelect, "auto");
+  // English is the browser language, so this is a removal, and it fails.
+  await chooseLanguage(languageSelect, "en");
 
-  assert.equal(languageSelect.value, "en");
+  assert.equal(languageSelect.value, "de");
   assert.equal(status.textContent, "Could not change the language");
   assert.deepEqual(localItems.uiLanguage, stored);
   // The shown language stays as it was.
-  assert.equal(findText("popupGroupPlayer").textContent, "TEST PLAYER");
+  assert.equal(findText("popupHideProgressBar").textContent, "TEST BAR");
 });
 
 test("popup follows a language picked in another popup window", async () => {
@@ -883,8 +935,8 @@ test("popup follows a language picked in another popup window", async () => {
   emitStorageChange(
     {
       uiLanguage: {
-        newValue: createTestLanguage("en", {
-          popupGroupPlayer: "TEST PLAYER",
+        newValue: createTestLanguage("de", {
+          popupHideProgressBar: "TEST BAR",
           popupStatusOn: "TEST ON",
         }),
       },
@@ -892,20 +944,20 @@ test("popup follows a language picked in another popup window", async () => {
     "local",
   );
 
-  assert.equal(findText("popupGroupPlayer").textContent, "TEST PLAYER");
+  assert.equal(findText("popupHideProgressBar").textContent, "TEST BAR");
   assert.equal(powerStatus.textContent, "TEST ON");
-  assert.equal(languageSelect.value, "en");
+  assert.equal(languageSelect.value, "de");
 
   // Removed elsewhere: back to the browser language.
   emitStorageChange({ uiLanguage: { oldValue: {} } }, "local");
 
-  assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
   assert.equal(powerStatus.textContent, "Protection on");
-  assert.equal(languageSelect.value, "auto");
+  assert.equal(languageSelect.value, "en");
 });
 
 test("popup shows the settings and follows changes made elsewhere before the language is read", async () => {
-  const stored = createTestLanguage("en", { popupStatusOn: "TEST ON" });
+  const stored = createTestLanguage("de", { popupStatusOn: "TEST ON" });
   const {
     settingToggles,
     storedSettings,
@@ -932,7 +984,7 @@ test("popup shows the settings and follows changes made elsewhere before the lan
   // The texts set before the language arrived switch to it.
   await finishLanguageRead();
   assert.equal(powerStatus.textContent, "TEST ON");
-  assert.equal(languageSelect.value, "en");
+  assert.equal(languageSelect.value, "de");
 
   previewToggle.checked = true;
   await previewToggle.listeners.change();
@@ -944,13 +996,12 @@ test("popup shows the settings and follows changes made elsewhere before the lan
 
 test("popup does not write its own language choice over a removal made elsewhere while loading", async () => {
   const deferred = createDeferredFetch();
-  const stored = createTestLanguage("en", { popupGroupPlayer: "TEST PLAYER" });
+  const stored = createTestLanguage("de", { popupHideProgressBar: "TEST BAR" });
   const { languageSelect, localItems, emitStorageChange, findText } = await loadPopup(
     {},
     { storedLanguage: stored, fetch: deferred.fetch },
   );
 
-  // Only English exists, so the choice uses a made-up second language.
   languageSelect.value = "pt_BR";
   const choice = languageSelect.listeners.change();
 
@@ -959,12 +1010,12 @@ test("popup does not write its own language choice over a removal made elsewhere
   emitStorageChange({ uiLanguage: { oldValue: stored } }, "local");
 
   deferred.pending.pt_BR(toMessagesFile(Object.assign(getEnglishMessages(), {
-    popupGroupPlayer: "Reprodutor",
+    popupHideProgressBar: "Ocultar barra",
   })));
   await choice;
   await flushPromises();
 
-  assert.equal(Object.prototype.hasOwnProperty.call(localItems, "uiLanguage"), false);
-  assert.equal(languageSelect.value, "auto");
-  assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.equal(hasStoredLanguage(localItems), false);
+  assert.equal(languageSelect.value, "en");
+  assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
 });

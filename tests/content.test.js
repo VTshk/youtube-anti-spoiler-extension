@@ -435,6 +435,7 @@ function answerLiveStateRequests(doc, win, answer) {
         canRewind: reply.canRewind === undefined ? null : reply.canRewind,
         isLive: reply.isLive,
         requestId: JSON.parse(event.detail).requestId,
+        rewindStart: reply.rewindStart === undefined ? null : reply.rewindStart,
         videoId: reply.videoId,
       }),
     }));
@@ -499,7 +500,6 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
       hideVideoPreviews: true,
       hideVideoTitles: true,
       startLiveFromBeginning: true,
-      showSkipButtons: true,
       hideComments: true,
     }),
     [
@@ -509,7 +509,6 @@ test("getEnabledClassNames maps enabled settings to stable root classes", () => 
         "yas-hide-video-previews",
         "yas-hide-video-titles",
         "yas-start-live-from-beginning",
-        "yas-show-skip-buttons",
         "yas-hide-comments",
       ],
   );
@@ -536,7 +535,6 @@ test("getEnabledClassNames keeps time hiding enabled when stored setting is fals
       hidePlayerProgressBar: true,
       hideVideoPreviews: false,
       startLiveFromBeginning: true,
-      showSkipButtons: false,
       hideComments: false,
     }),
     [
@@ -4529,6 +4527,106 @@ test("live guard confirms a jump that YouTube completes by reloading the media",
   assert.deepEqual([...controller.getAttemptedVideoIds()], ["reload-jump"]);
 });
 
+// Live check 2026-11-06 (Sky News, umLWFz4izTM): a 14 h stream with a 12 h
+// rewind window. <video>.seekable starts at 0, but the player only goes back
+// to its own window start, <video> 3610, and the jump landed at 3607.
+function startLongWindowStream(videoId) {
+  const clock = createFakeClock();
+  const win = createGuardWindow(`https://www.youtube.com/watch?v=${videoId}`);
+  const video = createLiveVideo({
+    currentTime: 46790,
+    seekable: {
+      length: 1,
+      start() {
+        return 0;
+      },
+      end() {
+        return 50390;
+      },
+    },
+  });
+  const doc = createLiveDocument({
+    video,
+    player: createElement("div"),
+    liveBroadcastContent: "True",
+    metadataVideoId: videoId,
+  });
+  answerLiveStateRequests(doc, win, () => ({
+    videoId,
+    isLive: true,
+    canRewind: true,
+    rewindStart: 3610,
+  }));
+  const dispatchedEvents = recordDispatchedEvents(doc);
+  const controller = content.createLiveStartController(win, clock.options);
+
+  controller.sync(LIVE_SETTINGS, doc);
+  assert.equal(getLiveOverlayButton(doc, "start").disabled, false);
+  getLiveOverlayButton(doc, "start").click();
+
+  return { clock, controller, dispatchedEvents, doc, video };
+}
+
+test("live guard jumps to the player's rewind window start on a long-window stream", () => {
+  const { controller, dispatchedEvents, doc, video } = startLongWindowStream("long-window");
+  const seekEvents = dispatchedEvents.filter(
+    (event) => event.type === content.LIVE_START_SEEK_EVENT,
+  );
+
+  assert.equal(seekEvents.length, 1);
+  assert.equal(JSON.parse(seekEvents[0].detail).fallbackSeconds, 3610);
+  assert.equal(video.currentTime, 3610);
+
+  // The player puts the <video> a few seconds before its window start.
+  video.currentTime = 3607;
+  video.listeners.seeked();
+
+  assertGuardHolds(doc, video);
+
+  video.frameCallbacks[0]();
+
+  assert.equal(getLiveOverlay(doc), null);
+  assert.equal(isLiveObscured(doc), false);
+  assert.equal(video.playCalls, 1);
+  assert.deepEqual([...controller.getAttemptedVideoIds()], ["long-window"]);
+});
+
+test("live guard accepts a long-window jump that the player lands a little after its window start", () => {
+  // Live check 2026-11-06: on Sky News and France 24 the player sometimes
+  // put the <video> 17–23 s after its window start.
+  const { controller, doc, video } = startLongWindowStream("long-window-late");
+
+  video.currentTime = 3627;
+  video.listeners.seeked();
+  video.frameCallbacks[0]();
+
+  assert.equal(getLiveOverlay(doc), null);
+  assert.equal(video.playCalls, 1);
+  assert.deepEqual([...controller.getAttemptedVideoIds()], ["long-window-late"]);
+});
+
+test("live guard does not count a jump that lands at the live edge as reaching the start", () => {
+  const { clock, controller, doc, video } = startLongWindowStream("long-window-live-edge");
+
+  // The player snaps back to the live moment.
+  video.currentTime = 46790;
+  video.listeners.seeked();
+  video.frameCallbacks.forEach((callback) => callback());
+  clock.advance(liveStart.LIVE_START_SEEK_FRAME_FALLBACK_MS);
+
+  assertGuardHolds(doc, video);
+
+  clock.advance(liveStart.LIVE_START_SEEK_CONFIRM_TIMEOUT_MS);
+
+  assert.equal(
+    getLiveOverlay(doc).querySelector(".yas-live-guard-status").textContent,
+    "Couldn't jump to the beginning.",
+  );
+  assert.equal(video.paused, true);
+  assertGuardHolds(doc, video);
+  assert.deepEqual([...controller.getAttemptedVideoIds()], []);
+});
+
 test("buildSpoilerCss blurs seek-preview frames with previews and chapter names with titles", () => {
   const css = content.buildSpoilerCss();
 
@@ -4793,4 +4891,17 @@ test("a language change re-translates an open live guard panel in its current st
   } finally {
     shared.setMessages(null);
   }
+});
+
+test("the live guard never changes how YouTube positions the player", () => {
+  // Forcing #player-container to position:relative collapsed the player to
+  // 0 px after in-site navigation, so the guard panel never appeared and the
+  // stream stayed paused with no buttons (owner report, 2026-11-06).
+  const css = content.buildSpoilerCss();
+  const obscuredPlayerRule = css.match(
+    /html\.yas-live-start-obscured #movie_player,[\s\S]+?\{([\s\S]+?)\}/,
+  );
+
+  assert.ok(obscuredPlayerRule, "the obscured player rule exists");
+  assert.doesNotMatch(obscuredPlayerRule[1], /position\s*:/);
 });

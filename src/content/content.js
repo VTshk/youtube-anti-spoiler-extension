@@ -54,7 +54,6 @@
     hideVideoPreviews: "yas-hide-video-previews",
     hideVideoTitles: "yas-hide-video-titles",
     startLiveFromBeginning: "yas-start-live-from-beginning",
-    showSkipButtons: "yas-show-skip-buttons",
     hideComments: "yas-hide-comments",
   });
 
@@ -321,8 +320,11 @@ html.${LIVE_START_OBSCURED_CLASS} ytd-player,
 html.${LIVE_START_OBSCURED_CLASS} #player-container {
   background: #0f0f0f !important;
   overflow: hidden !important;
-  position: relative !important;
 }
+/* No "position" here: YouTube's #player-container is position:absolute
+   inside a zero-height aspect-ratio box. Forcing it to relative collapsed
+   the player to 0 px after in-site navigation, so the live guard panel
+   had nowhere to go and never appeared. */
 
 /* No pixels of the stream under the live guard: while it loads its rewind
    window the stream plays behind the overlay, and a blur would still let
@@ -420,29 +422,45 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
   display: none !important;
 }
 
-html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}.${CLASS_BY_SETTING.showSkipButtons}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
+/* Drawn like YouTube's own text pill, the time display they replace
+   (measured 2026-11-06): 40 px high, 8 px from the top of the 56 px bar,
+   rgba(0,0,0,.3) behind, radius 28px, 14 px weight 500 text. The six
+   buttons share one pill, as YouTube groups previous, play and next. */
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
-  height: 100% !important;
+  height: 40px !important;
+  margin: 8px 0 8px 12px !important;
+  padding: 0 4px !important;
+  border-radius: 28px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
 }
 
+/* YouTube highlights a hovered control 4 px inside its pill. */
 #movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button {
-  height: 100% !important;
+  height: 32px !important;
   margin: 0 !important;
-  padding: 0 6px !important;
+  padding: 0 8px !important;
   border: 0 !important;
+  border-radius: 28px !important;
   background: transparent !important;
-  color: #fff !important;
-  font-family: Roboto, Arial, sans-serif !important;
-  font-size: 13px !important;
+  color: #ffffff !important;
+  font-family: "YouTube Noto", Roboto, Arial, Helvetica, sans-serif !important;
+  font-size: 14px !important;
   font-weight: 500 !important;
-  line-height: 1 !important;
-  opacity: 0.9 !important;
+  line-height: 32px !important;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5) !important;
   cursor: pointer !important;
+  transition: background-color 0.2s cubic-bezier(0.05, 0, 0, 1) !important;
 }
 
 #movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button:hover {
-  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 0 !important;
 }
 
 html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments#comments {

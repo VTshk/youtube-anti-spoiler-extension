@@ -82,12 +82,16 @@
     return baseMatch ? baseMatch.code : "en";
   }
 
+  // The code from SUPPORTED_LANGUAGES that Chrome shows for the browser
+  // language, used while no language is chosen in the popup.
+  function getBrowserLanguage() {
+    return findShownLanguage(root.chrome.i18n.getUILanguage());
+  }
+
   // The `lang` tag of the language actually shown: "auto" or a code from
   // SUPPORTED_LANGUAGES. Folder names use "_", language tags use "-".
   function getHtmlLang(languageCode) {
-    const shownCode = languageCode === "auto"
-      ? findShownLanguage(root.chrome.i18n.getUILanguage())
-      : languageCode;
+    const shownCode = languageCode === "auto" ? getBrowserLanguage() : languageCode;
 
     return shownCode.replace("_", "-");
   }
@@ -120,6 +124,7 @@
     setText,
     setLabel,
     applyTranslations,
+    getBrowserLanguage,
     getHtmlLang,
     fetchMessages,
   };

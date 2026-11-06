@@ -28,7 +28,11 @@
   const LIVE_GUARD_HEARTBEAT_MS = 1000;
   const LIVE_START_NOT_LIVE_GRACE_MS = 1500;
   const LIVE_START_SEEK_CONFIRM_TIMEOUT_MS = 3000;
-  const LIVE_START_SEEK_CONFIRM_TOLERANCE_SECONDS = 5;
+  // A jump counts as done from 10 s before the rewind window start to 30 s
+  // after it. The player lands up to 4.8 s early (a segment start) or, on
+  // 12-hour news windows, up to 23 s late (live check 2026-11-06, 20 jumps).
+  const LIVE_START_SEEK_CONFIRM_BEFORE_START_SECONDS = 10;
+  const LIVE_START_SEEK_CONFIRM_AFTER_START_SECONDS = 30;
   const LIVE_START_SEEK_FRAME_FALLBACK_MS = 500;
   const LIVE_GUARD_PLAYER_GONE_MS = 3000;
   const LIVE_GUARD_COMPACT_WIDTH_PX = 480;
@@ -636,9 +640,15 @@
         findVideoElement(doc),
       ];
 
-      return candidates.find((candidate) => (
-        candidate && typeof candidate.getBoundingClientRect === "function"
-      )) || null;
+      // A collapsed (0×0) element cannot hold the panel; try the next one.
+      return candidates.find((candidate) => {
+        if (!candidate || typeof candidate.getBoundingClientRect !== "function") {
+          return false;
+        }
+
+        const rect = candidate.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      }) || null;
     }
 
     function getScrollOffset(axis) {
@@ -1099,6 +1109,11 @@
         return;
       }
 
+      // The bridge answers at once. A fresh answer has the same rewind window
+      // that the bridge's seek below goes to: the player moves the window
+      // start in steps of about 10 s.
+      requestLatestLiveState(doc);
+
       const video = findVideoElement(doc);
 
       // The button is disabled until there is a DVR window to jump into.
@@ -1106,7 +1121,7 @@
         return;
       }
 
-      const startTime = getEarliestSeekableStart(video);
+      const startTime = getJumpStartTime(video);
       const seek = {
         check: null,
         confirming: null,
@@ -1120,11 +1135,14 @@
       activeGuard.seekFailed = false;
       pendingSeek = seek;
 
-      // readyState >= 2: the frame at the current position is loaded.
+      // readyState >= 2: the frame at the current position is loaded. The
+      // live moment is a whole rewind window after the start, so a jump that
+      // lands there never passes.
       const reachedStart = (media) => (
         !media.seeking &&
         media.readyState >= 2 &&
-        Math.abs(media.currentTime - startTime) <= LIVE_START_SEEK_CONFIRM_TOLERANCE_SECONDS
+        media.currentTime >= startTime - LIVE_START_SEEK_CONFIRM_BEFORE_START_SECONDS &&
+        media.currentTime <= startTime + LIVE_START_SEEK_CONFIRM_AFTER_START_SECONDS
       );
 
       // The jump is judged on whatever <video> the player holds now: on a live
@@ -1190,6 +1208,23 @@
       }
 
       refreshLiveGuardOverlay(doc);
+    }
+
+    // Where "Start from beginning" goes, in <video> seconds. On a stream
+    // longer than the player's rewind window, <video>.seekable still starts
+    // at 0, but the player only goes back to its own window start (live
+    // check 2026-11-06, Sky News: the jump landed at 3607, not near 0). The
+    // bridge reports that start; without it, the media's own start counts.
+    function getJumpStartTime(video) {
+      if (
+        latestLiveState &&
+        latestLiveState.videoId === activeGuard.videoId &&
+        Number.isFinite(latestLiveState.rewindStart)
+      ) {
+        return latestLiveState.rewindStart;
+      }
+
+      return getEarliestSeekableStart(video);
     }
 
     // "available": there is a DVR window to jump into. "checking": the window

@@ -35,18 +35,6 @@
     "message": "ネタバレ防止",
     "description": "Screen reader label and tooltip of the main on/off switch in the popup."
   },
-  "popupGroupPlayer": {
-    "message": "プレーヤー",
-    "description": "Popup heading over the video player settings. Shown in capitals."
-  },
-  "popupGroupAroundVideos": {
-    "message": "動画の周辺",
-    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
-  },
-  "popupGroupLive": {
-    "message": "ライブ配信",
-    "description": "Popup heading over the live stream settings. Shown in capitals."
-  },
   "popupHideProgressBar": {
     "message": "シークバーを隠す",
     "description": "Popup setting title: hides the video timeline."
@@ -54,18 +42,6 @@
   "popupHideProgressBarNote": {
     "message": "プレーヤーとプレビュー",
     "description": "Note under the \"Hide progress bar\" setting."
-  },
-  "popupSkipButtons": {
-    "message": "スキップボタン",
-    "description": "Popup setting title: buttons that jump back or forward in the video."
-  },
-  "popupSkipButtonsNote": {
-    "message": "10秒、1分、10分ずつ移動",
-    "description": "Note under the \"Skip buttons\" setting."
-  },
-  "popupSkipButtonsRequires": {
-    "message": "「シークバーを隠す」をオンにすると使えます",
-    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
   },
   "popupBlurPreviews": {
     "message": "プレビューをぼかす",
@@ -99,21 +75,13 @@
     "message": "開始時に一時停止し、ライブチャットを隠す",
     "description": "Note under the \"Protect live streams\" setting."
   },
-  "popupShortcutLabel": {
-    "message": "ショートカット：",
-    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
-  },
-  "popupShortcutNotSet": {
-    "message": "chrome://extensions/shortcuts でショートカットを設定してください",
-    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  "popupAdvancedSettings": {
+    "message": "詳細設定",
+    "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
   },
   "popupLanguageLabel": {
     "message": "言語",
-    "description": "Popup footer label of the language list."
-  },
-  "popupLanguageBrowser": {
-    "message": "ブラウザの言語",
-    "description": "First choice in the popup language list: follow the browser's language."
+    "description": "Label of the language list under \"Advanced settings\" in the popup."
   },
   "popupSaveError": {
     "message": "設定を保存できませんでした",

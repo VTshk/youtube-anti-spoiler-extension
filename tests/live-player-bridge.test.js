@@ -383,6 +383,7 @@ test("live player bridge reports current live state from page-world player data"
     canRewind: null,
     isLive: true,
     requestId: 12,
+    rewindStart: null,
     signals: {
       playerResponseLive: true,
       videoDataLive: true,
@@ -435,6 +436,7 @@ test("live player bridge reports a finished-stream VOD as not live", () => {
     canRewind: null,
     isLive: false,
     requestId: 13,
+    rewindStart: null,
     signals: {},
     videoId: "stream-vod",
   });
@@ -474,6 +476,7 @@ test("live player bridge trusts live-now markers in the player response", () => 
     canRewind: null,
     isLive: true,
     requestId: 14,
+    rewindStart: null,
     signals: {
       playerResponseLive: true,
     },
@@ -498,6 +501,7 @@ test("live player bridge reports an unknown live state while no source names a v
     canRewind: null,
     isLive: null,
     requestId: 21,
+    rewindStart: null,
     signals: {},
     videoId: null,
   });
@@ -570,6 +574,7 @@ test("live player bridge ignores a stale initial player response for another vid
     canRewind: null,
     isLive: null,
     requestId: 21,
+    rewindStart: null,
     signals: {},
     videoId: "vod-b",
   });
@@ -813,6 +818,61 @@ test("live player bridge reports a rewindable stream once its window is known", 
   }));
 
   assert.equal(result.canRewind, true);
+});
+
+// The bridge answers about the player's own <video>.
+function requestLiveStateWithVideo(player, video) {
+  const doc = createDocument(() => player);
+
+  doc.querySelector = (selector) => {
+    if (selector === "#movie_player") {
+      return player;
+    }
+
+    return selector === "#movie_player video" ? video : null;
+  };
+
+  bridge.initLivePlayerBridge(createRoot(doc, []));
+  doc.dispatch(bridge.LIVE_STATE_REQUEST_EVENT, JSON.stringify({
+    requestId: 21,
+  }));
+
+  return JSON.parse(doc.dispatchedEvents[0].detail);
+}
+
+test("live player bridge reports where the rewind window starts in <video> seconds", () => {
+  // Live check 2026-11-06 (Sky News, a 12 h window on a 14 h stream): the
+  // <video> at the live edge read 46790 with seekable 0–50390, the player
+  // read current 1528172 and seekableStart 1484992. The window starts
+  // 43180 s back, at <video> 3610, not at <video>.seekable 0.
+  const result = requestLiveStateWithVideo(
+    createRewindPlayer({
+      allowSeeking: true,
+      current: 1528172,
+      seekableStart: 1484992,
+      seekableEnd: 1528177,
+    }),
+    { currentTime: 46790, seeking: false },
+  );
+
+  assert.equal(result.canRewind, true);
+  assert.equal(result.rewindStart, 3610);
+});
+
+test("live player bridge does not report the rewind window start while the <video> is seeking", () => {
+  // While seeking, the player's current already reads the target and the
+  // <video> does not: their difference says nothing.
+  const result = requestLiveStateWithVideo(
+    createRewindPlayer({
+      allowSeeking: true,
+      current: 1484992,
+      seekableStart: 1484992,
+      seekableEnd: 1528177,
+    }),
+    { currentTime: 0, seeking: true },
+  );
+
+  assert.equal(result.rewindStart, null);
 });
 
 // --- Portion 5: skip buttons hidden while the player refuses to seek ---

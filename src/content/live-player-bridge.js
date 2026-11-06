@@ -250,14 +250,47 @@
       isLive = false;
     }
 
+    // The player's progress state describes the video it holds, so it only
+    // counts when that is the video reported here.
+    const playerHoldsVideo = getVideoDataVideoId(videoData) === videoId;
+
     return {
-      // The player's progress state describes the video it holds, so it only
-      // counts when that is the video reported here.
-      canRewind: getVideoDataVideoId(videoData) === videoId ? getPlayerCanRewind(player) : null,
+      canRewind: playerHoldsVideo ? getPlayerCanRewind(player) : null,
       isLive,
+      rewindStart: playerHoldsVideo ? getPlayerRewindStart(player, doc) : null,
       signals,
       videoId,
     };
+  }
+
+  // Where the player's rewind window begins, in <video> seconds. The
+  // player's times (current, seekableStart) are shifted from <video> time,
+  // and on a stream longer than the window the window starts later than
+  // <video>.seekable: live check 2026-11-06 (Sky News), seekable 0–50390,
+  // the window began at <video> 3610 and a jump there landed at 3607. null
+  // while the <video> is seeking: the player then reports the target, not
+  // the position the <video> shows.
+  function getPlayerRewindStart(player, doc) {
+    const video = doc.querySelector("#movie_player video");
+
+    if (!video || video.seeking || !player || typeof player.getProgressState !== "function") {
+      return null;
+    }
+
+    try {
+      const progressState = player.getProgressState();
+      const seekableStart = getFiniteNumber(progressState && progressState.seekableStart);
+      const current = getFiniteNumber(progressState && progressState.current);
+      const mediaTime = getFiniteNumber(video.currentTime);
+
+      if (seekableStart === null || current === null || mediaTime === null) {
+        return null;
+      }
+
+      return mediaTime - (current - seekableStart);
+    } catch (error) {
+      return null;
+    }
   }
 
   // Whether the streamer allows rewinding (DVR). null until the player knows
@@ -498,6 +531,7 @@
           canRewind: result.canRewind === undefined ? null : result.canRewind,
           isLive: result.isLive,
           requestId,
+          rewindStart: result.rewindStart === undefined ? null : result.rewindStart,
           signals: result.signals,
           videoId: result.videoId,
         }),

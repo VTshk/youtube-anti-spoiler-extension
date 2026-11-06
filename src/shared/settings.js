@@ -14,7 +14,6 @@
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
-    showSkipButtons: true,
     hideComments: true,
   });
 
@@ -22,6 +21,8 @@
   const LEGACY_SETTING_KEYS = Object.freeze([
     "hideThumbnailDuration",
     "hidePlayerTime",
+    // The skip buttons now always come with the hidden progress bar.
+    "showSkipButtons",
   ]);
   const STORAGE_READ_KEYS = Object.freeze([
     ...SETTING_KEYS,
@@ -42,7 +43,6 @@
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
       hideVideoTitles: getBoolean(raw, "hideVideoTitles"),
       startLiveFromBeginning: getBoolean(raw, "startLiveFromBeginning"),
-      showSkipButtons: getBoolean(raw, "showSkipButtons"),
       hideComments: getBoolean(raw, "hideComments"),
     };
   }

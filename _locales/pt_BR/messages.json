@@ -35,18 +35,6 @@
     "message": "Proteção contra spoilers",
     "description": "Screen reader label and tooltip of the main on/off switch in the popup."
   },
-  "popupGroupPlayer": {
-    "message": "Player",
-    "description": "Popup heading over the video player settings. Shown in capitals."
-  },
-  "popupGroupAroundVideos": {
-    "message": "Ao redor dos vídeos",
-    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
-  },
-  "popupGroupLive": {
-    "message": "Transmissões ao vivo",
-    "description": "Popup heading over the live stream settings. Shown in capitals."
-  },
   "popupHideProgressBar": {
     "message": "Ocultar a barra de progresso",
     "description": "Popup setting title: hides the video timeline."
@@ -54,18 +42,6 @@
   "popupHideProgressBarNote": {
     "message": "No player e nas prévias",
     "description": "Note under the \"Hide progress bar\" setting."
-  },
-  "popupSkipButtons": {
-    "message": "Botões de pular",
-    "description": "Popup setting title: buttons that jump back or forward in the video."
-  },
-  "popupSkipButtonsNote": {
-    "message": "Pule 10 s, 1 min ou 10 min",
-    "description": "Note under the \"Skip buttons\" setting."
-  },
-  "popupSkipButtonsRequires": {
-    "message": "Requer “Ocultar a barra de progresso”",
-    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
   },
   "popupBlurPreviews": {
     "message": "Desfocar prévias",
@@ -99,21 +75,13 @@
     "message": "Pausa no início e oculta o chat ao vivo",
     "description": "Note under the \"Protect live streams\" setting."
   },
-  "popupShortcutLabel": {
-    "message": "Atalho:",
-    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
-  },
-  "popupShortcutNotSet": {
-    "message": "Defina um atalho em chrome://extensions/shortcuts",
-    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  "popupAdvancedSettings": {
+    "message": "Configurações avançadas",
+    "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
   },
   "popupLanguageLabel": {
     "message": "Idioma",
-    "description": "Popup footer label of the language list."
-  },
-  "popupLanguageBrowser": {
-    "message": "Idioma do navegador",
-    "description": "First choice in the popup language list: follow the browser's language."
+    "description": "Label of the language list under \"Advanced settings\" in the popup."
   },
   "popupSaveError": {
     "message": "Não foi possível salvar as configurações",

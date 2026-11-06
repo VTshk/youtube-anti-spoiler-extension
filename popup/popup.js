@@ -6,8 +6,6 @@
   }
 
   let currentSettings = namespace.DEFAULT_SETTINGS;
-  // Set when the settings could not be read: every control stays disabled.
-  let readOnly = false;
 
   function getToggleElements() {
     return Array.from(root.document.querySelectorAll("[data-setting]"));
@@ -25,8 +23,10 @@
     return root.document.querySelector("[data-power-note]");
   }
 
-  function getSettingsPanel() {
-    return root.document.querySelector("[data-settings-panel]");
+  // The main card and the settings under "Advanced settings": both hide
+  // while protection is off.
+  function getSettingsPanels() {
+    return Array.from(root.document.querySelectorAll("[data-settings-panel]"));
   }
 
   function getLanguageSelect() {
@@ -88,26 +88,9 @@
     toggles.forEach((toggle) => {
       toggle.checked = Boolean(settings[toggle.dataset.setting]);
     });
-
-    renderSkipButtonsDependency(settings, toggles);
   }
 
-  // Skip buttons stand in for the hidden progress bar, so they only work
-  // while it is hidden. Their saved value is left alone: hiding the bar
-  // again brings the user's choice back.
-  function renderSkipButtonsDependency(settings, toggles) {
-    const skipToggle = toggles.find((toggle) => toggle.dataset.setting === "showSkipButtons");
-    const skipNote = root.document.querySelector("[data-skip-note]");
-    const progressBarHidden = Boolean(settings.hidePlayerProgressBar);
-
-    skipToggle.disabled = readOnly || !progressBarHidden;
-    namespace.setText(
-      skipNote,
-      progressBarHidden ? "popupSkipButtonsNote" : "popupSkipButtonsRequires",
-    );
-  }
-
-  function renderPower(settings, powerToggle, powerStatus, powerNote, settingsPanel) {
+  function renderPower(settings, powerToggle, powerStatus, powerNote, settingsPanels) {
     const enabled = Boolean(settings.extensionEnabled);
 
     if (powerToggle) {
@@ -122,9 +105,9 @@
       namespace.setText(powerNote, enabled ? "popupNoteOn" : "popupNoteOff");
     }
 
-    if (settingsPanel) {
-      settingsPanel.hidden = !enabled;
-    }
+    settingsPanels.forEach((panel) => {
+      panel.hidden = !enabled;
+    });
   }
 
   // Saves run one after another: each one applies its changes on top of
@@ -165,20 +148,20 @@
     });
   }
 
-  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel) {
+  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels) {
     if (!powerToggle) {
       return;
     }
 
     powerToggle.addEventListener("change", async () => {
       await saveSettings({ extensionEnabled: powerToggle.checked });
-      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
     });
   }
 
   // Another popup or Chrome sync may change settings while this popup is
   // open; keep the form current so the next save does not undo that change.
-  function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanel) {
+  function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels) {
     if (!root.chrome || !root.chrome.storage || !root.chrome.storage.onChanged) {
       return;
     }
@@ -203,26 +186,8 @@
         Object.assign({}, currentSettings, changedValues),
       );
       renderSettings(currentSettings, toggles);
-      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
     });
-  }
-
-  // Shows the shortcut the user actually has (it can be changed or cleared
-  // in chrome://extensions/shortcuts).
-  async function renderShortcut() {
-    if (!root.chrome || !root.chrome.commands || !root.chrome.commands.getAll) {
-      return;
-    }
-
-    const commands = await root.chrome.commands.getAll();
-    const toggle = commands.find((command) => command.name === "toggle-protection");
-    const shortcutIsSet = Boolean(toggle && toggle.shortcut);
-
-    root.document.querySelector("[data-shortcut-key]").textContent = shortcutIsSet
-      ? toggle.shortcut
-      : "";
-    root.document.querySelector("[data-shortcut-line]").hidden = !shortcutIsSet;
-    root.document.querySelector("[data-shortcut-missing]").hidden = shortcutIsSet;
   }
 
   function disableControls(toggles, powerToggle, languageSelect) {
@@ -239,9 +204,9 @@
 
   // The language is kept apart from the settings, in storage.local under
   // `uiLanguage: { code, messages }`: it belongs to this device, like the
-  // browser language. No key means "Browser language". Only the popup writes
-  // it, texts included, so content scripts never have to load extension
-  // files.
+  // browser language. No key ("auto") means the extension follows the
+  // browser language. Only the popup writes it, texts included, so content
+  // scripts never have to load extension files.
   let shownLanguage = "auto";
   // Counts the choices made in the language list. A choice whose loading or
   // saving ends after a newer choice was made does nothing.
@@ -295,13 +260,19 @@
     });
   }
 
+  // The list has no "browser language" entry: without a stored choice it
+  // shows the language Chrome picked from the browser language.
+  function getListedLanguage() {
+    return shownLanguage === "auto" ? namespace.getBrowserLanguage() : shownLanguage;
+  }
+
   // uiLanguage is { code, messages }, or null for the browser language.
   function showLanguage(uiLanguage) {
     shownLanguage = uiLanguage ? uiLanguage.code : "auto";
     namespace.setMessages(uiLanguage ? uiLanguage.messages : null);
     root.document.documentElement.lang = namespace.getHtmlLang(shownLanguage);
     namespace.applyTranslations(root.document);
-    getLanguageSelect().value = shownLanguage;
+    getLanguageSelect().value = getListedLanguage();
   }
 
   async function changeLanguage(languageSelect) {
@@ -316,7 +287,9 @@
     try {
       let uiLanguage = null;
 
-      if (code !== "auto") {
+      // Picking the browser's own language removes the stored choice, so
+      // the extension follows the browser again.
+      if (code !== namespace.getBrowserLanguage()) {
         const messages = await namespace.fetchMessages(code);
 
         if (request !== languageRequest) {
@@ -340,7 +313,7 @@
       }
 
       console.error("[Anti-Spoiler for YouTube] Could not change the language.", error);
-      languageSelect.value = shownLanguage;
+      languageSelect.value = getListedLanguage();
       setStatus("popupLanguageError");
     }
   }
@@ -362,13 +335,10 @@
     const powerToggle = getPowerToggle();
     const powerStatus = getPowerStatus();
     const powerNote = getPowerNote();
-    const settingsPanel = getSettingsPanel();
+    const settingsPanels = getSettingsPanels();
     const languageSelect = getLanguageSelect();
 
     fillLanguageOptions(languageSelect);
-    renderShortcut().catch((error) => {
-      console.error("[Anti-Spoiler for YouTube] Could not read the shortcut.", error);
-    });
 
     // The two reads are independent. The texts are shown in the right
     // language whatever happens to the settings read.
@@ -393,10 +363,9 @@
       // The displayed defaults may differ from what is actually stored, so a
       // save from this state would silently overwrite the user's real settings
       // with defaults. Keep the popup read-only until a reopen reads them.
-      readOnly = true;
       currentSettings = namespace.DEFAULT_SETTINGS;
       renderSettings(currentSettings, toggles);
-      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
+      renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
       await setActionIcon(currentSettings);
       disableControls(toggles, powerToggle, languageSelect);
       setStatus("popupLoadError");
@@ -404,13 +373,13 @@
     }
 
     renderSettings(currentSettings, toggles);
-    renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanel);
+    renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
     await setActionIcon(currentSettings);
     setStatus("");
 
     bindToggleSaving(toggles);
-    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanel);
-    bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanel);
+    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels);
+    bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels);
     languageSelect.addEventListener("change", () => changeLanguage(languageSelect));
   }
 

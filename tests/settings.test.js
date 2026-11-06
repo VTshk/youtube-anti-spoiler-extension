@@ -11,7 +11,6 @@ test("settings defaults hide spoiler-prone time by default", () => {
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
-    showSkipButtons: true,
     hideComments: true,
   });
 });
@@ -36,7 +35,6 @@ test("normalizeSettings keeps known boolean settings and fills missing defaults"
       hideVideoPreviews: true,
       hideVideoTitles: true,
       startLiveFromBeginning: false,
-      showSkipButtons: false,
       hideComments: false,
     },
   );
@@ -55,7 +53,6 @@ test("normalizeSettings ignores legacy time settings and keeps hideTime enabled"
       hideVideoPreviews: false,
       hideVideoTitles: false,
       startLiveFromBeginning: true,
-      showSkipButtons: true,
       hideComments: true,
     },
   );
@@ -76,6 +73,32 @@ test("writeSettings removes legacy setting keys after a successful save", async 
   await settings.writeSettings({ hideVideoPreviews: true }, storageArea);
 
   assert.deepEqual(removedKeys, [...settings.LEGACY_SETTING_KEYS]);
+});
+
+test("the old skip buttons setting is ignored and removed on the next save", async () => {
+  let storedSettings = { showSkipButtons: false, hideVideoPreviews: false };
+  const storageArea = {
+    get(keys, callback) {
+      callback(storedSettings);
+    },
+    set(values, callback) {
+      storedSettings = Object.assign({}, storedSettings, values);
+      callback();
+    },
+    remove(keys, callback) {
+      keys.forEach((key) => delete storedSettings[key]);
+      callback();
+    },
+  };
+
+  const readSettings = await settings.readSettings(storageArea);
+
+  assert.equal(Object.prototype.hasOwnProperty.call(readSettings, "showSkipButtons"), false);
+
+  await settings.writeSettings(Object.assign({}, readSettings, { hideVideoPreviews: true }), storageArea);
+
+  assert.equal(Object.prototype.hasOwnProperty.call(storedSettings, "showSkipButtons"), false);
+  assert.equal(storedSettings.hideVideoPreviews, true);
 });
 
 test("writeSettings resolves without a remove-capable storage area", async () => {
@@ -112,10 +135,10 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     "hideVideoPreviews",
     "hideVideoTitles",
     "startLiveFromBeginning",
-    "showSkipButtons",
     "hideComments",
     "hideThumbnailDuration",
     "hidePlayerTime",
+    "showSkipButtons",
   ]);
   assert.deepEqual(normalizedSettings, {
     extensionEnabled: true,
@@ -124,7 +147,6 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     hideVideoPreviews: false,
     hideVideoTitles: false,
     startLiveFromBeginning: true,
-    showSkipButtons: true,
     hideComments: true,
   });
 });

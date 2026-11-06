@@ -232,8 +232,9 @@ test("skip buttons are hidden by default and shown only with a hidden timeline, 
   const containerSelector = `#movie_player .${skipButtons.SKIP_BUTTONS_CLASS}`;
   // The page-world bridge marks the player when a live stream without
   // rewinding refuses every seek; the buttons would be dead there.
+  // No setting of their own: they come with the hidden progress bar.
   const showSelector =
-    "html.yas-extension-enabled.yas-hide-player-progress-bar.yas-show-skip-buttons" +
+    "html.yas-extension-enabled.yas-hide-player-progress-bar" +
     `:not(.${content.LIVE_START_OBSCURED_CLASS}) ` +
     `#movie_player:not([data-yas-seek-blocked]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
 
@@ -244,22 +245,46 @@ test("skip buttons are hidden by default and shown only with a hidden timeline, 
   );
   assert.match(
     css,
-    new RegExp(`${escapeRegExp(showSelector)} \\{\\n  display: inline-flex !important;`),
+    new RegExp(`(^|\\n)${escapeRegExp(showSelector)} \\{\\n  display: inline-flex !important;`),
   );
+  assert.doesNotMatch(css, /yas-show-skip-buttons/);
 });
 
-test("skip button classes follow the settings and protection switch", () => {
-  assert.equal(content.CLASS_BY_SETTING.showSkipButtons, "yas-show-skip-buttons");
+test("skip buttons follow the progress bar setting and the protection switch", () => {
+  assert.equal(Object.prototype.hasOwnProperty.call(content.CLASS_BY_SETTING, "showSkipButtons"), false);
+  assert.ok(content.getEnabledClassNames({ extensionEnabled: true }).includes("yas-hide-player-progress-bar"));
   assert.equal(
-    content.getEnabledClassNames({ extensionEnabled: true }).includes("yas-show-skip-buttons"),
-    true,
+    content.getEnabledClassNames({ extensionEnabled: true, hidePlayerProgressBar: false })
+      .includes("yas-hide-player-progress-bar"),
+    false,
   );
+  // An old stored value of the removed setting adds no class.
   assert.equal(
-    content.getEnabledClassNames({ extensionEnabled: true, showSkipButtons: false })
+    content.getEnabledClassNames({ extensionEnabled: true, showSkipButtons: true })
       .includes("yas-show-skip-buttons"),
     false,
   );
   assert.deepEqual(content.getEnabledClassNames({ extensionEnabled: false }), []);
+});
+
+test("skip buttons are drawn like YouTube's player pills, with hover and a focus ring", () => {
+  const css = content.buildSpoilerCss();
+  const buttonSelector = `#movie_player .${skipButtons.SKIP_BUTTONS_CLASS} .yas-skip-button`;
+  const ruleOf = (selector) => {
+    const match = css.match(new RegExp(`(^|\\n)${escapeRegExp(selector)} \\{([^}]*)\\}`));
+    assert.ok(match, selector);
+    return match[2];
+  };
+  const containerRule = css.match(/yas-skip-buttons \{\n  display: inline-flex !important;([^}]*)\}/)[1];
+
+  assert.match(containerRule, /height: 40px !important;/);
+  assert.match(containerRule, /border-radius: 28px !important;/);
+  assert.match(containerRule, /background: rgba\(0, 0, 0, 0\.3\) !important;/);
+  assert.match(ruleOf(buttonSelector), /font-size: 14px !important;/);
+  assert.match(ruleOf(buttonSelector), /font-weight: 500 !important;/);
+  assert.match(ruleOf(buttonSelector), /color: #ffffff !important;/);
+  assert.match(ruleOf(`${buttonSelector}:hover`), /background: rgba\(255, 255, 255, 0\.1\) !important;/);
+  assert.match(ruleOf(`${buttonSelector}:focus-visible`), /outline: 2px solid #ffffff !important;/);
 });
 
 function escapeRegExp(text) {

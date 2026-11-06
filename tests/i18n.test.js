@@ -147,20 +147,20 @@ test("every message key used in the code exists, and every English key is used",
 });
 
 test("getText prefers the chosen language, then Chrome's lookup, then shows the key", () => {
-  const i18n = loadI18n({ messages: { popupName: "Anti-Spoiler", popupGroupLive: "Live streams" } });
+  const i18n = loadI18n({ messages: { popupName: "Anti-Spoiler", popupProtectLive: "Protect live streams" } });
 
-  assert.equal(i18n.getText("popupGroupLive"), "Live streams");
+  assert.equal(i18n.getText("popupProtectLive"), "Protect live streams");
   assert.equal(i18n.getText("popupMissingKey"), "popupMissingKey");
 
-  i18n.setMessages({ popupGroupLive: "Трансляции" });
+  i18n.setMessages({ popupProtectLive: "Защищать трансляции" });
 
-  assert.equal(i18n.getText("popupGroupLive"), "Трансляции");
+  assert.equal(i18n.getText("popupProtectLive"), "Защищать трансляции");
   // A key the chosen language lacks falls back to Chrome's text.
   assert.equal(i18n.getText("popupName"), "Anti-Spoiler");
 
   i18n.setMessages(null);
 
-  assert.equal(i18n.getText("popupGroupLive"), "Live streams");
+  assert.equal(i18n.getText("popupProtectLive"), "Protect live streams");
 });
 
 test("getHtmlLang turns a folder name into a language tag", () => {
@@ -179,6 +179,13 @@ test("getHtmlLang for the browser language names the language Chrome shows", () 
   // Chrome does not fall back from pt-PT to pt_BR, so English is shown.
   assert.equal(loadI18n({ uiLanguage: "pt-PT" }).getHtmlLang("auto"), "en");
   assert.equal(loadI18n({ uiLanguage: "zh-CN" }).getHtmlLang("auto"), "en");
+});
+
+test("getBrowserLanguage names the folder of the language Chrome shows", () => {
+  assert.equal(loadI18n({ uiLanguage: "de-DE" }).getBrowserLanguage(), "de");
+  assert.equal(loadI18n({ uiLanguage: "pt-BR" }).getBrowserLanguage(), "pt_BR");
+  assert.equal(loadI18n({ uiLanguage: "en-GB" }).getBrowserLanguage(), "en");
+  assert.equal(loadI18n({ uiLanguage: "zh-CN" }).getBrowserLanguage(), "en");
 });
 
 test("setText and setLabel keep the key, and applyTranslations re-reads it", () => {

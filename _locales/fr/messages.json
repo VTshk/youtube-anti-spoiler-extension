@@ -35,18 +35,6 @@
     "message": "Protection anti-spoiler",
     "description": "Screen reader label and tooltip of the main on/off switch in the popup."
   },
-  "popupGroupPlayer": {
-    "message": "Lecteur",
-    "description": "Popup heading over the video player settings. Shown in capitals."
-  },
-  "popupGroupAroundVideos": {
-    "message": "Autour des vidéos",
-    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
-  },
-  "popupGroupLive": {
-    "message": "Diffusions en direct",
-    "description": "Popup heading over the live stream settings. Shown in capitals."
-  },
   "popupHideProgressBar": {
     "message": "Masquer la barre de progression",
     "description": "Popup setting title: hides the video timeline."
@@ -54,18 +42,6 @@
   "popupHideProgressBarNote": {
     "message": "Dans le lecteur et les aperçus",
     "description": "Note under the \"Hide progress bar\" setting."
-  },
-  "popupSkipButtons": {
-    "message": "Boutons de saut",
-    "description": "Popup setting title: buttons that jump back or forward in the video."
-  },
-  "popupSkipButtonsNote": {
-    "message": "Sauts de 10 s, 1 min ou 10 min",
-    "description": "Note under the \"Skip buttons\" setting."
-  },
-  "popupSkipButtonsRequires": {
-    "message": "Nécessite « Masquer la barre de progression »",
-    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
   },
   "popupBlurPreviews": {
     "message": "Flouter les aperçus",
@@ -99,21 +75,13 @@
     "message": "Pause au début et chat en direct masqué",
     "description": "Note under the \"Protect live streams\" setting."
   },
-  "popupShortcutLabel": {
-    "message": "Raccourci :",
-    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
-  },
-  "popupShortcutNotSet": {
-    "message": "Définissez un raccourci dans chrome://extensions/shortcuts",
-    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  "popupAdvancedSettings": {
+    "message": "Paramètres avancés",
+    "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
   },
   "popupLanguageLabel": {
     "message": "Langue",
-    "description": "Popup footer label of the language list."
-  },
-  "popupLanguageBrowser": {
-    "message": "Langue du navigateur",
-    "description": "First choice in the popup language list: follow the browser's language."
+    "description": "Label of the language list under \"Advanced settings\" in the popup."
   },
   "popupSaveError": {
     "message": "Impossible d’enregistrer les paramètres",

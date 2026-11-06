@@ -35,43 +35,47 @@
 
       <p class="status" data-status aria-live="polite"></p>
 
-      <div class="settings" data-settings-panel>
-        <h2 class="group-title" data-yas-i18n="popupGroupPlayer">Player</h2>
-        <div class="card">
-          <label class="row">
-            <span class="row-text">
-              <span class="row-title" data-yas-i18n="popupHideProgressBar">Hide progress bar</span>
-              <span class="row-note" data-yas-i18n="popupHideProgressBarNote">In the player and in previews</span>
-            </span>
-            <span class="toggle">
-              <input type="checkbox" data-setting="hidePlayerProgressBar">
-              <span aria-hidden="true"></span>
-            </span>
-          </label>
-          <label class="row nested">
-            <span class="row-text">
-              <span class="row-title" data-yas-i18n="popupSkipButtons">Skip buttons</span>
-              <span class="row-note" data-skip-note>Jump 10 s, 1 min or 10 min</span>
-            </span>
-            <span class="toggle">
-              <input type="checkbox" data-setting="showSkipButtons">
-              <span aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
+      <!-- The main settings. Hidden while protection is off. -->
+      <div class="card" data-settings-panel>
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title" data-yas-i18n="popupHideProgressBar">Hide progress bar</span>
+            <span class="row-note" data-yas-i18n="popupHideProgressBarNote">In the player and in previews</span>
+          </span>
+          <span class="toggle">
+            <input type="checkbox" data-setting="hidePlayerProgressBar">
+            <span aria-hidden="true"></span>
+          </span>
+        </label>
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title" data-yas-i18n="popupBlurPreviews">Blur previews</span>
+            <span class="row-note" data-yas-i18n="popupBlurPreviewsNote">Thumbnails and hover previews</span>
+          </span>
+          <span class="toggle">
+            <input type="checkbox" data-setting="hideVideoPreviews">
+            <span aria-hidden="true"></span>
+          </span>
+        </label>
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title" data-yas-i18n="popupProtectLive">Protect live streams</span>
+            <span class="row-note" data-yas-i18n="popupProtectLiveNote">Pause at the start and hide live chat</span>
+          </span>
+          <span class="toggle">
+            <input type="checkbox" data-setting="startLiveFromBeginning">
+            <span aria-hidden="true"></span>
+          </span>
+        </label>
+      </div>
 
-        <h2 class="group-title" data-yas-i18n="popupGroupAroundVideos">Around videos</h2>
-        <div class="card">
-          <label class="row">
-            <span class="row-text">
-              <span class="row-title" data-yas-i18n="popupBlurPreviews">Blur previews</span>
-              <span class="row-note" data-yas-i18n="popupBlurPreviewsNote">Thumbnails and hover previews</span>
-            </span>
-            <span class="toggle">
-              <input type="checkbox" data-setting="hideVideoPreviews">
-              <span aria-hidden="true"></span>
-            </span>
-          </label>
+      <!-- Stays visible while protection is off, with only the language
+           inside, so the language can always be changed. -->
+      <details class="card advanced">
+        <summary class="advanced-summary">
+          <span data-yas-i18n="popupAdvancedSettings">Advanced settings</span>
+        </summary>
+        <div data-settings-panel>
           <label class="row">
             <span class="row-text">
               <span class="row-title" data-yas-i18n="popupBlurTitles">Blur video titles</span>
@@ -93,35 +97,13 @@
             </span>
           </label>
         </div>
-
-        <h2 class="group-title" data-yas-i18n="popupGroupLive">Live streams</h2>
-        <div class="card">
-          <label class="row">
-            <span class="row-text">
-              <span class="row-title" data-yas-i18n="popupProtectLive">Protect live streams</span>
-              <span class="row-note" data-yas-i18n="popupProtectLiveNote">Pause at the start and hide live chat</span>
-            </span>
-            <span class="toggle">
-              <input type="checkbox" data-setting="startLiveFromBeginning">
-              <span aria-hidden="true"></span>
-            </span>
-          </label>
-        </div>
-      </div>
-
-      <footer class="footer">
-        <p class="shortcut" data-shortcut-line hidden>
-          <span data-yas-i18n="popupShortcutLabel">Shortcut:</span>
-          <kbd data-shortcut-key></kbd>
-        </p>
-        <p class="shortcut" data-shortcut-missing data-yas-i18n="popupShortcutNotSet" hidden>Set a shortcut in chrome://extensions/shortcuts</p>
-        <label class="language">
-          <span data-yas-i18n="popupLanguageLabel">Language</span>
-          <select data-language-select>
-            <option value="auto" data-yas-i18n="popupLanguageBrowser">Browser language</option>
-          </select>
+        <label class="row language">
+          <span class="row-text">
+            <span class="row-title" data-yas-i18n="popupLanguageLabel">Language</span>
+          </span>
+          <select data-language-select></select>
         </label>
-      </footer>
+      </details>
     </main>
 
     <script src="../src/shared/settings.js"></script>

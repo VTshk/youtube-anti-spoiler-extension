@@ -40,8 +40,7 @@ body {
   color: var(--text);
 }
 
-p,
-h2 {
+p {
   margin: 0;
 }
 
@@ -181,20 +180,55 @@ h2 {
   display: none;
 }
 
-.group-title {
-  margin: 14px 4px 6px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .card {
   overflow: hidden;
+  margin-top: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
+}
+
+/* "Advanced settings": a native <details> drawn as one more card. */
+.advanced-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+
+/* A chevron that points down while closed and up while open. */
+.advanced-summary::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin: 0 6px 4px 0;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.advanced[open] > .advanced-summary::after {
+  margin-bottom: -4px;
+  transform: rotate(225deg);
+}
+
+/* Inside the card, so the ring is drawn inward: the card clips outside. */
+.advanced-summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  border-radius: 13px;
+}
+
+.advanced .row {
+  border-top: 1px solid var(--line);
 }
 
 .row {
@@ -234,23 +268,7 @@ h2 {
   font-size: 12px;
 }
 
-/* Skip buttons depend on "Hide progress bar": nested under it. */
-.row.nested {
-  position: relative;
-  padding-left: 30px;
-}
-
-.row.nested::before {
-  content: "";
-  position: absolute;
-  top: 8px;
-  bottom: 8px;
-  left: 16px;
-  border-left: 2px solid var(--accent);
-  border-radius: 2px;
-}
-
-:is(.hero-title, .hero-note, .row-title, .row-note):is(:lang(ja), :lang(ko), :lang(zh)) {
+:is(.hero-title, .hero-note, .row-title, .row-note, .advanced-summary):is(:lang(ja), :lang(ko), :lang(zh)) {
   line-height: 1.5;
 }
 
@@ -317,40 +335,15 @@ h2 {
   outline-offset: 2px;
 }
 
-.footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  margin: 12px 4px 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-kbd {
-  padding: 1px 6px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--surface);
-  color: var(--text);
-  font: inherit;
-  font-weight: 600;
-}
-
-.language {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .language select {
-  padding: 3px 6px;
+  flex: 0 0 auto;
+  padding: 4px 6px;
   border: 1px solid var(--control-border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   font: inherit;
+  font-size: 13px;
 }
 
 .language select:focus-visible {
