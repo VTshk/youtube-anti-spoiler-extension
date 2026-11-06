@@ -119,3 +119,24 @@ Content of the captures:
   1. the docs/0.4.0 session commits, because it edits `store/listing*.md` too;
   2. the "remove protection for this video" branch is merged here;
   3. a new session produces the screenshots and the English listing from this plan.
+
+## Result (2026-11-06, second half)
+
+- Merged the neighbour feature: a8c9c63 (21b4871 "Show spoilers for this video") and d642aa8 (1f3389f, popup button
+  removed). NOT merged yet: the neighbour's uncommitted change that drops the ±10 s skip buttons and lets the player
+  buttons give way on a narrow player. Texts and screenshots already show ±1 min and ±10 min only, so that change must
+  be merged before release.
+- Screenshots: `store/screenshots/` (5 × 1280×800, tile 440×280, marquee 1400×560); the same five as
+  `docs/screenshots/1..5.png` for the landing page. Real Chrome with the extension on real YouTube; thumbnails, titles,
+  channels and the video frame swapped for generated fictional sports (gpt-image-2.5-sunburst). Scripts in
+  `C:\Users\vtshk\AppData\Local\Temp\yas-store\cap\` (cap.mjs captures, swap.js content swap, compose.mjs layout).
+- Storyboard changed after Argon: no before/after split on screenshot 1; slot 5 is "Uncover one video" (eye button,
+  Alt+Shift+V) instead of "Private by design".
+- Texts: `store/listing.md` (store name, short and full description, keywords incl. esports series), README FAQ
+  (11 questions incl. esports series), `store/github-about.md`, landing `docs/index.html` with JSON-LD
+  SoftwareApplication + FAQPage, `docs/sitemap.xml`, `docs/_config.yml`. Drafted by Codex (Sol), checked by Argon
+  against the code (5 findings, all accepted).
+- Left to the owner: enable GitHub Pages (Settings → Pages → main, /docs); paste GitHub About from
+  `store/github-about.md`; upload texts and images in the store dashboard; Reddit posts. robots.txt is not possible for
+  a project page (crawlers read only https://vtshk.github.io/robots.txt; with no file everything is allowed).
+  Localized listings `store/listing.<lang>.md` were not rewritten.

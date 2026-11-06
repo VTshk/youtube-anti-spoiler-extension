@@ -2,6 +2,8 @@
 
 Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports match results:
 
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia).
+
 - time in previews, lists, search results, recommendations, chapters, transcripts, and the player;
 - the player progress bar, with skip buttons in its place;
 - optional video preview blur (including end cards, the post-video suggestion wall, the autoplay "Up next" screen, and the frames shown when hovering the timeline), with the "Most replayed" graph hidden;
@@ -108,6 +110,52 @@ When a live stream opens, the player is blacked out and muted right away, before
 If the extension can't tell whether the video is live, it offers **Start from beginning** and **Play** (resume where the video is).
 
 If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat is blurred behind **Show comments**; the user can open it with that button at any time, also before making the choice. Recordings of finished streams are not affected.
+
+## FAQ
+
+### How do I hide the video length on YouTube to avoid spoilers?
+
+Install Anti-Spoiler for YouTube™ from the [Chrome Web Store](https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia). Protection is on by default. Video time and duration stay hidden while protection is on, unless you uncover the current video.
+
+### Can I skip through a replay without seeing the progress bar?
+
+Yes. With the progress bar hidden, player buttons let you move back or forward by 1 minute or 10 minutes without displaying your position. For short steps, the player's own arrow keys still work. The buttons are unavailable on live streams that do not allow seeking.
+
+### Does it help with esports series?
+
+Yes. In an esports series, the length of the VOD tells you how many maps or games were played, and so the final score. A short video means a clean sweep; a long one means the series went the distance. With the video length, the progress bar and chapter times hidden, the series stays open until the last map.
+
+### Can I blur thumbnails and titles that give away the winner?
+
+Yes. Turn on "Blur previews" in the popup for thumbnails, previews and end screens. Under "Advanced settings", turn on "Blur video titles" for titles, including the open video and browser tab. Both settings are off by default.
+
+### Does it hide comments and live chat?
+
+Comments are covered by default, including under videos, in the comments panel and on Shorts. Live-stream protection also covers live chat. Use "Show comments" to reveal either.
+
+### Can I watch a live stream on YouTube from the start without seeing the result?
+
+The Beta live-stream guard covers and mutes the player until you choose "Start from beginning" or "Continue live". Starting from the beginning means the earliest point still available for rewinding. It cannot recover parts outside that window or rewind a stream that disables seeking.
+
+### Can I uncover just one video and keep other videos protected?
+
+Yes. While protection is on, click the eye button in the player or press Alt+Shift+V. The current video is uncovered while other videos stay protected. Repeat the action to cover it again. Timestamp links in descriptions and comments stay hidden.
+
+### Which settings are enabled by default?
+
+Protection, time hiding, "Hide progress bar", "Hide comments" and "Protect live streams" (Beta) are on by default. "Blur previews" and "Blur video titles" are off by default. Time hiding stays active whenever protection is on, except for a video you uncover.
+
+### Does it collect my viewing history or send data to a server?
+
+The extension has no analytics and makes no requests to external services. Protection runs locally. Settings use Chrome storage and can sync when Chrome Sync is enabled; language and theme choices stay on your device. The page's local storage keeps your two blur choices so the blur applies at once, and the tab's session storage remembers which video you uncovered until you leave it or close the tab.
+
+### How do I turn protection on or off with the keyboard?
+
+Alt+Shift+S toggles protection. Alt+Shift+V uncovers or covers the current video while protection is on. You can change these shortcuts at chrome://extensions/shortcuts. The protection on/off switch is also available in the extension popup.
+
+### Which languages does the extension support?
+
+The popup and in-page buttons support English, Russian, Spanish, Portuguese (Brazil), German, French, Japanese, Korean, Indonesian and Turkish. Choose a language in the popup.
 
 ## Development
 
