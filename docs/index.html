@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anti-Spoiler for YouTube™ – Hide Video Length &amp; Progress Bar</title>
+  <meta name="description" content="Hide video length and the progress bar on YouTube for sports and esports replays. Blur previews and titles optionally, or uncover just one video.">
+  <link rel="canonical" href="https://vtshk.github.io/youtube-anti-spoiler-extension/">
+  <meta name="theme-color" content="#18181b">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #18181b;
+      --panel: #222226;
+      --text: #fafafa;
+      --muted: #d4d4d8;
+      --accent: #c85252;
+      --link: #f0a7a7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 1rem/1.7 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--link); text-underline-offset: .2em; }
+    a:hover { text-decoration-thickness: .15em; }
+    a:focus-visible, summary:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 5px;
+    }
+    .wrap { width: min(1120px, 92%); margin-inline: auto; }
+    .skip-link {
+      position: absolute;
+      top: 0;
+      left: 1rem;
+      padding: .7rem;
+      background: var(--bg);
+      transform: translateY(-150%);
+      z-index: 10;
+    }
+    .skip-link:focus { transform: translateY(0); }
+    header { padding-block: 1.2rem; border-bottom: 1px solid #3f3f46; }
+    nav { display: flex; flex-wrap: wrap; gap: .7rem 1.5rem; }
+    .hero { padding-block: clamp(3rem, 8vw, 6rem); max-width: 850px; }
+    .eyebrow { color: var(--link); font-weight: 700; }
+    h1 { font-size: clamp(2.4rem, 6vw, 4.5rem); line-height: 1.12; margin: .4em 0; }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); line-height: 1.25; }
+    h3 { font-size: 1.4rem; line-height: 1.35; }
+    .lead { font-size: clamp(1.2rem, 2.5vw, 1.55rem); color: var(--muted); }
+    .button {
+      display: inline-block;
+      margin-block: .8rem;
+      padding: .8rem 1.3rem;
+      border-radius: .6rem;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .button:hover { background: #b94545; }
+    .muted { color: var(--muted); }
+    section { padding-block: 2rem; scroll-margin-top: 1rem; }
+    .feature {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+      gap: 2rem;
+      align-items: center;
+      margin-block: 1.5rem;
+      padding: clamp(1rem, 3vw, 2rem);
+      background: var(--panel);
+      border: 1px solid #3f3f46;
+      border-left: 4px solid var(--accent);
+      border-radius: .8rem;
+    }
+    .feature h3 { margin-top: 0; }
+    figure { margin: 0; min-width: 0; }
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      border-radius: .4rem;
+      background: #111114;
+      color: var(--muted);
+    }
+    li { margin-block: .6rem; }
+    kbd {
+      font: .9em ui-monospace, Consolas, monospace;
+      padding: .15em .35em;
+      border: 1px solid #71717a;
+      border-radius: .25rem;
+      white-space: nowrap;
+    }
+    .badge {
+      display: inline-block;
+      color: var(--link);
+      border: 1px solid var(--accent);
+      border-radius: .3rem;
+      padding: .1em .4em;
+      font-size: .65em;
+      vertical-align: middle;
+    }
+    details { border-bottom: 1px solid #52525b; padding: 1rem 0; }
+    summary { cursor: pointer; font-weight: 700; }
+    details p { color: var(--muted); max-width: 85ch; }
+    footer { padding-block: 2rem; border-top: 1px solid #3f3f46; color: var(--muted); }
+    footer a { overflow-wrap: anywhere; }
+    @media (max-width: 720px) {
+      .feature { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+      kbd { white-space: normal; overflow-wrap: anywhere; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Anti-Spoiler for YouTube™ – Hide Video Length & Progress Bar",
+  "applicationCategory": "BrowserApplication",
+  "operatingSystem": "Chrome",
+  "url": "https://vtshk.github.io/youtube-anti-spoiler-extension/",
+  "installUrl": "https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia",
+  "offers": {
+    "@type": "Offer",
+    "price": 0,
+    "priceCurrency": "USD"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I hide the video length on YouTube to avoid spoilers?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Install Anti-Spoiler for YouTube™ from the Chrome Web Store. Protection is on by default. Video time and duration stay hidden while protection is on, unless you uncover the current video."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I skip through a replay without seeing the progress bar?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. With the progress bar hidden, player buttons let you move back or forward by 10 seconds, 1 minute or 10 minutes without displaying your position. They are unavailable on live streams that do not allow seeking."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I blur thumbnails and titles that give away the winner?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Turn on \"Blur previews\" in the popup for thumbnails, previews and end screens. Under \"Advanced settings\", turn on \"Blur video titles\" for titles, including the open video and browser tab. Both settings are off by default."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it hide comments and live chat?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Comments are covered by default, including under videos, in the comments panel and on Shorts. Live-stream protection also covers live chat. Use \"Show comments\" to reveal either."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I watch a live stream on YouTube from the start without seeing the result?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Beta live-stream guard covers and mutes the player until you choose \"Start from beginning\" or \"Continue live\". Starting from the beginning means the earliest point still available for rewinding. It cannot recover parts outside that window or rewind a stream that disables seeking."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I uncover just one video and keep other videos protected?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. While protection is on, click the eye button in the player or press Alt+Shift+V. The current video is uncovered while other videos stay protected. Repeat the action to cover it again. Timestamp links in descriptions and comments stay hidden."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which settings are enabled by default?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Protection, time hiding, \"Hide progress bar\", \"Hide comments\" and \"Protect live streams\" (Beta) are on by default. \"Blur previews\" and \"Blur video titles\" are off by default. Time hiding stays active whenever protection is on, except for a video you uncover."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does it collect my viewing history or send data to a server?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The extension has no analytics and makes no requests to external services. Protection runs locally. Settings use Chrome storage and can sync when Chrome Sync is enabled; language and theme choices stay on your device. The page's local storage keeps your two blur choices so the blur applies at once, and the tab's session storage remembers which video you uncovered until you leave it or close the tab."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I turn protection on or off with the keyboard?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Alt+Shift+S toggles protection. Alt+Shift+V uncovers or covers the current video while protection is on. You can change these shortcuts at chrome://extensions/shortcuts. The protection on/off switch is also available in the extension popup."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which languages does the extension support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The popup and in-page buttons support English, Russian, Spanish, Portuguese (Brazil), German, French, Japanese, Korean, Indonesian and Turkish. Choose a language in the popup."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <nav class="wrap" aria-label="Main navigation">
+      <a href="#features">Features</a>
+      <a href="#how-to-use">How to use</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#faq">FAQ</a>
+      <a href="https://github.com/VTshk/youtube-anti-spoiler-extension">GitHub</a>
+    </nav>
+  </header>
+  <main id="main" class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <p class="eyebrow">For sports and esports replays, VODs and streams</p>
+      <h1 id="hero-title">Anti-Spoiler for YouTube™</h1>
+      <p class="lead">Keep match results a surprise: hide video length and the progress bar.</p>
+      <a class="button" href="https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia">Add to Chrome</a>
+      <p class="muted">Protection is on by default. Preview and title blur are optional.</p>
+    </section>
+
+    <section id="features" aria-labelledby="features-title">
+      <h2 id="features-title">Watch without clues about the ending</h2>
+      <article class="feature">
+        <div>
+          <h3>Watch matches without spoilers</h3>
+          <p>Durations disappear from thumbnails, search results and recommendations.
+            Player time, chapter timestamps and transcript times stay hidden, too.
+            Comments are covered until you choose to show them.</p>
+        </div>
+        <figure>
+          <img src="screenshots/1.png" width="1280" height="800" loading="lazy"
+            alt="A match on YouTube with the video length, progress bar and comments hidden, and the Anti-Spoiler popup open.">
+        </figure>
+      </article>
+      <article class="feature">
+        <div>
+          <h3>Skip without seeing the timeline</h3>
+          <p>With the progress bar hidden, use buttons to move back or forward
+            10 seconds, 1 minute or 10 minutes. Your playback position stays out of view.
+            Skip buttons require a video or stream that allows seeking.</p>
+        </div>
+        <figure>
+          <img src="screenshots/2.png" width="1280" height="800" loading="lazy"
+            alt="Player controls with skip buttons for 10 seconds, 1 minute and 10 minutes instead of the progress bar.">
+        </figure>
+      </article>
+      <article class="feature">
+        <div>
+          <h3>Join live streams from the start <span class="badge">(Beta)</span></h3>
+          <p>The player is covered and muted while you choose
+            “Start from beginning” or “Continue live”. The beginning is the earliest
+            available rewind point. If seeking is disabled, you can only continue live.
+            Live chat stays behind “Show comments”.</p>
+        </div>
+        <figure>
+          <img src="screenshots/3.png" width="1280" height="800" loading="lazy"
+            alt="A live stream paused before the current moment, with Start from beginning and Continue live, and the chat covered.">
+        </figure>
+      </article>
+      <article class="feature">
+        <div>
+          <h3>Clean feeds, no video lengths</h3>
+          <p>“Blur previews” covers thumbnails, end screens and timeline preview
+            frames. “Blur video titles” blurs titles in lists and on the video page, including the browser tab.
+            Both settings are off by default.</p>
+        </div>
+        <figure>
+          <img src="screenshots/4.png" width="1280" height="800" loading="lazy"
+            alt="Three steps of protection in a video feed: no video lengths, then blurred previews, then blurred titles.">
+        </figure>
+      </article>
+      <article class="feature">
+        <div>
+          <h3>Uncover one video, keep the rest safe</h3>
+          <p>Already know the result? Use the eye button in the player or <kbd>Alt+Shift+V</kbd>.
+            Other videos stay protected. Use the same control to cover it again;
+            timestamp links in descriptions and comments stay hidden.</p>
+        </div>
+        <figure>
+          <img src="screenshots/5.png" width="1280" height="800" loading="lazy"
+            alt="One video uncovered with the eye button in the player while the recommended videos stay protected.">
+        </figure>
+      </article>
+    </section>
+
+    <section id="how-to-use" aria-labelledby="how-title">
+      <h2 id="how-title">How to use it</h2>
+      <ol>
+        <li><a href="https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia">Add the extension from the Chrome Web Store</a>,
+          then open a video on www.youtube.com.</li>
+        <li>Open the extension popup. Protection, time hiding, “Hide progress bar”,
+          “Hide comments” and “Protect live streams” (Beta) are on by default.</li>
+        <li>Enable “Blur previews” or “Blur video titles” if you want them.
+          Title blur is under “Advanced settings”.</li>
+        <li>Use <kbd>Alt+Shift+S</kbd> to toggle protection.
+          Use <kbd>Alt+Shift+V</kbd> or the eye button in the player to uncover
+          the current video. Change shortcuts at
+          <code>chrome://extensions/shortcuts</code>.</li>
+      </ol>
+      <p>The popup and in-page buttons support English, Russian, Spanish,
+        Portuguese (Brazil), German, French, Japanese, Korean, Indonesian and Turkish.</p>
+    </section>
+
+    <section id="privacy" aria-labelledby="privacy-title">
+      <h2 id="privacy-title">Protection runs locally</h2>
+      <p>The extension has no analytics and makes no requests to external services.
+        Its only extension permission is storage, with page access limited to
+        https://www.youtube.com/*.</p>
+      <p>Protection settings use Chrome storage and can sync when Chrome Sync is enabled.
+        Language and theme choices stay on your device. The page's local storage keeps your two blur choices so the blur applies at once, and the tab's session storage remembers which video you uncovered until you leave it or close the tab.</p>
+      <p><a href="privacy/">Read the privacy policy</a>.</p>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-title">
+      <h2 id="faq-title">FAQ</h2>
+      <details>
+        <summary>How do I hide the video length on YouTube to avoid spoilers?</summary>
+        <p>Install Anti-Spoiler for YouTube™ from the <a href="https://chromewebstore.google.com/detail/ofplbhckbbeohimppkfbcfjagcheiaia">Chrome Web Store</a>. Protection is on by default. Video time and duration stay hidden while protection is on, unless you uncover the current video.</p>
+      </details>
+      <details>
+        <summary>Can I skip through a replay without seeing the progress bar?</summary>
+        <p>Yes. With the progress bar hidden, player buttons let you move back or forward by 10 seconds, 1 minute or 10 minutes without displaying your position. They are unavailable on live streams that do not allow seeking.</p>
+      </details>
+      <details>
+        <summary>Can I blur thumbnails and titles that give away the winner?</summary>
+        <p>Yes. Turn on &quot;Blur previews&quot; in the popup for thumbnails, previews and end screens. Under &quot;Advanced settings&quot;, turn on &quot;Blur video titles&quot; for titles, including the open video and browser tab. Both settings are off by default.</p>
+      </details>
+      <details>
+        <summary>Does it hide comments and live chat?</summary>
+        <p>Comments are covered by default, including under videos, in the comments panel and on Shorts. Live-stream protection also covers live chat. Use &quot;Show comments&quot; to reveal either.</p>
+      </details>
+      <details>
+        <summary>Can I watch a live stream on YouTube from the start without seeing the result?</summary>
+        <p>The Beta live-stream guard covers and mutes the player until you choose &quot;Start from beginning&quot; or &quot;Continue live&quot;. Starting from the beginning means the earliest point still available for rewinding. It cannot recover parts outside that window or rewind a stream that disables seeking.</p>
+      </details>
+      <details>
+        <summary>Can I uncover just one video and keep other videos protected?</summary>
+        <p>Yes. While protection is on, click the eye button in the player or press Alt+Shift+V. The current video is uncovered while other videos stay protected. Repeat the action to cover it again. Timestamp links in descriptions and comments stay hidden.</p>
+      </details>
+      <details>
+        <summary>Which settings are enabled by default?</summary>
+        <p>Protection, time hiding, &quot;Hide progress bar&quot;, &quot;Hide comments&quot; and &quot;Protect live streams&quot; (Beta) are on by default. &quot;Blur previews&quot; and &quot;Blur video titles&quot; are off by default. Time hiding stays active whenever protection is on, except for a video you uncover.</p>
+      </details>
+      <details>
+        <summary>Does it collect my viewing history or send data to a server?</summary>
+        <p>The extension has no analytics and makes no requests to external services. Protection runs locally. Settings use Chrome storage and can sync when Chrome Sync is enabled; language and theme choices stay on your device. The page's local storage keeps your two blur choices so the blur applies at once, and the tab's session storage remembers which video you uncovered until you leave it or close the tab.</p>
+      </details>
+      <details>
+        <summary>How do I turn protection on or off with the keyboard?</summary>
+        <p>Alt+Shift+S toggles protection. Alt+Shift+V uncovers or covers the current video while protection is on. You can change these shortcuts at chrome://extensions/shortcuts. The protection on/off switch is also available in the extension popup.</p>
+      </details>
+      <details>
+        <summary>Which languages does the extension support?</summary>
+        <p>The popup and in-page buttons support English, Russian, Spanish, Portuguese (Brazil), German, French, Japanese, Korean, Indonesian and Turkish. Choose a language in the popup.</p>
+      </details>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap">
+      <p><a href="https://github.com/VTshk/youtube-anti-spoiler-extension">Source on GitHub</a>
+        <a href="privacy/">Privacy policy</a>
+        · Contact: <a href="mailto:vtshka8@gmail.com">vtshka8@gmail.com</a></p>
+      <p>YouTube is a trademark of Google LLC. This extension is not affiliated with or endorsed by Google.</p>
+    </div>
+  </footer>
+</body>
+</html>

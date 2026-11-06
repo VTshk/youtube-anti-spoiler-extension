@@ -1,0 +1,6 @@
+markdown: kramdown
+exclude:
+  - design/
+  - research/
+  - superpowers/
+  - TECH-DEBT.md
