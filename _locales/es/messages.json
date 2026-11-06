@@ -24,7 +24,7 @@
     "description": "Popup status title while protection is off. Shown in capitals."
   },
   "popupNoteOn": {
-    "message": "El tiempo y la duración del video están ocultos",
+    "message": "Tiempo y duración del video ocultos",
     "description": "Line under the status title while protection is on."
   },
   "popupNoteOff": {
@@ -81,7 +81,7 @@
   },
   "popupLanguageLabel": {
     "message": "Idioma",
-    "description": "Label of the language list under \"Advanced settings\" in the popup."
+    "description": "Screen reader label and tooltip of the language chip in the popup's top card."
   },
   "popupSaveError": {
     "message": "No se pudo guardar la configuración",
@@ -94,6 +94,26 @@
   "popupLanguageError": {
     "message": "No se pudo cambiar el idioma",
     "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "popupThemeAuto": {
+    "message": "Tema: automático",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the theme follows the system."
+  },
+  "popupThemeLight": {
+    "message": "Tema: claro",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the light theme is chosen."
+  },
+  "popupThemeDark": {
+    "message": "Tema: oscuro",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the dark theme is chosen."
+  },
+  "popupThemeError": {
+    "message": "No se pudo guardar el tema",
+    "description": "Popup error when the chosen theme could not be saved."
+  },
+  "popupContactLabel": {
+    "message": "¿Preguntas o sugerencias?",
+    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
   },
   "liveGuardTitle": {
     "message": "La protección contra spoilers está activa",

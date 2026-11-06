@@ -33,6 +33,16 @@ function createPopupElement(tagName) {
     setAttribute(name, value) {
       this.attributes[name] = String(value);
     },
+    removeAttribute(name) {
+      delete this.attributes[name];
+    },
+    toggleAttribute(name, force) {
+      if (force) {
+        this.attributes[name] = "";
+      } else {
+        delete this.attributes[name];
+      }
+    },
   };
 }
 
@@ -60,6 +70,7 @@ function createElementsFromPopupHtml() {
         element.dataset[toDatasetName(name)] = value || "";
       } else if (name === "hidden") {
         element.hidden = true;
+        element.attributes.hidden = "";
       } else if (name === "value") {
         element.value = value;
       } else if (value !== undefined) {
@@ -125,12 +136,20 @@ async function loadPopup(
     failLanguageRead = false,
     delayLanguageRead = false,
     failLanguageWrite = false,
+    storedTheme = undefined,
+    failThemeWrite = false,
     fetch = fetchPackagedFile,
     uiLanguage = "en-US",
   } = {},
 ) {
   const storageChangeListeners = [];
-  const localItems = storedLanguage ? { uiLanguage: storedLanguage } : {};
+  const localItems = {};
+  if (storedLanguage) {
+    localItems.uiLanguage = storedLanguage;
+  }
+  if (storedTheme) {
+    localItems.uiTheme = storedTheme;
+  }
   const elements = createElementsFromPopupHtml();
   const setIconCalls = [];
   const fetchedUrls = [];
@@ -146,7 +165,7 @@ async function loadPopup(
 
   const document = {
     readyState: "complete",
-    documentElement: { lang: "en" },
+    documentElement: Object.assign(createPopupElement("html"), { lang: "en" }),
     createElement: createPopupElement,
     querySelector(selector) {
       return elements.find((element) => matchesDataSelector(element, selector)) || null;
@@ -198,7 +217,12 @@ async function loadPopup(
         },
         local: {
           get(key, callback) {
-            assert.equal(key, "uiLanguage");
+            assert.ok(key === "uiLanguage" || key === "uiTheme", key);
+
+            if (key === "uiTheme") {
+              callback({ uiTheme: localItems.uiTheme });
+              return;
+            }
 
             if (failLanguageRead) {
               failWith("local storage unavailable", callback);
@@ -213,7 +237,12 @@ async function loadPopup(
             callback(Object.assign({}, localItems));
           },
           set(items, callback) {
-            if (failLanguageWrite) {
+            if (failThemeWrite && "uiTheme" in items) {
+              failWith("quota exceeded", callback);
+              return;
+            }
+
+            if (failLanguageWrite && "uiLanguage" in items) {
               failWith("quota exceeded", callback);
               return;
             }
@@ -222,7 +251,12 @@ async function loadPopup(
             callback();
           },
           remove(key, callback) {
-            if (failLanguageWrite) {
+            if (failThemeWrite && key === "uiTheme") {
+              failWith("quota exceeded", callback);
+              return;
+            }
+
+            if (failLanguageWrite && key === "uiLanguage") {
               failWith("quota exceeded", callback);
               return;
             }
@@ -269,6 +303,9 @@ async function loadPopup(
     settingsPanels: document.querySelectorAll("[data-settings-panel]"),
     settingToggles: document.querySelectorAll("[data-setting]"),
     languageSelect: getElement("[data-language-select]"),
+    languageCode: getElement("[data-language-code]"),
+    themeButton: getElement("[data-theme-toggle]"),
+    themeIcons: document.querySelectorAll("[data-theme-icon]"),
     setIconCalls,
     status: getElement("[data-status]"),
     storedSettings,
@@ -329,32 +366,35 @@ function toMessagesFile(messages) {
   return file;
 }
 
-test("popup markup follows design B: the logo capsule, the main settings and Advanced settings", () => {
+test("popup markup follows design B: the logo capsule with its chips, the main settings and Advanced settings", () => {
   assert.match(POPUP_HTML, /<html lang="en">/);
-  assert.match(POPUP_HTML, /<section class="hero">/);
   assert.match(POPUP_HTML, /class="hero-top"[\s\S]*class="hero-band"[\s\S]*class="hero-bottom"/);
   assert.match(POPUP_HTML, /<input\s+type="checkbox"\s+role="switch"\s+data-power-toggle/);
   assert.match(POPUP_HTML, /data-yas-i18n="popupName">Anti-Spoiler</);
   // White on the logo red is large-text-only contrast: no small subtitle.
   assert.doesNotMatch(POPUP_HTML, /for YouTube<\/small>/);
-  // The status line sits right under the capsule and is empty until needed.
-  assert.match(POPUP_HTML, /<\/section>\s*<p class="status" data-status aria-live="polite"><\/p>/);
+  // The status line sits right under the capsule and its chips and is
+  // empty until needed.
+  assert.match(POPUP_HTML, /<\/button>\s*<\/div>\s*<\/div>\s*<p class="status" data-status aria-live="polite"><\/p>/);
 
-  // The main card first, then "Advanced settings" with the rest and the
-  // language.
+  // The capsule and its chips, then the main card, then "Advanced settings"
+  // with the rest, then the contact line.
   const order = [
+    '<div class="hero-wrap">',
+    '<label class="hero" data-hero>',
+    '<div class="hero-tools">',
+    "data-language-select",
+    "data-theme-toggle",
     '<div class="card" data-settings-panel>',
     'data-setting="hidePlayerProgressBar"',
     'data-setting="hideVideoPreviews"',
     'data-setting="startLiveFromBeginning"',
-    '<details class="card advanced">',
+    '<details class="card advanced" data-settings-panel>',
     '<summary class="advanced-summary">',
     'data-yas-i18n="popupAdvancedSettings"',
-    "<div data-settings-panel>",
     'data-setting="hideVideoTitles"',
     'data-setting="hideComments"',
-    'data-yas-i18n="popupLanguageLabel"',
-    "data-language-select",
+    '<footer class="contact">',
   ];
   const positions = order.map((needle) => POPUP_HTML.indexOf(needle));
   positions.forEach((position, index) => {
@@ -364,18 +404,19 @@ test("popup markup follows design B: the logo capsule, the main settings and Adv
   assert.equal(POPUP_HTML.match(/data-setting="/g).length, 5);
   assert.equal(POPUP_HTML.match(/data-settings-panel/g).length, 2);
 
-  // Closed by default. The language row sits outside the settings that hide
-  // while protection is off, so it stays reachable.
+  // Closed by default. Advanced holds only settings now: the language row is
+  // gone from it, the language lives in the capsule.
   assert.doesNotMatch(POPUP_HTML, /<details[^>]*\sopen/);
+  assert.doesNotMatch(POPUP_HTML, /class="row language"/);
+  assert.doesNotMatch(POPUP_HTML, /<div data-settings-panel>/);
+  // The list has no "browser language" entry; the options come from the script.
   assert.match(
     POPUP_HTML,
-    /<div data-settings-panel>(?:(?!<\/div>)[\s\S])*<\/div>\s*<label class="row language">/,
+    /<select data-language-select data-yas-i18n-label="popupLanguageLabel" aria-label="Language"><\/select>/,
   );
-  // The list has no "browser language" entry; the options come from the script.
-  assert.match(POPUP_HTML, /<select data-language-select><\/select>/);
 
   // Gone: group headings, the skip buttons row and the shortcut hint.
-  ["popupGroup", "showSkipButtons", "class=\"row nested\"", "data-shortcut", "<kbd", "<footer", "popupLanguageBrowser"].forEach((text) => {
+  ["popupGroup", "showSkipButtons", "class=\"row nested\"", "data-shortcut", "<kbd", "popupLanguageBrowser"].forEach((text) => {
     assert.doesNotMatch(POPUP_HTML, new RegExp(text), text);
   });
   assert.match(
@@ -385,6 +426,70 @@ test("popup markup follows design B: the logo capsule, the main settings and Adv
   assert.doesNotMatch(POPUP_HTML, /data-setting="hideTime"/);
   assert.doesNotMatch(POPUP_HTML, /data-setting="hideThumbnailDuration"/);
   assert.doesNotMatch(POPUP_HTML, /data-setting="hidePlayerTime"/);
+});
+
+test("the whole capsule is the label of the master switch, with the play triangle as decoration", () => {
+  const hero = POPUP_HTML.match(/<label class="hero" data-hero>([\s\S]*?)\n        <\/label>/);
+
+  assert.ok(hero, "the capsule is a label");
+  // The master switch is inside, so a click anywhere toggles it natively,
+  // and it is the only control there: a label labels its first control.
+  assert.match(hero[1], /<input\s+type="checkbox"\s+role="switch"\s+data-power-toggle/);
+  assert.equal(hero[1].match(/<input/g).length, 1);
+  // It keeps its own name: aria-label wins over the text of the label.
+  assert.match(hero[1], /data-power-toggle\s+data-yas-i18n-label="popupMasterSwitchLabel"\s+aria-label="Spoiler protection"/);
+  // No nested label and no block elements, which a label may not hold.
+  assert.doesNotMatch(hero[1], /<(label|div|p|section)[\s>]/);
+
+  // The triangle sits in the centre, not before the name, and is hidden
+  // from screen readers.
+  assert.match(hero[1], /class="hero-top">\s*<span class="hero-name"[^>]*>Anti-Spoiler<\/span>\s*<svg class="hero-play"[^>]*aria-hidden="true"/);
+  assert.match(POPUP_CSS, /\.hero-play\s*\{[^}]*position:\s*absolute;[^}]*left:\s*50%;/);
+  assert.match(POPUP_CSS, /\.hero-band\s*\{[^}]*position:\s*relative;/);
+
+  // No click handler of its own: one would toggle a second time. The only
+  // listener on the capsule follows the pointer for the hover circle, and
+  // the only click listener is the theme button's, outside the capsule.
+  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 1);
+  assert.match(POPUP_JS, /themeButton\.addEventListener\("click", changeTheme\)/);
+  assert.match(POPUP_JS, /hero\.addEventListener\("pointermove"/);
+  assert.equal(POPUP_JS.match(/hero\.addEventListener\(/g).length, 1);
+});
+
+test("the capsule shows a pointer, a red hover circle while off, and nothing while read-only", () => {
+  assert.match(POPUP_CSS, /\.hero\s*\{[^}]*position:\s*relative;[^}]*cursor:\s*pointer;/);
+  assert.match(POPUP_CSS, /\.hero:has\(\[data-power-toggle\]:disabled\)\s*\{\s*cursor:\s*default;/);
+  assert.match(
+    POPUP_CSS,
+    /\.hero::before\s*\{[^}]*background:\s*radial-gradient\(circle 80px at var\(--x\) var\(--y\), #ef6a6a, var\(--accent\) 45%\);[^}]*mask-image:\s*radial-gradient\(circle 80px at var\(--x\) var\(--y\), #000 35%, transparent\);[^}]*opacity:\s*0;[^}]*transition:\s*opacity 0\.15s;[^}]*pointer-events:\s*none;/,
+  );
+  // Only while off and not read-only.
+  assert.match(POPUP_CSS, /\.hero:hover:has\(\[data-power-toggle\]:enabled:not\(:checked\)\)::before\s*\{\s*opacity:\s*1;/);
+  assert.match(POPUP_CSS, /\.hero:hover:has\(\[data-power-toggle\]:enabled:checked\) \.hero-band\s*\{\s*background:\s*#2a2a2a;/);
+  assert.match(POPUP_CSS, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.hero::before,\s*\.hero-band\s*\{\s*transition:\s*none;/);
+});
+
+test("popup sets the pointer position on the capsule, relative to it, in px", async () => {
+  const popup = await loadPopup({ extensionEnabled: false });
+  const hero = popup.document.querySelector("[data-hero]");
+  const properties = {};
+
+  hero.getBoundingClientRect = () => ({ left: 12, top: 12 });
+  hero.style = {
+    setProperty(name, value) {
+      properties[name] = value;
+    },
+  };
+  hero.listeners.pointermove({ clientX: 100, clientY: 40 });
+
+  assert.deepEqual(properties, { "--x": "88px", "--y": "28px" });
+});
+
+test("popup does not follow the pointer while read-only", async () => {
+  const popup = await loadPopup({}, { failRead: true });
+  const hero = popup.document.querySelector("[data-hero]");
+
+  assert.equal(hero.listeners.pointermove, undefined);
 });
 
 test("popup HTML English texts match the English messages", () => {
@@ -441,12 +546,12 @@ test("popup CSS uses the design B tokens with a dark theme", () => {
   // The inputs are invisible, so the focus ring goes on the picture next to them.
   assert.match(POPUP_CSS, /\.switch input:focus-visible \+ span\s*\{[^}]*outline:\s*2px solid #ffffff;/);
   assert.match(POPUP_CSS, /\.toggle input:focus-visible \+ span\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
-  assert.match(POPUP_CSS, /\.language select:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
+  assert.doesNotMatch(POPUP_CSS, /\.language select/);
   assert.match(POPUP_CSS, /:lang\(ja\), :lang\(ko\), :lang\(zh\)\)\s*\{\s*line-height:\s*1\.5;/);
 
   // "Advanced settings": a full-width row, 14 px 600, with a chevron that
   // turns when open and a focus ring drawn inside the card.
-  assert.match(POPUP_CSS, /\.advanced-summary\s*\{[^}]*min-height:\s*48px;[^}]*font-size:\s*14px;[^}]*font-weight:\s*600;[^}]*list-style:\s*none;/);
+  assert.match(POPUP_CSS, /\.advanced-summary\s*\{[^}]*min-height:\s*44px;[^}]*font-size:\s*14px;[^}]*font-weight:\s*600;[^}]*list-style:\s*none;/);
   assert.match(POPUP_CSS, /\.advanced-summary::after\s*\{[^}]*transform:\s*rotate\(45deg\);/);
   assert.match(POPUP_CSS, /\.advanced\[open\] > \.advanced-summary::after\s*\{[^}]*transform:\s*rotate\(225deg\);/);
   assert.match(POPUP_CSS, /\.advanced-summary:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);[^}]*outline-offset:\s*-2px;/);
@@ -481,17 +586,21 @@ test("popup shows the protection status and notes in English", async () => {
   });
 });
 
-test("popup hides the settings but keeps the language while protection is off", async () => {
-  const { powerToggle, powerStatus, powerNote, settingsPanels, languageSelect } = await loadPopup({
+test("popup hides the settings and Advanced but keeps the language and theme while protection is off", async () => {
+  const { powerToggle, powerStatus, powerNote, settingsPanels, languageSelect, themeButton } = await loadPopup({
     extensionEnabled: false,
   });
 
   assert.equal(powerStatus.textContent, "Protection off");
   assert.equal(powerNote.textContent, "YouTube is shown normally");
+  assert.deepEqual(settingsPanels.map((panel) => panel.tagName), ["DIV", "DETAILS"]);
   settingsPanels.forEach((panel) => {
     assert.equal(panel.hidden, true);
   });
+  // The chips sit in the capsule, outside every panel (see the markup tests).
   assert.equal(languageSelect.disabled, false);
+  assert.equal(languageSelect.hidden, false);
+  assert.equal(themeButton.disabled, false);
 
   powerToggle.checked = true;
   await powerToggle.listeners.change();
@@ -537,7 +646,7 @@ test("popup sets the toolbar action icon to normal after enabling protection", a
 });
 
 test("popup goes read-only when settings cannot be loaded", async () => {
-  const { powerToggle, settingToggles, status, languageSelect } = await loadPopup(
+  const { powerToggle, settingToggles, status, languageSelect, themeButton } = await loadPopup(
     {},
     { failRead: true },
   );
@@ -552,6 +661,8 @@ test("popup goes read-only when settings cannot be loaded", async () => {
   assert.equal(languageSelect.disabled, true);
   assert.equal(status.textContent, "Could not load settings — close and reopen the popup");
   assert.equal(languageSelect.listeners.change, undefined);
+  assert.equal(themeButton.disabled, true);
+  assert.equal(themeButton.listeners.click, undefined);
 });
 
 test("popup in read-only mode still shows the stored language", async () => {
@@ -729,7 +840,8 @@ function hasStoredLanguage(localItems) {
 test("popup lists every language under its own name, with no browser language entry", async () => {
   const { languageSelect, findText, document } = await loadPopup({});
 
-  assert.equal(findText("popupLanguageLabel").textContent, "Language");
+  assert.equal(languageSelect.attributes["aria-label"], "Language");
+  assert.equal(languageSelect.attributes.title, "Language");
   assert.equal(findText("popupAdvancedSettings").textContent, "Advanced settings");
   assert.deepEqual(
     languageSelect.children.map((option) => [option.value, option.textContent]),
@@ -1018,4 +1130,226 @@ test("popup does not write its own language choice over a removal made elsewhere
   assert.equal(hasStoredLanguage(localItems), false);
   assert.equal(languageSelect.value, "en");
   assert.equal(findText("popupHideProgressBar").textContent, "Hide progress bar");
+});
+
+// --- Chips in the capsule: language and theme ---
+
+test("the language chip and the theme button sit in the capsule, outside its label", () => {
+  const tools = POPUP_HTML.match(/<\/label>\s*<!--[\s\S]*?-->\s*<div class="hero-tools">([\s\S]*?)\n        <\/div>\n      <\/div>/);
+
+  assert.ok(tools, "the chips follow the capsule label inside .hero-wrap");
+  // The language chip: globe, two-letter code, chevron, and the real list
+  // laid over it.
+  assert.match(
+    tools[1],
+    /<span class="chip chip-language">\s*<svg[^>]*aria-hidden="true"[\s\S]*?<span data-language-code>EN<\/span>\s*<svg class="chev"[^>]*aria-hidden="true"[\s\S]*?<select data-language-select/,
+  );
+  // The theme button: a real button, so a click never submits or toggles
+  // anything else, with one icon per mode and only Auto shown at first.
+  assert.match(tools[1], /<button type="button" class="chip chip-icon" data-theme-toggle data-yas-i18n-label="popupThemeAuto" aria-label="Theme: automatic">/);
+  const icons = [...tools[1].matchAll(/<svg data-theme-icon="([a-z]+)"( hidden)?[^>]*aria-hidden="true"/g)];
+  assert.deepEqual(icons.map(([, mode, hidden]) => [mode, Boolean(hidden)]), [
+    ["auto", false],
+    ["light", true],
+    ["dark", true],
+  ]);
+  assert.match(tools[1], /d="M21 12\.8A9 9 0 1 1 11\.2 3a7 7 0 0 0 9\.8 9\.8z"/);
+
+  // Neither control is inside the label of the master switch.
+  const hero = POPUP_HTML.match(/<label class="hero" data-hero>([\s\S]*?)<\/label>/)[1];
+  assert.doesNotMatch(hero, /data-language-select|data-theme-toggle|hero-tools/);
+});
+
+test("the labels written in the popup HTML match the English messages", () => {
+  const labels = [...POPUP_HTML.matchAll(/data-yas-i18n-label="([A-Za-z0-9]+)"\s+aria-label="([^"]+)"/g)];
+
+  assert.equal(labels.length, 3);
+  labels.forEach(([, key, text]) => {
+    assert.equal(text, en(key), key);
+  });
+});
+
+test("popup CSS draws the chips over the capsule, with focus and read-only states", () => {
+  assert.match(POPUP_CSS, /\.hero-wrap\s*\{\s*position:\s*relative;/);
+  assert.match(POPUP_CSS, /\.hero-tools\s*\{[^}]*position:\s*absolute;[^}]*top:\s*16px;[^}]*right:\s*12px;[^}]*display:\s*flex;[^}]*gap:\s*6px;/);
+  assert.match(
+    POPUP_CSS,
+    /\.chip\s*\{[^}]*height:\s*28px;[^}]*border:\s*1px solid rgba\(255, 255, 255, 0\.28\);[^}]*border-radius:\s*14px;[^}]*background:\s*rgba\(34, 34, 34, 0\.78\);[^}]*color:\s*#ffffff;[^}]*font-size:\s*12\.5px;[^}]*font-weight:\s*700;/,
+  );
+  assert.match(POPUP_CSS, /\.chip:hover\s*\{\s*background:\s*rgba\(34, 34, 34, 0\.92\);/);
+  assert.match(POPUP_CSS, /\.chip-icon\s*\{[^}]*width:\s*28px;[^}]*padding:\s*0;/);
+  assert.match(POPUP_CSS, /\.chip-language\s*\{\s*position:\s*relative;/);
+  assert.match(
+    POPUP_CSS,
+    /\.chip-language select\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*margin:\s*0;[^}]*opacity:\s*0;[^}]*cursor:\s*pointer;/,
+  );
+  assert.match(
+    POPUP_CSS,
+    /\.chip-language:has\(select:focus-visible\),\s*\.chip-icon:focus-visible\s*\{[^}]*outline:\s*2px solid #ffffff;[^}]*outline-offset:\s*2px;/,
+  );
+  assert.match(POPUP_CSS, /\.chip:has\(:disabled\),\s*\.chip:disabled\s*\{[^}]*opacity:\s*0\.45;[^}]*cursor:\s*default;/);
+});
+
+test("popup CSS has the dark theme for Auto in a dark system and for the chosen dark theme", () => {
+  const darkTokens = {
+    "--bg": "#141416",
+    "--surface": "#1e1e22",
+    "--text": "#f4f4f5",
+    "--muted": "#a8a29e",
+    "--line": "#2e2e34",
+    "--control-border": "#8a8a94",
+    "--focus": "#ffffff",
+    "--error": "#e06c6c",
+  };
+  const mediaBlock = POPUP_CSS.match(/@media \(prefers-color-scheme: dark\)\s*\{\s*:root:not\(\[data-theme="light"\]\)\s*\{([^}]*)\}/);
+  const chosenBlock = POPUP_CSS.match(/:root\[data-theme="dark"\]\s*\{([^}]*--bg[^}]*)\}/);
+
+  assert.ok(mediaBlock, "the system dark theme skips a chosen light theme");
+  assert.ok(chosenBlock, "the chosen dark theme has its own block");
+  Object.entries(darkTokens).forEach(([name, value]) => {
+    assert.match(mediaBlock[1], new RegExp(`${name}:\\s*${value};`), `media ${name}`);
+    assert.match(chosenBlock[1], new RegExp(`${name}:\\s*${value};`), `chosen ${name}`);
+  });
+  // The native list and the scrollbars follow the chosen theme.
+  assert.match(POPUP_CSS, /:root\[data-theme="light"\]\s*\{\s*color-scheme:\s*light;/);
+  assert.match(POPUP_CSS, /:root\[data-theme="dark"\]\s*\{\s*color-scheme:\s*dark;/);
+});
+
+function getShownThemeIcons(themeIcons) {
+  return themeIcons
+    .filter((icon) => !Object.prototype.hasOwnProperty.call(icon.attributes, "hidden"))
+    .map((icon) => icon.dataset.themeIcon);
+}
+
+function hasStoredTheme(localItems) {
+  return Object.prototype.hasOwnProperty.call(localItems, "uiTheme");
+}
+
+test("popup follows the system theme when no theme is stored", async () => {
+  const { document, themeButton, themeIcons } = await loadPopup({});
+
+  assert.equal(document.documentElement.attributes["data-theme"], undefined);
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["auto"]);
+  assert.equal(themeButton.attributes["aria-label"], "Theme: automatic");
+  assert.equal(themeButton.attributes.title, "Theme: automatic");
+});
+
+test("popup shows the stored dark theme at startup", async () => {
+  const { document, themeButton, themeIcons } = await loadPopup({}, { storedTheme: "dark" });
+
+  assert.equal(document.documentElement.attributes["data-theme"], "dark");
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["dark"]);
+  assert.equal(themeButton.attributes["aria-label"], "Theme: dark");
+});
+
+test("popup theme button cycles auto, light, dark, auto and stores each choice", async () => {
+  const { document, themeButton, themeIcons, localItems } = await loadPopup({});
+
+  await themeButton.listeners.click();
+  assert.equal(localItems.uiTheme, "light");
+  assert.equal(document.documentElement.attributes["data-theme"], "light");
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["light"]);
+  assert.equal(themeButton.attributes["aria-label"], "Theme: light");
+
+  await themeButton.listeners.click();
+  assert.equal(localItems.uiTheme, "dark");
+  assert.equal(document.documentElement.attributes["data-theme"], "dark");
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["dark"]);
+
+  // Back to Auto: the stored choice is removed.
+  await themeButton.listeners.click();
+  assert.equal(hasStoredTheme(localItems), false);
+  assert.equal(document.documentElement.attributes["data-theme"], undefined);
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["auto"]);
+  assert.equal(themeButton.attributes["aria-label"], "Theme: automatic");
+});
+
+test("popup shows the previous theme and an error when saving the theme fails", async () => {
+  const { document, themeButton, themeIcons, localItems, status } = await loadPopup(
+    {},
+    { storedTheme: "light", failThemeWrite: true },
+  );
+
+  await themeButton.listeners.click();
+
+  assert.equal(localItems.uiTheme, "light");
+  assert.equal(document.documentElement.attributes["data-theme"], "light");
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["light"]);
+  assert.equal(themeButton.attributes["aria-label"], "Theme: light");
+  assert.equal(status.textContent, "Could not save the theme");
+});
+
+test("popup follows a theme picked in another popup window", async () => {
+  const { document, themeIcons, emitStorageChange } = await loadPopup({});
+
+  emitStorageChange({ uiTheme: { newValue: "dark" } }, "local");
+  assert.equal(document.documentElement.attributes["data-theme"], "dark");
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["dark"]);
+
+  // Removed elsewhere: back to Auto.
+  emitStorageChange({ uiTheme: { oldValue: "dark" } }, "local");
+  assert.equal(document.documentElement.attributes["data-theme"], undefined);
+  assert.deepEqual(getShownThemeIcons(themeIcons), ["auto"]);
+});
+
+test("popup re-translates the theme button label after a language change", async () => {
+  const { themeButton, emitStorageChange } = await loadPopup({}, { storedTheme: "dark" });
+
+  emitStorageChange(
+    { uiLanguage: { newValue: createTestLanguage("de", { popupThemeDark: "TEST DARK" }) } },
+    "local",
+  );
+
+  assert.equal(themeButton.attributes["aria-label"], "TEST DARK");
+  assert.equal(themeButton.attributes.title, "TEST DARK");
+});
+
+test("popup language chip shows the listed language as two capitals", async () => {
+  const english = await loadPopup({});
+  assert.equal(english.languageCode.textContent, "EN");
+
+  const brazilian = await loadPopup({}, { uiLanguage: "pt-BR" });
+  assert.equal(brazilian.languageSelect.value, "pt_BR");
+  assert.equal(brazilian.languageCode.textContent, "PT");
+
+  // A chosen language updates the chip too.
+  await chooseLanguage(english.languageSelect, "de");
+  assert.equal(english.languageCode.textContent, "DE");
+});
+
+// --- Contact line ---
+
+test("popup ends with a contact line outside the capsule and every settings panel", () => {
+  const footer = POPUP_HTML.match(/<footer class="contact">([\s\S]*?)<\/footer>\s*<\/main>/);
+
+  assert.ok(footer, "the contact line is the last part of the popup");
+  assert.match(
+    footer[1],
+    /<span data-yas-i18n="popupContactLabel">Questions or ideas\?<\/span>\s*<a href="mailto:vtshka8@gmail\.com">vtshka8@gmail\.com<\/a>/,
+  );
+  // After the Advanced card has closed, so it shows with protection off and
+  // in read-only mode.
+  assert.match(POPUP_HTML, /<\/details>\s*<!--[\s\S]*?-->\s*<footer class="contact">/);
+  assert.equal(en("popupContactLabel"), "Questions or ideas?");
+
+  assert.match(POPUP_CSS, /\.contact\s*\{[^}]*margin-top:\s*6px;[^}]*color:\s*var\(--muted\);[^}]*font-size:\s*12px;[^}]*text-align:\s*center;[^}]*overflow-wrap:\s*anywhere;/);
+  assert.match(POPUP_CSS, /\.contact a\s*\{[^}]*color:\s*var\(--text\);[^}]*text-decoration:\s*underline;/);
+  assert.match(POPUP_CSS, /\.contact a:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
+  // No script for the link.
+  assert.doesNotMatch(POPUP_JS, /mailto|contact/i);
+});
+
+test("every locale has the theme and contact texts", () => {
+  const keys = ["popupThemeAuto", "popupThemeLight", "popupThemeDark", "popupThemeError", "popupContactLabel"];
+
+  fs.readdirSync(path.join(rootPath, "_locales")).forEach((code) => {
+    const file = JSON.parse(
+      fs.readFileSync(path.join(rootPath, "_locales", code, "messages.json"), "utf8"),
+    );
+
+    keys.forEach((key) => {
+      assert.ok(file[key] && file[key].message.trim(), `${code} ${key}`);
+      assert.ok(file[key].description, `${code} ${key} description`);
+    });
+  });
 });

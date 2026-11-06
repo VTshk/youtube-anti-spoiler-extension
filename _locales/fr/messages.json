@@ -24,7 +24,7 @@
     "description": "Popup status title while protection is off. Shown in capitals."
   },
   "popupNoteOn": {
-    "message": "Le temps et la durée des vidéos sont masqués",
+    "message": "Temps et durée des vidéos masqués",
     "description": "Line under the status title while protection is on."
   },
   "popupNoteOff": {
@@ -81,7 +81,7 @@
   },
   "popupLanguageLabel": {
     "message": "Langue",
-    "description": "Label of the language list under \"Advanced settings\" in the popup."
+    "description": "Screen reader label and tooltip of the language chip in the popup's top card."
   },
   "popupSaveError": {
     "message": "Impossible d’enregistrer les paramètres",
@@ -94,6 +94,26 @@
   "popupLanguageError": {
     "message": "Impossible de changer la langue",
     "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "popupThemeAuto": {
+    "message": "Thème : automatique",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the theme follows the system."
+  },
+  "popupThemeLight": {
+    "message": "Thème : clair",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the light theme is chosen."
+  },
+  "popupThemeDark": {
+    "message": "Thème : sombre",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the dark theme is chosen."
+  },
+  "popupThemeError": {
+    "message": "Impossible d’enregistrer le thème",
+    "description": "Popup error when the chosen theme could not be saved."
+  },
+  "popupContactLabel": {
+    "message": "Questions ou suggestions ?",
+    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
   },
   "liveGuardTitle": {
     "message": "La protection anti-spoiler est active",

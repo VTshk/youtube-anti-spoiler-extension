@@ -15,6 +15,10 @@
     return root.document.querySelector("[data-power-toggle]");
   }
 
+  function getHero() {
+    return root.document.querySelector("[data-hero]");
+  }
+
   function getPowerStatus() {
     return root.document.querySelector("[data-power-status]");
   }
@@ -23,14 +27,18 @@
     return root.document.querySelector("[data-power-note]");
   }
 
-  // The main card and the settings under "Advanced settings": both hide
-  // while protection is off.
+  // The main card and the "Advanced settings" card: both hide while
+  // protection is off.
   function getSettingsPanels() {
     return Array.from(root.document.querySelectorAll("[data-settings-panel]"));
   }
 
   function getLanguageSelect() {
     return root.document.querySelector("[data-language-select]");
+  }
+
+  function getThemeButton() {
+    return root.document.querySelector("[data-theme-toggle]");
   }
 
   function getEnabledIconPaths() {
@@ -159,6 +167,21 @@
     });
   }
 
+  // The capsule is the label of the master switch, so clicks toggle it
+  // without any code here. This only tells CSS where the pointer is, for the
+  // red circle drawn over the gray capsule while protection is off.
+  function bindHeroPointer(hero) {
+    if (!hero) {
+      return;
+    }
+
+    hero.addEventListener("pointermove", (event) => {
+      const box = hero.getBoundingClientRect();
+      hero.style.setProperty("--x", `${event.clientX - box.left}px`);
+      hero.style.setProperty("--y", `${event.clientY - box.top}px`);
+    });
+  }
+
   // Another popup or Chrome sync may change settings while this popup is
   // open; keep the form current so the next save does not undo that change.
   function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels) {
@@ -190,7 +213,7 @@
     });
   }
 
-  function disableControls(toggles, powerToggle, languageSelect) {
+  function disableControls(toggles, powerToggle, languageSelect, themeButton) {
     toggles.forEach((toggle) => {
       toggle.disabled = true;
     });
@@ -200,6 +223,91 @@
     }
 
     languageSelect.disabled = true;
+    themeButton.disabled = true;
+  }
+
+  // The theme is kept in storage.local under `uiTheme`: "light" or "dark".
+  // No key ("auto") follows the system theme. Only the popup reads and
+  // writes it.
+  // Each click moves to the next mode.
+  const NEXT_THEME = { auto: "light", light: "dark", dark: "auto" };
+  const THEME_LABELS = {
+    auto: "popupThemeAuto",
+    light: "popupThemeLight",
+    dark: "popupThemeDark",
+  };
+  let shownTheme = "auto";
+
+  function readStoredTheme() {
+    return new Promise((resolve) => {
+      root.chrome.storage.local.get("uiTheme", (items) => {
+        const error = root.chrome.runtime.lastError;
+
+        if (error) {
+          console.error("[Anti-Spoiler for YouTube] Could not read the theme.", error.message);
+          resolve("auto");
+          return;
+        }
+
+        resolve(items.uiTheme || "auto");
+      });
+    });
+  }
+
+  // "auto" removes the choice: back to the system theme.
+  function writeStoredTheme(theme) {
+    return new Promise((resolve, reject) => {
+      const done = () => {
+        const error = root.chrome.runtime.lastError;
+
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+
+        resolve();
+      };
+
+      if (theme === "auto") {
+        root.chrome.storage.local.remove("uiTheme", done);
+      } else {
+        root.chrome.storage.local.set({ uiTheme: theme }, done);
+      }
+    });
+  }
+
+  function showTheme(theme) {
+    shownTheme = theme;
+
+    if (theme === "auto") {
+      root.document.documentElement.removeAttribute("data-theme");
+    } else {
+      root.document.documentElement.setAttribute("data-theme", theme);
+    }
+
+    // SVG elements have no `hidden` property, so the attribute itself is set.
+    root.document.querySelectorAll("[data-theme-icon]").forEach((icon) => {
+      icon.toggleAttribute("hidden", icon.dataset.themeIcon !== theme);
+    });
+
+    // setLabel keeps the key, so a language change re-translates the label.
+    namespace.setLabel(getThemeButton(), THEME_LABELS[theme]);
+  }
+
+  async function changeTheme() {
+    const previousTheme = shownTheme;
+    const nextTheme = NEXT_THEME[previousTheme];
+
+    showTheme(nextTheme);
+
+    try {
+      await writeStoredTheme(nextTheme);
+      setStatus("");
+    } catch (error) {
+      console.error("[Anti-Spoiler for YouTube] Could not save the theme.", error);
+      showTheme(previousTheme);
+      setStatus("popupThemeError");
+    }
   }
 
   // The language is kept apart from the settings, in storage.local under
@@ -273,6 +381,9 @@
     root.document.documentElement.lang = namespace.getHtmlLang(shownLanguage);
     namespace.applyTranslations(root.document);
     getLanguageSelect().value = getListedLanguage();
+    // The chip shows the listed language as two capitals: pt_BR -> PT.
+    root.document.querySelector("[data-language-code]").textContent =
+      getListedLanguage().slice(0, 2).toUpperCase();
   }
 
   async function changeLanguage(languageSelect) {
@@ -318,25 +429,38 @@
     }
   }
 
-  // Another popup window may pick a language while this one is open.
+  // Another popup window may pick a language or a theme while this one is
+  // open.
   function bindExternalLanguageChanges() {
     root.chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === "local" && changes.uiLanguage) {
+      if (areaName !== "local") {
+        return;
+      }
+
+      if (changes.uiLanguage) {
         // The stored language is now the newest choice: a choice of ours
         // still loading must not write over it when it finishes.
         languageRequest += 1;
         showLanguage(changes.uiLanguage.newValue || null);
       }
+
+      if (changes.uiTheme) {
+        showTheme(changes.uiTheme.newValue || "auto");
+      }
     });
   }
 
   async function start() {
+    // First, so the colours are right as early as possible.
+    readStoredTheme().then(showTheme);
+
     const toggles = getToggleElements();
     const powerToggle = getPowerToggle();
     const powerStatus = getPowerStatus();
     const powerNote = getPowerNote();
     const settingsPanels = getSettingsPanels();
     const languageSelect = getLanguageSelect();
+    const themeButton = getThemeButton();
 
     fillLanguageOptions(languageSelect);
 
@@ -367,7 +491,7 @@
       renderSettings(currentSettings, toggles);
       renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
       await setActionIcon(currentSettings);
-      disableControls(toggles, powerToggle, languageSelect);
+      disableControls(toggles, powerToggle, languageSelect, themeButton);
       setStatus("popupLoadError");
       return;
     }
@@ -379,8 +503,10 @@
 
     bindToggleSaving(toggles);
     bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels);
+    bindHeroPointer(getHero());
     bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels);
     languageSelect.addEventListener("change", () => changeLanguage(languageSelect));
+    themeButton.addEventListener("click", changeTheme);
   }
 
   if (root.document.readyState === "loading") {

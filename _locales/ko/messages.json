@@ -48,7 +48,7 @@
     "description": "Popup setting title: blurs video thumbnails."
   },
   "popupBlurPreviewsNote": {
-    "message": "미리보기 이미지와 마우스를 올렸을 때의 미리보기",
+    "message": "썸네일과 마우스 오버 미리보기",
     "description": "Note under the \"Blur previews\" setting."
   },
   "popupBlurTitles": {
@@ -81,7 +81,7 @@
   },
   "popupLanguageLabel": {
     "message": "언어",
-    "description": "Label of the language list under \"Advanced settings\" in the popup."
+    "description": "Screen reader label and tooltip of the language chip in the popup's top card."
   },
   "popupSaveError": {
     "message": "설정을 저장하지 못했습니다",
@@ -94,6 +94,26 @@
   "popupLanguageError": {
     "message": "언어를 변경하지 못했습니다",
     "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "popupThemeAuto": {
+    "message": "테마: 자동",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the theme follows the system."
+  },
+  "popupThemeLight": {
+    "message": "테마: 밝게",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the light theme is chosen."
+  },
+  "popupThemeDark": {
+    "message": "테마: 어둡게",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the dark theme is chosen."
+  },
+  "popupThemeError": {
+    "message": "테마를 저장하지 못했습니다",
+    "description": "Popup error when the chosen theme could not be saved."
+  },
+  "popupContactLabel": {
+    "message": "문의 및 제안:",
+    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
   },
   "liveGuardTitle": {
     "message": "스포일러 방지가 켜져 있습니다",

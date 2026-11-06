@@ -163,3 +163,64 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
 - **The owner's rule from now on** («смотрите в браузере все проверяйте свою работу. и обязательно проверяйте что и
   отключенные настройки никак не ломают ютуб»): every change is checked live in real Chrome, with each setting on and
   off.
+
+## Hero card and quick access, 2026-11-06 (late): uncommitted at the time of writing
+
+- **Owner fixed the "everything visible until toggled" report:** two copies of the extension were installed at once.
+  It was not a code bug: in real Chrome 156 and Chromium, direct loads were protected from the first moment.
+- **Hero card** (plan `docs/superpowers/plans/2026-11-06-hero-card.md`):
+  - the whole card is a `<label>` for the master switch;
+  - the play triangle is centred, 37×40, `bottom: -20px`, so about half of it sits behind the band as in the logo;
+  - with protection off, a red circle follows the pointer, brighter at the centre (`#ef6a6a` → `#c85252`);
+  - with protection on, the band lightens on hover;
+  - `npm test` 271/271;
+  - the clicks were checked live in real Chrome; the latest triangle and hover tweaks were checked only by stub
+    screenshot.
+- **Owner request:** «смену языка и смену темной и светлой темы надо вынести из настроек и добавить куда то тоже в
+  быстрый доступ. подумайте с кодексом и аргоном над вариантами».
+  - Brief: `brief-quick-access.md`.
+  - Codex (Astra) report: `C:\Users\vtshk\AppData\Local\Temp\yas-design\codex-quick\round1.out.md`.
+  - Argon: summarized in the options below.
+  - Mockups: `mockups/quick-a.html`, `quick-b.html`, `quick-c.html`; board: `board-quick.png`.
+    - **A. Footer bar** (Argon's pick): below Advanced, a native language select with the full name and a 3-button
+      theme segment. Height 436 px (+40).
+    - **B. Chips in the hero cap**: a globe "EN ▾" chip and a theme cycle button, top-right, outside the `<label>`.
+      Height 396 px (+0).
+    - **C. In the Advanced row** (Codex's pick): "EN" plus 3 theme icons on the right of the summary row. Height
+      396 px (+0), but the row is crowded.
+  - Both models agree:
+    - the theme applies to the popup only, and the in-page panels stay dark;
+    - store `uiTheme` in `storage.local` next to `uiLanguage`;
+    - remove the language row from Advanced.
+  - **Owner choice, 2026-11-06: "B. Значки в шапке".** Implement it in a new session: plan → implementer → live check in real Chrome.
+    Per the owner's rule, every setting on and off must not break YouTube.
+
+## Quick access (option B) and contact footer, 2026-11-06: implemented, uncommitted
+
+- Plan: `docs/superpowers/plans/2026-11-06-quick-access-chips.md` (section 6 is the contact footer, owner request).
+- Built: a language chip (an overlay native `<select>`) and a theme cycle button (Auto → Light → Dark) in the hero cap,
+  outside the label; `uiTheme` in `storage.local` (no key = Auto); popup only. The language row is gone from Advanced,
+  and `data-settings-panel` sits on `<details>`. A footer with "Questions or ideas?" and `mailto:vtshka8@gmail.com`.
+  5 new keys in all 10 locales; none removed.
+- `npm test`: 284/284.
+- Live in real Chrome 156 (rig `yas-audit2/quick.mjs`, `heights.mjs`, `mailto.mjs`, `yt-quick.mjs`; outputs
+  `out-quick`, `out-quick-yt`): popup 35/36 (the failing cell is the height). YouTube DIRECT 2/2, B the same as the R3
+  baseline (the paused-after-reload cells also fail without the extension), errors 0.
+- **Height with Advanced closed** (body px, before → after): en/ru/pt_BR/id 384 → 420, es/fr/tr 400 → 436,
+  ja 401 → 441, de 416 → 452, ko 419 → 455. Of this, +24 is the footer and +12 the earlier hero-card cap padding.
+  This is over the "about 400" target: owner decision pending.
+- **mailto:** from the real action popup a plain link starts a `mailto:` navigation that Chrome takes over (the popup
+  stays open); `target="_blank"` opens a tab that closes itself and closes the popup. Whether the OS mail app opens
+  was **not observed**: the window probe was blocked by the permission classifier.
+- Rig quirk: Playwright `locale: en-US` makes `getUILanguage()` en-US while `getMessage` returns Russian on this
+  machine, so "English" shows Russian texts in the rig. It comes from the rig; the language logic was not changed.
+- **Spacing tightened (owner: "Tighten spacing"):** shell padding top and bottom 12 → 10, card gap 12 → 10, row
+  padding 9 → 7, Advanced summary min-height 48 → 44, footer margin 8 → 6 with line-height 1.25. `npm test` 284/284;
+  popup cells unchanged (35/36, only the height cell). Height now: en/ru/pt_BR/id 393, es/fr/tr 409, ja 410, de 425,
+  ko 428. The rest comes from notes that wrap to 2 lines: `popupNoteOn` in es/de/fr and `popupBlurPreviewsNote` in
+  de/ko/tr. Shorter translations would bring these languages to about 393–412.
+- **Notes shortened (owner: "Shorten notes"):** `popupNoteOn` es «Tiempo y duración del video ocultos», de
+  «Zeit und Videolänge ausgeblendet», fr «Temps et durée des vidéos masqués»; `popupBlurPreviewsNote` de
+  «Thumbnails und Hover-Vorschauen», ko «썸네일과 마우스 오버 미리보기», tr «Küçük resimler ve fareyle önizleme».
+  `npm test` 284/284. Height in real Chrome: 393 px in 8 languages; ja and ko 410 px, only from the CJK line-height
+  1.5 rule (no wrapping).

@@ -48,7 +48,7 @@
     "description": "Popup setting title: blurs video thumbnails."
   },
   "popupBlurPreviewsNote": {
-    "message": "Küçük resimler ve üzerine gelince açılan önizlemeler",
+    "message": "Küçük resimler ve fareyle önizleme",
     "description": "Note under the \"Blur previews\" setting."
   },
   "popupBlurTitles": {
@@ -81,7 +81,7 @@
   },
   "popupLanguageLabel": {
     "message": "Dil",
-    "description": "Label of the language list under \"Advanced settings\" in the popup."
+    "description": "Screen reader label and tooltip of the language chip in the popup's top card."
   },
   "popupSaveError": {
     "message": "Ayarlar kaydedilemedi",
@@ -94,6 +94,26 @@
   "popupLanguageError": {
     "message": "Dil değiştirilemedi",
     "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "popupThemeAuto": {
+    "message": "Tema: otomatik",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the theme follows the system."
+  },
+  "popupThemeLight": {
+    "message": "Tema: açık",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the light theme is chosen."
+  },
+  "popupThemeDark": {
+    "message": "Tema: koyu",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the dark theme is chosen."
+  },
+  "popupThemeError": {
+    "message": "Tema kaydedilemedi",
+    "description": "Popup error when the chosen theme could not be saved."
+  },
+  "popupContactLabel": {
+    "message": "Soru veya öneriniz mi var?",
+    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
   },
   "liveGuardTitle": {
     "message": "Spoiler koruması etkin",

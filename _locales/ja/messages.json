@@ -81,7 +81,7 @@
   },
   "popupLanguageLabel": {
     "message": "言語",
-    "description": "Label of the language list under \"Advanced settings\" in the popup."
+    "description": "Screen reader label and tooltip of the language chip in the popup's top card."
   },
   "popupSaveError": {
     "message": "設定を保存できませんでした",
@@ -94,6 +94,26 @@
   "popupLanguageError": {
     "message": "言語を変更できませんでした",
     "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "popupThemeAuto": {
+    "message": "テーマ：自動",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the theme follows the system."
+  },
+  "popupThemeLight": {
+    "message": "テーマ：ライト",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the light theme is chosen."
+  },
+  "popupThemeDark": {
+    "message": "テーマ：ダーク",
+    "description": "Screen reader label and tooltip of the theme button in the popup while the dark theme is chosen."
+  },
+  "popupThemeError": {
+    "message": "テーマを保存できませんでした",
+    "description": "Popup error when the chosen theme could not be saved."
+  },
+  "popupContactLabel": {
+    "message": "ご質問・ご提案：",
+    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
   },
   "liveGuardTitle": {
     "message": "ネタバレ防止が有効です",
