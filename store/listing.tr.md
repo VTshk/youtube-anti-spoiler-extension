@@ -27,9 +27,12 @@ Uzantı; YouTube'daki süre göstergelerini, oynatıcının ilerleme çubukları
 - İsteğe bağlı olarak video önizlemelerini, bitiş ekranlarını ve zaman çizelgesindeki önizleme karelerini bulanıklaştırır; en çok tekrar oynatılan anların grafiğini gizler.
 - İsteğe bağlı olarak video başlıklarını gizler; açık videonun başlığı, tarih satırı ve açıklama metni, tarayıcı sekmesinin başlığı ve Chrome'un medya kontrolleri de buna dahildir.
 - Tüm korumayı basit bir açılır pencereden veya Alt+Shift+S ile açıp kapatmanızı sağlar.
+- Açılır pencerede 10 arayüz dilinden birini ve açık, koyu veya otomatik temayı seçmenizi sağlar.
 - Ayarlarınız Chrome profiliniz üzerinden senkronize edilir.
 
 YouTube için Anti-Spoiler tarayıcınızda yerel olarak çalışır. YouTube etkinliğinizi, ayarlarınızı veya tarama verilerinizi hiçbir sunucuya göndermez.
+
+Soru veya öneriniz mi var? vtshka8@gmail.com adresine yazın.
 
 Bu uzantının YouTube veya Google ile bir bağlantısı yoktur; onlar tarafından onaylanmamış ve desteklenmemiştir.
 
@@ -39,4 +42,4 @@ YouTube, anti-spoiler, spoiler, spor, maç, ilerleme çubuğu, süre, video öni
 
 ## Destek
 
-YouTube arayüzü güncellendikten sonra bir şey çalışmayı bırakırsa, etkilenen sayfayı veya öğeyi Chrome Web Store destek kanalı üzerinden bildirin.
+Soru ve önerilerinizi vtshka8@gmail.com adresine gönderin. YouTube arayüzü güncellendikten sonra bir şey çalışmayı bırakırsa aynı adrese yazın veya Chrome Web Store destek kanalını kullanın; etkilenen sayfayı ya da öğeyi belirtin.

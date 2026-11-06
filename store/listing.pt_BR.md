@@ -27,9 +27,12 @@ Recursos:
 - Se quiser, desfoca as prévias dos vídeos, as telas finais e os quadros de prévia da linha do tempo, e oculta o gráfico dos momentos mais repetidos.
 - Se quiser, oculta os títulos dos vídeos, incluindo o título do vídeo aberto, a linha da data e o texto da descrição, o título da aba do navegador e os controles de mídia do Chrome.
 - Ativa ou desativa toda a proteção em uma janela simples ou com Alt+Shift+S.
+- Escolha entre 10 idiomas da interface e um tema claro, escuro ou automático direto na janela da extensão.
 - Suas configurações ficam sincronizadas com o perfil do Chrome.
 
 O Anti-Spoiler para YouTube funciona localmente no seu navegador. Ele não envia sua atividade no YouTube, suas configurações nem seus dados de navegação para nenhum servidor.
+
+Dúvidas ou sugestões? Escreva para vtshka8@gmail.com.
 
 Esta extensão não é afiliada ao YouTube nem ao Google e não é endossada nem patrocinada por eles.
 
@@ -39,4 +42,4 @@ YouTube, anti-spoiler, spoilers, esportes, partida, barra de progresso, duraçã
 
 ## Suporte
 
-Se algo parar de funcionar depois de uma atualização da interface do YouTube, informe a página ou o elemento afetado pelo canal de suporte da Chrome Web Store.
+Envie dúvidas e sugestões para vtshka8@gmail.com. Se algo parar de funcionar depois de uma atualização da interface do YouTube, escreva para o mesmo endereço ou use o canal de suporte da Chrome Web Store e informe a página ou o elemento afetado.

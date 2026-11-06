@@ -9,13 +9,14 @@ Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, such as
 The `storage` permission is required to save the user's extension settings:
 
 - whether protection is enabled;
-- whether time indicators should be hidden;
-- whether progress bars should be hidden and skip buttons shown;
+- whether progress bars should be hidden (skip buttons are shown in their place while they are hidden);
 - whether video previews and titles should be blurred;
 - whether comments should be hidden;
 - whether live streams should be protected.
 
 The extension uses `chrome.storage.sync` so settings persist across browser sessions and can sync with the user's Chrome profile.
+
+It also uses `chrome.storage.local` for two display choices made in the popup: the interface language picked by the user (with that language's packaged interface texts, so the YouTube page buttons can use them) and the popup theme (automatic, light, or dark). Both stay on the device.
 
 ## `https://www.youtube.com/*`
 

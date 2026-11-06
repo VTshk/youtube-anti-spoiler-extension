@@ -11,6 +11,8 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
 
+The popup and the in-page buttons are available in 10 languages: English, Russian, Spanish, Portuguese (Brazil), German, French, Japanese, Korean, Indonesian, and Turkish.
+
 Requires Chrome 111 or newer (the live-stream guard runs a MAIN-world content script).
 
 This extension is not affiliated with, endorsed by, or sponsored by YouTube or Google.
@@ -20,6 +22,8 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 ```text
 .
 |-- manifest.json
+|-- _locales/
+|   `-- <language>/messages.json
 |-- icons/
 |-- popup/
 |   |-- popup.html
@@ -34,6 +38,7 @@ This extension is not affiliated with, endorsed by, or sponsored by YouTube or G
 |   |   |-- live-start-controller.js
 |   |   `-- skip-buttons.js
 |   `-- shared/
+|       |-- i18n.js
 |       `-- settings.js
 |-- tests/
 |-- scripts/
@@ -53,16 +58,25 @@ No build step is required for local unpacked installation.
 
 ## Usage
 
-The popup has a main **Protection is on** toggle. It fully enables or disables the extension without changing the other checkboxes. The keyboard shortcut **Alt+Shift+S** does the same; change it at `chrome://extensions/shortcuts`.
+The popup opens with a red-capped card showing **Protection on** or **Protection off**. Clicking the card is the main switch: it fully enables or disables the extension without changing the other settings, which are hidden while protection is off. The keyboard shortcut **Alt+Shift+S** does the same; change it at `chrome://extensions/shortcuts`.
 
-Time hiding is always active while protection is on. Available settings:
+The card's red cap also holds two quick buttons:
 
-- **Hide progress bar** - hides the player timeline and preview progress bars. Enabled by default.
-- **Skip buttons** - while the timeline is hidden, adds `−10m −1m −10s +10s +1m +10m` buttons to the player controls. They never show where the video ends up. They are not shown on live streams where the player does not allow seeking (the streamer turned rewinding off). Enabled by default.
+- the language chip (for example `EN`) - picks the language of the popup and the in-page buttons. It starts with the browser's language; choosing the browser's language again removes the override;
+- the theme button - cycles the popup theme: automatic (follows the system), light, dark. The in-page panels on YouTube always stay dark.
+
+Time hiding is always active while protection is on. The main settings:
+
+- **Hide progress bar** - hides the player timeline and preview progress bars. While the timeline is hidden, the player controls show `−10m −1m −10s +10s +1m +10m` skip buttons; they never show where the video ends up. They are not shown on live streams where the player does not allow seeking (the streamer turned rewinding off). There is no separate switch for the skip buttons. Enabled by default.
 - **Blur previews** - applies a strong blur to video thumbnails/previews, end screens, and the storyboard frames shown when hovering a visible timeline; hides the "Most replayed" graph above a visible timeline; removes the video's artwork from Chrome's media controls and the system media overlay. Disabled by default.
-- **Hide video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. Disabled by default.
-- **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
 - **Protect live streams** - see below. Enabled by default.
+
+Under **Advanced settings**:
+
+- **Blur video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. Disabled by default.
+- **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
+
+At the bottom of the popup is a contact line with the support email.
 
 While protection is on, the extension does not pass the playback position to Chrome's media controls. Settings switched mid-video reach the media controls right away. Chrome may still show a position it reads from the video element itself; this cannot be turned off from an extension.
 
@@ -85,7 +99,7 @@ Run the tests:
 npm test
 ```
 
-Tests cover setting defaults, legacy key compatibility, content script selectors, the live-stream guard and its page-world bridge, skip buttons, the comments guard, the tab title, the media session patch, the MV3 manifest, the keyboard shortcut, toolbar icon state, popup behavior, and release packaging.
+Tests cover setting defaults, legacy key compatibility, content script selectors, the live-stream guard and its page-world bridge, skip buttons, the comments guard, the tab title, the media session patch, the MV3 manifest, the keyboard shortcut, toolbar icon state, popup behavior, the language picker and translations, the popup theme, and release packaging.
 
 ## Chrome Web Store Preparation
 
@@ -95,6 +109,10 @@ Build the upload package:
 npm run build:release
 ```
 
-The generated ZIP is written to `dist/` and contains only runtime extension files. Store listing text, permission justifications, reviewer notes, and the release checklist are in `store/`.
+The generated ZIP is written to `dist/` and contains only runtime extension files. Store listing text (one file per language), permission justifications, reviewer notes, and the release checklist are in `store/`.
 
 The public privacy policy page is `docs/privacy.md`, intended for GitHub Pages.
+
+## Contact
+
+Questions, ideas, or something broken after a YouTube update: [vtshka8@gmail.com](mailto:vtshka8@gmail.com).

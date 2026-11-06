@@ -27,9 +27,12 @@ Fitur:
 - Bila diinginkan, memburamkan pratinjau video, layar akhir, dan bingkai pratinjau di linimasa, serta menyembunyikan grafik "Paling sering di-replay".
 - Bila diinginkan, menyembunyikan judul video, termasuk judul video yang sedang dibuka, baris tanggal dan teks deskripsi, judul tab browser, dan kontrol media Chrome.
 - Mengaktifkan atau menonaktifkan semua perlindungan dari popup sederhana atau dengan Alt+Shift+S.
+- Pilih salah satu dari 10 bahasa antarmuka dan tema terang, gelap, atau otomatis langsung di popup.
 - Menyinkronkan setelan Anda melalui penyimpanan profil Chrome.
 
 Anti-Spoiler untuk YouTube bekerja secara lokal di browser Anda. Ekstensi ini tidak mengirim aktivitas YouTube, setelan, atau data penjelajahan Anda ke server mana pun.
+
+Pertanyaan atau saran? Kirim email ke vtshka8@gmail.com.
 
 Ekstensi ini tidak berafiliasi dengan, didukung oleh, atau disponsori oleh YouTube maupun Google.
 
@@ -39,4 +42,4 @@ YouTube, anti-spoiler, spoiler, olahraga, pertandingan, bilah progres, durasi, p
 
 ## Dukungan
 
-Jika ada yang berhenti berfungsi setelah YouTube memperbarui tampilannya, laporkan halaman atau elemen yang terdampak melalui saluran dukungan Chrome Web Store.
+Kirim pertanyaan dan saran ke vtshka8@gmail.com. Jika ada yang berhenti berfungsi setelah YouTube memperbarui tampilannya, kirim email ke alamat yang sama atau gunakan saluran dukungan Chrome Web Store, dan sebutkan halaman atau elemen yang terdampak.

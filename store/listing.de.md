@@ -27,9 +27,12 @@ Funktionen:
 - Macht auf Wunsch Videovorschauen, den Abspann und die Vorschaubilder auf der Zeitleiste unscharf und blendet die Grafik der am häufigsten wiederholten Stellen aus.
 - Blendet auf Wunsch Videotitel aus, auch den Titel des geöffneten Videos, die Datumszeile und den Beschreibungstext, den Titel des Browsertabs und die Mediensteuerung von Chrome.
 - Schaltet den gesamten Schutz in einem einfachen Fenster oder mit Alt+Shift+S ein und aus.
+- Wähle direkt im Fenster der Erweiterung eine von 10 Oberflächensprachen und ein helles, dunkles oder automatisches Design.
 - Synchronisiert deine Einstellungen über dein Chrome-Profil.
 
 Anti-Spoiler für YouTube arbeitet lokal in deinem Browser. Die Erweiterung sendet weder deine YouTube-Aktivität noch deine Einstellungen oder Browserdaten an einen Server.
+
+Fragen oder Ideen? Schreib an vtshka8@gmail.com.
 
 Diese Erweiterung steht in keiner Verbindung zu YouTube oder Google und wird von ihnen weder unterstützt noch gesponsert.
 
@@ -39,4 +42,4 @@ YouTube, Anti-Spoiler, Spoiler, Sport, Spiel, Fortschrittsbalken, Videolänge, V
 
 ## Support
 
-Wenn nach einer Änderung der YouTube-Oberfläche etwas nicht mehr funktioniert, melde die betroffene Seite oder das betroffene Element über den Support-Kanal im Chrome Web Store.
+Fragen und Ideen schickst du an vtshka8@gmail.com. Wenn nach einer Änderung der YouTube-Oberfläche etwas nicht mehr funktioniert, schreib an dieselbe Adresse oder nutze den Support-Kanal im Chrome Web Store und nenne die betroffene Seite oder das betroffene Element.

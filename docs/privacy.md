@@ -13,6 +13,8 @@ The extension does not collect, sell, transfer, or transmit personal data.
 
 The extension stores only its user-selected settings, such as whether protection is enabled and which YouTube elements should be hidden. These settings are stored using Chrome's `chrome.storage.sync` API so they can persist across browser sessions and sync with the user's Chrome profile when Chrome Sync is enabled.
 
+The popup's interface language and theme choice are stored on the device only, using Chrome's `chrome.storage.local` API.
+
 ## YouTube Page Access
 
 The extension runs only on `https://www.youtube.com/*`. It uses this access to hide or blur spoiler-prone interface elements on YouTube pages, including durations, progress bars, and video previews.

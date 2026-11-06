@@ -224,3 +224,50 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
   «Thumbnails und Hover-Vorschauen», ko «썸네일과 마우스 오버 미리보기», tr «Küçük resimler ve fareyle önizleme».
   `npm test` 284/284. Height in real Chrome: 393 px in 8 languages; ja and ko 410 px, only from the CJK line-height
   1.5 rule (no wrapping).
+
+## 1.0.0 (planned as 0.4.0): docs, store texts, version, final live checks (2026-11-06)
+
+- **Docs:** `README.md` describes the current popup (the capsule is the master switch and the settings hide while it is off;
+  the language chip and theme button sit in the red cap; the main card holds progress bar, previews and live streams;
+  "Advanced settings" holds titles and comments; skip buttons always come with the hidden progress bar, with no
+  switch of their own; a contact line; 10 languages). It also gets a "Contact" section with `vtshka8@gmail.com`.
+  `store/permissions.md` no longer has the skip switch and now names `storage.local` (language and theme).
+  `store/reviewer-notes.md` follows the new popup. `store/privacy.md` and `docs/privacy.md` have one sentence about
+  `storage.local`.
+- **Store listings (10 languages):** a bullet "language (10) and light/dark/auto theme in the popup", a contact line in
+  the detailed description, and the support email in "Support", each in its own language. Not proofread by
+  Astra/Argon; the owner checks Russian.
+- **Version 1.0.0** (the owner chose 1.0.0 over 0.4.0 on 2026-11-06): `manifest.json`, `package.json`. No test pins the literal (`release.test.js` reads it from the
+  manifest). `npm test` 284/284 at the bump; 285/285 on the tree with the other session's Beta badge.
+- **Not mine, found in the tree:** an uncommitted restyle of the contact line in `popup/popup.css` +
+  `tests/popup.test.js` (a thin rule above it, 11 px, muted link), plus `board-footer*.png`. The rig copy `ext-040`
+  includes it, so the measured popup height is 409 px (ja 425 px) instead of 393/410.
+- **Live, real Chrome 156.0.8078.80 headful, CDP `loadUnpacked`, rig `yas-audit2`:** scripts `pop-040.mjs` (popup,
+  `--lang=<code>`, fresh profile) and `yt-040.mjs` (`PHASE=MINI|FULL|AD|CHAN`, six configs: def, allOn = previews +
+  titles on, barOff, liveOff, commentsOff, masterOff; `--autoplay-policy=no-user-gesture-required`). Outputs are in
+  `out-040/` (`*.log` + screenshots; the `*-run1.log` files are the first run, which network timeouts broke).
+
+| Check | Expected | Actual |
+|---|---|---|
+| Popup ru / en / de / ja: texts, layout light+dark, master off/on, theme cycle, 5 rows on/off, picker → other language → back, contact | all PASS, 0 clipped, 0 errors | 52/52 PASS; `getUILanguage` = ru/en/de/ja; 0 clipped; body 409 px (ja 425) |
+| Mini-player, normal video, 6 configs (key `i`, then back) | playing; time/bar hidden per config; back to a full player | 12/12 PASS (masterOff after a rig fix: the hidden pill element counted as "present"). In the mini-player YouTube shows no time, bar or pill |
+| Mini-player, live, guard configs (def, allOn, barOff, commentsOff) | the stream is never shown | `i` does nothing while the panel is up (NA ×4); leaving with the YouTube logo while the panel is up: no mini-player, video paused at opacity 0 (PASS ×4); Continue live → plays, unmuted (PASS ×4) |
+| Mini-player, live, liveOff / masterOff | no guard, plays in the mini-player | PASS ×2 |
+| Fullscreen, normal video, 6 configs | time/bar per config; pill visible with the bar hidden, +10s works and fullscreen stays; exit restores the player | 12/12 PASS (+10s: 8 → 19 s, still fullscreen; barOff/masterOff: bar visible, no pill) |
+| Fullscreen, live, guard configs | guard inside the fullscreen element | `f` does nothing while the panel is up (NA ×4); Continue → plays, unmuted; exit OK (PASS ×8) |
+| Fullscreen, live, liveOff / masterOff | fullscreen live plays, no guard | PASS ×2 |
+| `/@SkyNews/live`, `/@aljazeeraenglish/live`, guard configs | panel ≤5 s; silent and hidden; Start from beginning → ≤180 s from the window start; chat covered → revealed | panel 25–765 ms; 4 s sampling: paused+muted+opacity 0 every time; start: 3–4 s from the start; chat cover + reveal PASS on every config where chat was on (Sky News chat was disabled by the channel in 3 of 4 runs: NA) |
+| Same, liveOff / masterOff | no panel, no chat cover, live edge | PASS ×4 (0 s behind the edge) |
+| Ad before a video | ad plays, then the video, protection per config | **NA ×6**: no ad in 36 loads. YouTube serves this machine as region RU (the logo shows "RU"), so there are no ads |
+| Page and extension errors | 0 | 0 in every run (popup ×4, MINI ×2, FULL ×2, CHAN ×2, AD) |
+
+- **Observation (not a confirmed defect):** at the moment the panel is first found (314–765 ms after navigation), Al
+  Jazeera and Sky News once showed the `<video>` as "playing, not muted, opacity 0". The next sample (~0.5 s later and
+  on to 4 s) was always paused+muted. A fraction of a second of sound may slip out before the mute; to confirm, it
+  needs a probe with 50 ms sampling or an audio capture.
+- **Not checked:** an ad before a video and an ad during the live guard (no ads in region RU; needs another region or
+  VPN); a real toolbar popup frame (the popup was opened as a tab); the mailto opening the OS mail app (the owner checks
+  by hand); a signed-in account; proofreading of the new listing lines in the 9 non-English languages.
+- **Changed by another session during the checks:** a "Beta" badge next to "Protect live streams" (`popup/popup.html`,
+  `popup.css`, `tests/popup.test.js`). The `ext-040` copy was taken before it, so the live popup checks above do
+  **not** cover the badge.

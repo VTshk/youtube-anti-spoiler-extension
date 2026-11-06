@@ -1354,3 +1354,11 @@ test("every locale has the theme and contact texts", () => {
     });
   });
 });
+
+test("the live-stream setting carries an English Beta badge in the logo red", () => {
+  assert.match(
+    POPUP_HTML,
+    /<span class="row-title"><span data-yas-i18n="popupProtectLive">Protect live streams<\/span> <span class="badge">Beta<\/span><\/span>/,
+  );
+  assert.match(POPUP_CSS, /\.badge\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--accent\) 16%, var\(--surface\)\);[^}]*color:\s*color-mix\(in srgb, var\(--accent\) 75%, var\(--text\)\);/);
+});

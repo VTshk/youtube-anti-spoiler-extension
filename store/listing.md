@@ -23,9 +23,12 @@ Features:
 - Optionally blur video previews, end screens, and timeline preview frames, and hide the "Most replayed" graph.
 - Optionally hide video titles, including the open video's title, date line, and description text, the browser tab title, and Chrome's media controls.
 - Turn all protection on or off from a simple popup or with Alt+Shift+S.
+- Pick one of 10 interface languages and a light, dark, or automatic theme right in the popup.
 - Keep your settings synced with Chrome profile storage.
 
 Anti-Spoiler for YouTube works locally in your browser. It does not send your YouTube activity, settings, or browsing data to any server.
+
+Questions or ideas? Write to vtshka8@gmail.com.
 
 This extension is not affiliated with, endorsed by, or sponsored by YouTube or Google.
 
@@ -39,4 +42,4 @@ YouTube, anti-spoiler, spoilers, sports, match, progress bar, duration, video pr
 
 ## Support
 
-If something stops working after a YouTube interface update, report the affected page or selector behavior through the Chrome Web Store support channel.
+Send questions and ideas to vtshka8@gmail.com. If something stops working after a YouTube interface update, write to the same address or use the Chrome Web Store support channel, and name the affected page or element.
