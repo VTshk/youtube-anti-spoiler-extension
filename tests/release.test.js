@@ -105,6 +105,7 @@ test("release build script creates a runtime-only Chrome Web Store zip", () => {
   assert.ok(entries.includes("src/content/content.js"));
   assert.ok(entries.includes("src/content/live-player-bridge.js"));
   assert.ok(entries.includes("src/content/skip-buttons.js"));
+  assert.ok(entries.includes("src/content/reveal-button.js"));
   assert.ok(entries.includes("src/background/background.js"));
   assert.ok(entries.includes("icons/icon128.png"));
   assert.ok(entries.includes("icons/icon-disabled128.png"));

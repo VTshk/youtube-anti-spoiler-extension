@@ -27,6 +27,7 @@ Funciones:
 - Si quieres, difumina las vistas previas, las pantallas finales y los fotogramas de vista previa de la línea de tiempo, y oculta el gráfico de los momentos más repetidos.
 - Si quieres, oculta los títulos de los videos, incluidos el título del video abierto, la línea de la fecha y el texto de la descripción, el título de la pestaña del navegador y los controles multimedia de Chrome.
 - Activa o desactiva toda la protección desde una ventana sencilla o con Alt+Shift+S.
+- Descubre un solo video cuando quieras con “Mostrar los spoilers de este video”: con Alt+Shift+V, el botón del ojo en el reproductor o el botón de la ventana. Los demás videos siguen protegidos.
 - Elige entre 10 idiomas de la interfaz y un tema claro, oscuro o automático directamente en la ventana de la extensión.
 - Mantiene tu configuración sincronizada con el perfil de Chrome.
 

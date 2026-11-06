@@ -39,16 +39,25 @@ function fetchPackagedFile(url) {
   });
 }
 
-function loadBackground(storedSettings = {}, localItems = {}) {
+// answerTabMessage plays chrome.tabs.sendMessage: it gets the tab id and the
+// message and returns the promise Chrome would.
+function loadBackground(storedSettings = {}, localItems = {}, answerTabMessage = () => Promise.resolve()) {
   const setIconCalls = [];
   const storageListeners = [];
   const commandListeners = [];
   const installedListeners = [];
   const localWrites = [];
+  const tabMessages = [];
   const context = {
     console,
     fetch: fetchPackagedFile,
     chrome: {
+      tabs: {
+        sendMessage(tabId, message) {
+          tabMessages.push({ tabId, message });
+          return answerTabMessage(tabId, message);
+        },
+      },
       commands: {
         onCommand: {
           addListener(listener) {
@@ -133,6 +142,7 @@ function loadBackground(storedSettings = {}, localItems = {}) {
     localWrites,
     setIconCalls,
     storageListeners,
+    tabMessages,
   };
 }
 
@@ -200,6 +210,42 @@ test("background ignores unknown commands", async () => {
   await commandListeners[0]("something-else");
 
   assert.equal(storedSettings.extensionEnabled, true);
+});
+
+test("background reveal shortcut asks the tab it was pressed in to uncover its video", async () => {
+  const storedSettings = { extensionEnabled: true };
+  const { commandListeners, tabMessages } = loadBackground(storedSettings);
+
+  await commandListeners[0]("reveal-video", { id: 42 });
+
+  assert.equal(tabMessages.length, 1);
+  assert.equal(tabMessages[0].tabId, 42);
+  assert.equal(tabMessages[0].message.type, "yas-toggle-reveal");
+  // Protection itself stays as it was.
+  assert.equal(storedSettings.extensionEnabled, true);
+});
+
+test("background reveal shortcut ignores a press without a tab", async () => {
+  const { commandListeners, tabMessages } = loadBackground({ extensionEnabled: true });
+
+  await commandListeners[0]("reveal-video", undefined);
+  await commandListeners[0]("reveal-video", {});
+
+  assert.equal(tabMessages.length, 0);
+});
+
+test("background reveal shortcut survives a tab without the content script", async () => {
+  // Chrome rejects sendMessage when nothing in the tab listens (a page that
+  // is not YouTube, or a YouTube tab opened before the extension loaded).
+  const { commandListeners, tabMessages } = loadBackground(
+    { extensionEnabled: true },
+    {},
+    () => Promise.reject(new Error("Could not establish connection. Receiving end does not exist.")),
+  );
+
+  await commandListeners[0]("reveal-video", { id: 7 });
+
+  assert.equal(tabMessages.length, 1);
 });
 
 test("background keyboard shortcut pressed twice quickly ends where it started", async () => {

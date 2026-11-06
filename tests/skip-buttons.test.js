@@ -232,10 +232,12 @@ test("skip buttons are hidden by default and shown only with a hidden timeline, 
   const containerSelector = `#movie_player .${skipButtons.SKIP_BUTTONS_CLASS}`;
   // The page-world bridge marks the player when a live stream without
   // rewinding refuses every seek; the buttons would be dead there.
-  // No setting of their own: they come with the hidden progress bar.
+  // No setting of their own: they come with the hidden progress bar, so an
+  // uncovered video, whose timeline is visible, has none.
   const showSelector =
     "html.yas-extension-enabled.yas-hide-player-progress-bar" +
-    `:not(.${content.LIVE_START_OBSCURED_CLASS}) ` +
+    `:not(.${content.LIVE_START_OBSCURED_CLASS})` +
+    `:not(.${content.REVEAL_VIDEO_CLASS}) ` +
     `#movie_player:not([data-yas-seek-blocked]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
 
   assert.equal(content.LIVE_START_OBSCURED_CLASS, "yas-live-start-obscured");

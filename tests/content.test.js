@@ -2836,7 +2836,8 @@ test("buildSpoilerCss blurs video titles under the title-hiding class", () => {
   assert.match(css, /html\.yas-hide-video-titles \.ytp-videowall-still-info-title/);
   assert.match(css, /html\.yas-hide-video-titles \.ytp-ce-video-title/);
   assert.match(css, /html\.yas-hide-video-titles \.ytp-autonav-endscreen-upnext-title/);
-  assert.match(css, /html\.yas-hide-video-titles \.ytp-title-link/);
+  // The open video's own title can be uncovered with "Show spoilers for this video".
+  assert.match(css, /html\.yas-hide-video-titles:not\(\.yas-reveal-video\) \.ytp-title-link/);
   assert.match(css, /html\.yas-hide-video-titles yt-lockup-metadata-view-model h3/);
   // Titles must stay clickable — no pointer-events lockout in the title rule.
   assert.doesNotMatch(titleRule[0], /pointer-events/);
@@ -2945,13 +2946,13 @@ test("buildSpoilerCss keeps the red LIVE badge under search result titles visibl
 test("buildSpoilerCss hides player seek preview time with the time setting", () => {
   const css = content.buildSpoilerCss();
   const playerTimeRule = css.match(
-    /html\.yas-hide-time \.ytp-time-display[\s\S]+?\{[\s\S]+?\}/,
+    /html\.yas-hide-time:not\(\.yas-reveal-video\) \.ytp-time-display[\s\S]+?\{[\s\S]+?\}/,
   )[0];
   const progressRule = css.match(
     /html\.yas-hide-player-progress-bar[\s\S]+?\{[\s\S]+?\}/,
   )[0];
 
-  assert.match(playerTimeRule, /\.ytp-tooltip-text/);
+  assert.match(playerTimeRule, /\.ytp-tooltip\.ytp-preview \.ytp-tooltip-text/);
   assert.match(playerTimeRule, /\.ytp-tooltip-bottom-text/);
   assert.match(playerTimeRule, /\.ytp-tooltip-duration/);
   assert.match(playerTimeRule, /\.ytp-tooltip-progress-bar-pill-time-stamp/);
@@ -2969,7 +2970,7 @@ test("buildSpoilerCss hides progress overlays with the progress setting", () => 
     /html\.yas-hide-player-progress-bar[\s\S]+?\{[\s\S]+?\}/,
   )[0];
   const playerTimeRule = css.match(
-    /html\.yas-hide-time \.ytp-time-display[\s\S]+?\{[\s\S]+?\}/,
+    /html\.yas-hide-time:not\(\.yas-reveal-video\) \.ytp-time-display[\s\S]+?\{[\s\S]+?\}/,
   )[0];
 
   assert.doesNotMatch(progressRule, /ytThumbnailBottomOverlayViewModelHost/);
@@ -3058,15 +3059,27 @@ function assertScoped(css, className, selectors) {
   });
 }
 
+// Parts of the open video, uncovered by "Show spoilers for this video".
+function assertOpenVideoScoped(css, className, selectors) {
+  selectors.forEach((selector) => {
+    assert.ok(
+      css.includes(`html.${className}:not(.yas-reveal-video) ${selector}`),
+      `${selector} is scoped under ${className} unless the video is uncovered`,
+    );
+  });
+}
+
 test("buildSpoilerCss hides timestamps in descriptions, chapters, and transcripts", () => {
   const css = content.buildSpoilerCss();
 
   assertScoped(css, "yas-hide-time", [
     'a.ytAttributedStringLink[href*="&t="]',
     'a.ytAttributedStringLink[href*="?t="]',
+    "ytd-video-renderer .metadata-snippet-container-one-line",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-time", [
     "ytd-macro-markers-list-item-renderer #time",
     ".ytwTranscriptSegmentViewModelTimestamp",
-    "ytd-video-renderer .metadata-snippet-container-one-line",
   ]);
 
   // "list=" also ends in "t=": a bare [href*="t="] would hide playlist links.
@@ -3074,24 +3087,30 @@ test("buildSpoilerCss hides timestamps in descriptions, chapters, and transcript
 });
 
 test("buildSpoilerCss blurs the new grid, hover previews, and chapter thumbnails", () => {
-  assertScoped(content.buildSpoilerCss(), "yas-hide-video-previews", [
+  const css = content.buildSpoilerCss();
+
+  assertScoped(css, "yas-hide-video-previews", [
     ".ytp-modern-videowall-still-image",
-    ".ytp-cued-thumbnail-overlay-image",
     "ytd-video-preview video",
-    "ytd-macro-markers-list-item-renderer #thumbnail img",
     "ytd-watch-card-hero-video-renderer #hero-image img",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-video-previews", [
+    ".ytp-cued-thumbnail-overlay-image",
+    "ytd-macro-markers-list-item-renderer #thumbnail img",
   ]);
 });
 
 test("buildSpoilerCss blurs titles in the new grid, fullscreen, Shorts, and search cards", () => {
-  assertScoped(content.buildSpoilerCss(), "yas-hide-video-titles", [
+  const css = content.buildSpoilerCss();
+
+  assertScoped(css, "yas-hide-video-titles", [
     ".ytp-modern-videowall-still-info-title",
     ".ytPlayerOverlayVideoDetailsRendererTitle",
     ".ytLockupMetadataViewModelTitle",
     ".shortsLockupViewModelHostMetadataTitle",
-    "yt-shorts-video-title-view-model",
     "ytd-watch-card-hero-video-renderer #watch-card-title",
   ]);
+  assertOpenVideoScoped(css, "yas-hide-video-titles", ["yt-shorts-video-title-view-model"]);
 });
 
 test("buildSpoilerCss hides the player's cued thumbnail during the live guard", () => {
@@ -3591,6 +3610,32 @@ test("live guard remembers a choice on the same video and asks again after anoth
   controller.sync(LIVE_SETTINGS, doc);
 
   assert.notEqual(getLiveOverlayButton(doc, "continue"), null);
+});
+
+test("live guard asks again on the same stream once its choice is forgotten (Hide spoilers again)", () => {
+  const clock = createFakeClock();
+  const win = createGuardWindow("https://www.youtube.com/watch?v=stream-a");
+  const video = createLiveVideo();
+  const doc = createLiveDocument({
+    video,
+    player: createElement("div"),
+    liveBroadcastContent: "True",
+    metadataVideoId: "stream-a",
+  });
+  const controller = content.createLiveStartController(win, clock.options);
+
+  controller.sync(LIVE_SETTINGS, doc);
+  getLiveOverlayButton(doc, "continue").click();
+  controller.sync(LIVE_SETTINGS, doc);
+  assert.equal(getLiveOverlay(doc), null);
+
+  // Owner decision 2026-11-06: covering the stream again asks every time,
+  // even after Continue live.
+  controller.forgetChoice("stream-a");
+  controller.sync(LIVE_SETTINGS, doc);
+
+  assert.notEqual(getLiveOverlayButton(doc, "continue"), null);
+  assert.equal(isLiveObscured(doc), true);
 });
 
 // R5: ads.
@@ -4632,12 +4677,16 @@ test("buildSpoilerCss blurs seek-preview frames with previews and chapter names 
 
   // With the timeline visible, hovering it shows storyboard frames from later
   // in the video and the chapter name there.
-  assert.match(css, /html\.yas-hide-video-previews \.ytp-tooltip-bg/);
-  assert.match(css, /html\.yas-hide-video-previews \.ytp-storyboard-framepreview-img/);
-  assert.match(css, /html\.yas-hide-video-titles \.ytp-tooltip\.ytp-preview \.ytp-tooltip-title/);
-  assert.match(css, /html\.yas-hide-video-titles \.ytp-tooltip-progress-bar-pill-title/);
+  assertOpenVideoScoped(css, "yas-hide-video-previews", [
+    ".ytp-tooltip-bg",
+    ".ytp-storyboard-framepreview-img",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-video-titles", [
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-title",
+    ".ytp-tooltip-progress-bar-pill-title",
+  ]);
   // Button tooltips share .ytp-tooltip-title; they must stay readable.
-  assert.doesNotMatch(css, /html\.yas-hide-video-titles \.ytp-tooltip-title/);
+  assert.doesNotMatch(css, /html\.yas-hide-video-titles(:not\(\.yas-reveal-video\))? \.ytp-tooltip-title/);
 });
 
 function createTitledElement({ title, insideVideoTitle, rootClasses }) {
@@ -4770,8 +4819,8 @@ test("buildSpoilerCss blurs the open video's title and the line under it with ti
 
   // Live check 2026-11-05: the h1 above the description, and the line with
   // views and "Streamed 1mo ago" (the exact date in its tooltip).
-  assert.match(titleRule, /html\.yas-hide-video-titles ytd-watch-metadata h1(,| \{)/);
-  assert.match(titleRule, /html\.yas-hide-video-titles ytd-watch-metadata ytd-watch-info-text(,| \{)/);
+  assert.match(titleRule, /html\.yas-hide-video-titles:not\(\.yas-reveal-video\) ytd-watch-metadata h1(,| \{)/);
+  assert.match(titleRule, /html\.yas-hide-video-titles:not\(\.yas-reveal-video\) ytd-watch-metadata ytd-watch-info-text(,| \{)/);
 });
 
 test("buildSpoilerCss blurs the description text, not its more / Show less buttons, with titles", () => {
@@ -4786,11 +4835,11 @@ test("buildSpoilerCss blurs the description text, not its more / Show less butto
   // the #expand / #collapse buttons are their siblings.
   assert.match(
     titleRule,
-    /html\.yas-hide-video-titles ytd-watch-metadata #description-inline-expander #snippet-text(,| \{)/,
+    /html\.yas-hide-video-titles:not\(\.yas-reveal-video\) ytd-watch-metadata #description-inline-expander #snippet-text(,| \{)/,
   );
   assert.match(
     titleRule,
-    /html\.yas-hide-video-titles ytd-watch-metadata #description-inline-expander #expanded(,| \{)/,
+    /html\.yas-hide-video-titles:not\(\.yas-reveal-video\) ytd-watch-metadata #description-inline-expander #expanded(,| \{)/,
   );
   assert.doesNotMatch(titleRule, /#expand(,| \{)|#collapse|#description-inline-expander(,| \{)/);
 });
@@ -4824,7 +4873,7 @@ test("buildSpoilerCss hides the Most replayed graph with previews and keeps blur
   // A blurred curve would still show where its peaks are.
   assert.match(
     css,
-    /html\.yas-hide-video-previews \.ytp-heat-map-container \{\n  visibility: hidden !important;\n  opacity: 0 !important;\n  pointer-events: none !important;\n\}/,
+    /html\.yas-hide-video-previews:not\(\.yas-reveal-video\) \.ytp-heat-map-container \{\n  visibility: hidden !important;\n  opacity: 0 !important;\n  pointer-events: none !important;\n\}/,
   );
 
   const previewRule = getRuleWithBody(
@@ -4834,8 +4883,8 @@ test("buildSpoilerCss hides the Most replayed graph with previews and keeps blur
   );
 
   assert.doesNotMatch(previewRule, /heat-map/);
-  assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-tooltip-bg(,| \{)/);
-  assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-storyboard-framepreview-img(,| \{)/);
+  assert.match(previewRule, /html\.yas-hide-video-previews:not\(\.yas-reveal-video\) \.ytp-tooltip-bg(,| \{)/);
+  assert.match(previewRule, /html\.yas-hide-video-previews:not\(\.yas-reveal-video\) \.ytp-storyboard-framepreview-img(,| \{)/);
 });
 
 test("a language change re-translates an open live guard panel in its current state", () => {
@@ -4904,4 +4953,227 @@ test("the live guard never changes how YouTube positions the player", () => {
 
   assert.ok(obscuredPlayerRule, "the obscured player rule exists");
   assert.doesNotMatch(obscuredPlayerRule[1], /position\s*:/);
+});
+
+// --- "Show spoilers for this video": generated CSS ---
+
+test("buildSpoilerCss uncovers the open video's time, timeline, previews and titles under the reveal class", () => {
+  const css = content.buildSpoilerCss();
+
+  assert.equal(content.REVEAL_VIDEO_CLASS, "yas-reveal-video");
+  assertOpenVideoScoped(css, "yas-hide-time", [
+    ".ytp-time-display",
+    ".ytp-time-current",
+    ".ytp-time-duration",
+    ".ytp-tooltip-progress-bar-pill-time-stamp",
+    ".ytPlayerStoryboardTimestamp",
+    "ytd-transcript-segment-renderer .segment-timestamp",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-player-progress-bar", [
+    ".ytp-progress-bar-container",
+    ".ytp-scrubber-container",
+    ".ytp-chapters-container",
+    ".ytp-timed-markers-container",
+    ".ytPlayerProgressBarHost",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-video-previews", [
+    ".ytp-heat-map-container",
+    "ytd-expandable-metadata-renderer #thumbnail img",
+  ]);
+  assertOpenVideoScoped(css, "yas-hide-video-titles", [
+    ".ytp-title-text",
+    "ytd-macro-markers-list-item-renderer h4",
+    "ytd-watch-metadata h1",
+    "ytd-watch-metadata #description-inline-expander #expanded",
+  ]);
+
+  // No player time or timeline selector is left hidden on an uncovered video.
+  const playerLines = css
+    .split("\n")
+    .filter((line) => /^html\.yas-hide-(time|player-progress-bar)[:. ]/.test(line))
+    .filter((line) => /\.ytp-(time|tooltip|progress|scrubber|chapter|timed-markers)|ytPlayer/.test(line));
+
+  assert.ok(playerLines.length >= 15, `player lines found: ${playerLines.length}`);
+  playerLines.forEach((line) => assert.match(line, /:not\(\.yas-reveal-video\) /, line));
+});
+
+test("buildSpoilerCss keeps other videos protected while the open video is uncovered", () => {
+  const css = content.buildSpoilerCss();
+  const otherVideos = {
+    "yas-hide-time": [
+      "ytd-thumbnail-overlay-time-status-renderer",
+      ".video-time",
+      ".ytBadgeShapeText",
+      ".ytp-videowall-still-info-duration",
+      ".ytp-autonav-timestamp",
+      ".ytp-ce-video-duration",
+    ],
+    "yas-hide-player-progress-bar": [
+      ".ytThumbnailOverlayProgressBarHostWatchedProgressBar",
+      "ytd-thumbnail-overlay-resume-playback-renderer #progress",
+    ],
+    "yas-hide-video-previews": [
+      "ytd-thumbnail img",
+      "yt-thumbnail-view-model img",
+      ".ytp-ce-covering-image",
+      ".ytp-videowall-still-image",
+      ".ytp-autonav-endscreen-upnext-thumbnail",
+      "ytd-video-preview video",
+      ".reel-video-in-sequence-thumbnail",
+    ],
+    "yas-hide-video-titles": [
+      "#video-title",
+      "yt-lockup-metadata-view-model h3",
+      ".ytPlayerOverlayVideoDetailsRendererTitle",
+      ".ytp-videowall-still-info-title",
+      ".ytp-ce-video-title",
+      ".ytp-autonav-endscreen-upnext-title",
+    ],
+  };
+
+  Object.entries(otherVideos).forEach(([className, selectors]) => {
+    assertScoped(css, className, selectors);
+    selectors.forEach((selector) => {
+      assert.equal(
+        css.includes(`:not(.yas-reveal-video) ${selector}`),
+        false,
+        `${selector} stays hidden on an uncovered video's page`,
+      );
+    });
+  });
+});
+
+test("buildSpoilerCss keeps timestamp links hidden while the open video is uncovered", () => {
+  // A link to a time does not say which video it opens: a description can
+  // link to another match.
+  const css = content.buildSpoilerCss();
+  const timestampLinks = [
+    'a.ytAttributedStringLink[href*="&t="]',
+    'a.ytAttributedStringLink[href*="?t="]',
+    '#content-text a[href*="&t="]',
+  ];
+
+  assertScoped(css, "yas-hide-time", timestampLinks);
+  timestampLinks.forEach((selector) => {
+    assert.equal(css.includes(`:not(.yas-reveal-video) ${selector}`), false, selector);
+  });
+});
+
+test("buildSpoilerCss blurs the chapter name in the player bar with titles, keeping its button", () => {
+  const css = content.buildSpoilerCss();
+
+  // Only the text: the chapter button around it still opens the chapter list.
+  assertOpenVideoScoped(css, "yas-hide-video-titles", [".ytp-chapter-title-content"]);
+  assert.doesNotMatch(css, /\.ytp-chapter-title[ ,{]/);
+  assert.doesNotMatch(css, /\.ytp-chapter-container/);
+});
+
+test("buildSpoilerCss hides only the seek preview's tooltip text, not the player buttons' tooltips", () => {
+  const css = content.buildSpoilerCss();
+
+  assertOpenVideoScoped(css, "yas-hide-time", [".ytp-tooltip.ytp-preview .ytp-tooltip-text"]);
+  // Settings, Fullscreen and the other buttons share .ytp-tooltip-text.
+  assert.doesNotMatch(css, /html\.yas-hide-time(:not\(\.yas-reveal-video\))? \.ytp-tooltip-text/);
+  // Live check 2026-11-06: button tooltips are .ytp-tooltip.ytp-bottom > ... >
+  // .ytp-tooltip-bottom-text > .ytp-tooltip-text, so these are scoped too.
+  assertOpenVideoScoped(css, "yas-hide-time", [
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-bottom-text",
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-duration",
+  ]);
+  assert.doesNotMatch(css, /html\.yas-hide-time(:not\(\.yas-reveal-video\))? \.ytp-tooltip-(bottom-text|duration)/);
+});
+
+test("buildSpoilerCss shows the reveal button only while protection is on and content.js shows it", () => {
+  const css = content.buildSpoilerCss();
+
+  assert.match(css, /(^|\n)#movie_player \.yas-reveal-button \{\n  display: none !important;/);
+  assert.match(
+    css,
+    /(^|\n)html\.yas-extension-enabled #movie_player \.yas-reveal-button:not\(\[hidden\]\) \{\n  display: inline-flex !important;/,
+  );
+  // The slash over the eye only while the video is uncovered.
+  assert.match(
+    css,
+    /#movie_player \.yas-reveal-button:not\(\[aria-pressed="true"\]\) \.yas-reveal-slash \{\n  display: none !important;/,
+  );
+});
+
+// --- "Show spoilers for this video": chat and live guards ---
+
+// The tab's sessionStorage, where the uncovered video's id is kept.
+function installSessionStorage() {
+  const items = new Map();
+
+  globalThis.sessionStorage = {
+    getItem: (key) => (items.has(key) ? items.get(key) : null),
+    setItem: (key, value) => items.set(key, String(value)),
+    removeItem: (key) => items.delete(key),
+  };
+
+  return items;
+}
+
+test("an uncovered live stream gets no live guard or chat cover, and both come back after Hide spoilers again", async () => {
+  switchChatGuardOff();
+  const video = createLiveVideo();
+  const doc = createLiveDocument({
+    chat: createElement("ytd-live-chat-frame"),
+    video,
+    player: createElement("div"),
+    liveBroadcastContent: "True",
+    metadataVideoId: "revealed-live",
+  });
+  const shared = globalThis.YouTubeAntiSpoiler;
+  const originalReadSettings = shared.readSettings;
+  const timers = captureGlobalTimers();
+  const sessionItems = installSessionStorage();
+
+  globalThis.location = { href: "https://www.youtube.com/watch?v=revealed-live" };
+  answerLiveStateRequests(doc, globalThis, () => ({ videoId: "revealed-live", isLive: true }));
+
+  try {
+    // The defaults: protection and the live guard on.
+    shared.readSettings = () => Promise.resolve(shared.normalizeSettings({}));
+    await content.refreshProtection(doc);
+
+    assertGuardHolds(doc, video);
+    assert.notEqual(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+
+    assert.deepEqual(content.toggleReveal(doc), { available: true, revealed: true });
+    assert.equal(sessionItems.get(content.REVEALED_VIDEO_STORAGE_KEY), "revealed-live");
+
+    // The guard ends: no overlay, no blur, sound back; the user presses play.
+    assert.equal(getLiveOverlay(doc), null);
+    assert.equal(isLiveObscured(doc), false);
+    assert.equal(video.muted, false);
+    assert.equal(video.playCalls, 0);
+    assert.equal(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+    assert.equal(doc.documentElement.classList.contains(content.CHAT_GUARD_OBSCURED_CLASS), false);
+
+    // A refresh on the same video keeps it uncovered.
+    shared.readSettings = () => new Promise(() => {});
+    content.refreshProtection(doc);
+    timers.runPending();
+    assert.equal(getLiveOverlay(doc), null);
+    assert.equal(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+
+    // Hiding again guards the stream as a newly opened one, chat included:
+    // uncovering was not "Show comments".
+    assert.deepEqual(content.toggleReveal(doc), { available: true, revealed: false });
+    assert.equal(sessionItems.has(content.REVEALED_VIDEO_STORAGE_KEY), false);
+    timers.runPending();
+
+    assert.notEqual(getLiveOverlay(doc), null);
+    assert.equal(isLiveObscured(doc), true);
+    assert.notEqual(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+    assert.equal(doc.documentElement.classList.contains(content.CHAT_GUARD_OBSCURED_CLASS), true);
+  } finally {
+    delete globalThis.sessionStorage;
+    delete globalThis.location;
+    doc.player = null;
+    content.refreshProtection(doc);
+    switchChatGuardOff();
+    timers.restore();
+    shared.readSettings = originalReadSettings;
+  }
 });

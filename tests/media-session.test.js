@@ -231,3 +231,35 @@ test("media session follows a language change with no new metadata from YouTube"
   assert.equal(win.navigator.mediaSession.metadata.title, "Видео YouTube");
   assert.equal(win.navigator.mediaSession.metadata.artist, "Sports Channel");
 });
+
+test("media session passes an uncovered video through and masks it again after Hide spoilers again", () => {
+  const win = createMediaWindow([
+    "yas-extension-enabled",
+    "yas-hide-video-titles",
+    "yas-hide-video-previews",
+  ]);
+
+  bridge.patchMediaSession(win);
+  win.navigator.mediaSession.metadata = createYouTubeMetadata(win);
+  win.navigator.mediaSession.setPositionState(POSITION);
+  assert.equal(win.navigator.mediaSession.metadata.title, bridge.HIDDEN_MEDIA_TITLE);
+  assert.deepEqual(win.positionCalls, [[]]);
+
+  // "Show spoilers for this video": content.js puts the class on <html>.
+  win.setRootClass("yas-reveal-video", true);
+
+  assert.equal(win.navigator.mediaSession.metadata.title, "Team A 3-0 Team B | Highlights");
+  assert.equal(win.navigator.mediaSession.metadata.artwork.length, 1);
+  // The cleared position is not put back from here; YouTube's next call
+  // goes through.
+  win.navigator.mediaSession.setPositionState(POSITION);
+  assert.deepEqual(win.positionCalls.at(-1), [POSITION]);
+
+  win.setRootClass("yas-reveal-video", false);
+
+  assert.equal(win.navigator.mediaSession.metadata.title, bridge.HIDDEN_MEDIA_TITLE);
+  assert.deepEqual(win.navigator.mediaSession.metadata.artwork, []);
+  assert.deepEqual(win.positionCalls.at(-1), []);
+  win.navigator.mediaSession.setPositionState(POSITION);
+  assert.deepEqual(win.positionCalls.at(-1), []);
+});

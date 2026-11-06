@@ -6,6 +6,7 @@
     require("../shared/i18n.js");
     require("./live-start-controller.js");
     require("./skip-buttons.js");
+    require("./reveal-button.js");
   }
 
   const shared = root.YouTubeAntiSpoiler || {};
@@ -36,6 +37,20 @@
   const COMMENTS_GUARD_CHECK_MS = 1000;
   const HIDDEN_TAB_TITLE = "YouTube";
   const SKIP_BUTTONS_CLASS = shared.SKIP_BUTTONS_CLASS;
+  const REVEAL_BUTTON_CLASS = shared.REVEAL_BUTTON_CLASS;
+  // "Show spoilers for this video": on <html> while the open video is the
+  // one the user uncovered. Rules for the open video are written with
+  // UNLESS_REVEALED, so they stop applying; everything about other videos
+  // (cards, thumbnails, end cards, "Up next") stays protected.
+  const REVEAL_VIDEO_CLASS = "yas-reveal-video";
+  const UNLESS_REVEALED = `:not(.${REVEAL_VIDEO_CLASS})`;
+  // The uncovered video's id in sessionStorage (this tab only), so a reload
+  // of the same video keeps it.
+  const REVEALED_VIDEO_STORAGE_KEY = "yas-revealed-video";
+  // The optional blurs from the last settings read, in the page's
+  // localStorage, so the next page load blurs at once instead of waiting
+  // for chrome.storage.
+  const LAST_SETTINGS_STORAGE_KEY = "yas-last-settings";
   // Put on #movie_player by the page-world bridge (live-player-bridge.js)
   // while the player refuses to seek.
   const SEEK_BLOCKED_ATTRIBUTE = "data-yas-seek-blocked";
@@ -91,18 +106,26 @@
   // the last chapter in a description or transcript is close to the end.
   const TIMESTAMP_TEXT_SELECTORS = Object.freeze([
     // Description and comment timestamps are links to "&t=<seconds>s".
+    // They stay hidden when the open video is uncovered: a link does not
+    // say which video it points to, and a description can link to a
+    // moment of another match.
     'a.ytAttributedStringLink[href*="&t="]',
     'a.ytAttributedStringLink[href*="?t="]',
     '#content-text a[href*="&t="]',
-    // "Key moments" / chapters panel and its search-result variant.
-    "ytd-macro-markers-list-item-renderer #time",
-    // Transcript panel (current and legacy markup).
-    ".ytwTranscriptSegmentViewModelTimestamp",
-    "ytd-transcript-segment-renderer .segment-timestamp",
     // Search results show a description snippet that lists chapter times
     // inline with the text, so the snippet can only be hidden as a whole.
     "ytd-video-renderer .metadata-snippet-container-one-line",
     "ytd-video-renderer .metadata-snippet-container",
+  ]);
+
+  // Timestamps of the open video, uncovered with it.
+  const OPEN_VIDEO_TIMESTAMP_SELECTORS = Object.freeze([
+    // "Key moments" / chapters panel. Its search-result variant matches too,
+    // but search has no open video, so the reveal class is never set there.
+    "ytd-macro-markers-list-item-renderer #time",
+    // Transcript panel (current and legacy markup).
+    ".ytwTranscriptSegmentViewModelTimestamp",
+    "ytd-transcript-segment-renderer .segment-timestamp",
   ]);
 
   // Live badges carry the word "LIVE", not a duration: keep both the thumbnail
@@ -111,14 +134,18 @@
     ":not(.ytBadgeShapeThumbnailLive):not(.ytBadgeShapeThumbnailLive *):not(:has(.ytBadgeShapeThumbnailLive))" +
     ":not(.ytBadgeShapeLive):not(.ytBadgeShapeLive *):not(:has(.ytBadgeShapeLive))";
 
+  // The player shows the open video: these are uncovered with it.
   const PLAYER_TIME_SELECTORS = Object.freeze([
     ".ytp-time-display",
     ".ytp-time-current",
     ".ytp-time-separator",
     ".ytp-time-duration",
-    ".ytp-tooltip-text",
-    ".ytp-tooltip-bottom-text",
-    ".ytp-tooltip-duration",
+    // The time in the seek preview. Scoped to it: player buttons (Settings,
+    // Full screen) draw their names in the same tooltip classes
+    // (.ytp-tooltip.ytp-bottom > ... > .ytp-tooltip-bottom-text > .ytp-tooltip-text).
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-text",
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-bottom-text",
+    ".ytp-tooltip.ytp-preview .ytp-tooltip-duration",
     ".ytp-tooltip-progress-bar-pill-time-stamp",
     ".ytPlayerStoryboardTimestamp",
   ]);
@@ -142,11 +169,6 @@
     "ytm-thumbnail-overlay-resume-playback-renderer #progress",
   ]);
 
-  const PROGRESS_SELECTORS = Object.freeze([
-    ...PLAYER_PROGRESS_SELECTORS,
-    ...THUMBNAIL_PROGRESS_SELECTORS,
-  ]);
-
   const VIDEO_PREVIEW_SELECTORS = Object.freeze([
     "a#thumbnail img",
     "a#thumbnail video",
@@ -168,18 +190,22 @@
     ".ytp-videowall-still-image",
     ".ytp-modern-videowall-still-image",
     ".ytp-autonav-endscreen-upnext-thumbnail",
-    // The current video's cover before playback starts.
-    ".ytp-cued-thumbnail-overlay-image",
     // Hovering a thumbnail plays the video inline in a separate player.
     "ytd-video-preview video",
     "#inline-preview-player video",
-    // Chapter thumbnails ("Key moments") and the big tournament/team card
-    // at the top of search results.
-    "ytd-macro-markers-list-item-renderer #thumbnail img",
-    "ytd-expandable-metadata-renderer #thumbnail img",
+    // The big tournament/team card at the top of search results.
     "ytd-watch-card-hero-video-renderer #hero-image img",
     // Upcoming Shorts are pre-rendered as background-image frames.
     ".reel-video-in-sequence-thumbnail",
+  ]);
+
+  // Previews of the open video, uncovered with it.
+  const OPEN_VIDEO_PREVIEW_SELECTORS = Object.freeze([
+    // The current video's cover before playback starts.
+    ".ytp-cued-thumbnail-overlay-image",
+    // Chapter thumbnails ("Key moments").
+    "ytd-macro-markers-list-item-renderer #thumbnail img",
+    "ytd-expandable-metadata-renderer #thumbnail img",
     // Seek-preview frames of the current video: the hover tooltip over a
     // visible timeline and the large frame while dragging. They show what
     // happens later in the video, so they go with the other previews.
@@ -195,29 +221,39 @@
     ".yt-lockup-metadata-view-model__title",
     ".ytLockupMetadataViewModelTitle",
     ".media-item-headline",
-    // Shorts shelves, the Shorts player, and the big search card title
-    // (often "Team A 3 vs 0 Team B").
+    // Shorts shelves and the big search card title (often "Team A 3 vs 0
+    // Team B").
     ".shortsLockupViewModelHostMetadataTitle",
-    "yt-shorts-video-title-view-model",
     "ytd-watch-card-hero-video-renderer #watch-card-title",
-    // Chapter names in "Key moments" ("Goal 89'", "Penalty shootout").
-    "ytd-macro-markers-list-item-renderer h4",
-    "ytd-macro-markers-list-item-renderer h3",
-    // Player chrome: the title shown over the video (fullscreen, embeds,
-    // miniplayer) plus endscreen card, videowall, and autoplay titles.
-    ".ytp-title-link",
-    ".ytp-title-text",
+    // Endscreen card, videowall, and autoplay titles in the player.
     ".ytp-ce-video-title",
     ".ytp-ce-playlist-title",
     ".ytp-videowall-still-info-title",
     ".ytp-modern-videowall-still-info-title",
     ".ytPlayerOverlayVideoDetailsRendererTitle",
     ".ytp-autonav-endscreen-upnext-title",
+  ]);
+
+  // Titles, chapter names, and the description of the open video,
+  // uncovered with it.
+  const OPEN_VIDEO_TITLE_SELECTORS = Object.freeze([
+    // The Shorts player.
+    "yt-shorts-video-title-view-model",
+    // Chapter names in "Key moments" ("Goal 89'", "Penalty shootout").
+    "ytd-macro-markers-list-item-renderer h4",
+    "ytd-macro-markers-list-item-renderer h3",
+    // Player chrome: the title shown over the video (fullscreen, embeds,
+    // miniplayer).
+    ".ytp-title-link",
+    ".ytp-title-text",
     // Chapter name in the tooltip over a visible timeline: hovering ahead
     // reads out later chapters ("Goal 89'"). Scoped to the seek preview,
     // because buttons use the same tooltip class for their own names.
     ".ytp-tooltip.ytp-preview .ytp-tooltip-title",
     ".ytp-tooltip-progress-bar-pill-title",
+    // The current chapter's name in the player bar, next to the time. Only
+    // the text, so the chapter button stays clickable.
+    ".ytp-chapter-title-content",
     // The open video's title above the description and the line under it:
     // views, "Streamed 1mo ago" / "15h ago", and the exact date in its
     // tooltip and after "more". The date has no element of its own (a
@@ -232,7 +268,10 @@
     "ytd-watch-metadata #description-inline-expander #expanded",
   ]);
 
-  const VIDEO_TITLE_SELECTOR_LIST = VIDEO_TITLE_SELECTORS.join(", ");
+  const VIDEO_TITLE_SELECTOR_LIST = [
+    ...VIDEO_TITLE_SELECTORS,
+    ...OPEN_VIDEO_TITLE_SELECTORS,
+  ].join(", ");
   const STASHED_TITLE_ATTRIBUTE = "data-yas-title";
 
   function getEnabledClassNames(settings) {
@@ -258,6 +297,11 @@
       .join(",\n");
   }
 
+  // Rules about the open video stop applying while it is uncovered.
+  function scopeOpenVideoSelectors(className, selectors) {
+    return scopeSelectors(`${className}${UNLESS_REVEALED}`, selectors);
+  }
+
   function buildSpoilerCss() {
     return `
 ${scopeSelectors(
@@ -270,18 +314,19 @@ ${scopeSelectors(
   pointer-events: none !important;
 }
 
-${scopeSelectors(CLASS_BY_SETTING.hideTime, TIMESTAMP_TEXT_SELECTORS)} {
+${scopeSelectors(CLASS_BY_SETTING.hideTime, TIMESTAMP_TEXT_SELECTORS)},
+${scopeOpenVideoSelectors(CLASS_BY_SETTING.hideTime, OPEN_VIDEO_TIMESTAMP_SELECTORS)} {
   visibility: hidden !important;
   pointer-events: none !important;
 }
 
-${scopeSelectors(CLASS_BY_SETTING.hideTime, PLAYER_TIME_SELECTORS)} {
+${scopeOpenVideoSelectors(CLASS_BY_SETTING.hideTime, PLAYER_TIME_SELECTORS)} {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
-html.${CLASS_BY_SETTING.hideTime} .ytp-time-display {
+html.${CLASS_BY_SETTING.hideTime}${UNLESS_REVEALED} .ytp-time-display {
   width: 0 !important;
   min-width: 0 !important;
   max-width: 0 !important;
@@ -290,20 +335,22 @@ html.${CLASS_BY_SETTING.hideTime} .ytp-time-display {
   overflow: hidden !important;
 }
 
-${scopeSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, PROGRESS_SELECTORS)} {
+${scopeOpenVideoSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, PLAYER_PROGRESS_SELECTORS)},
+${scopeSelectors(CLASS_BY_SETTING.hidePlayerProgressBar, THUMBNAIL_PROGRESS_SELECTORS)} {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
 }
 
-${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)} {
+${scopeSelectors(CLASS_BY_SETTING.hideVideoPreviews, VIDEO_PREVIEW_SELECTORS)},
+${scopeOpenVideoSelectors(CLASS_BY_SETTING.hideVideoPreviews, OPEN_VIDEO_PREVIEW_SELECTORS)} {
   filter: blur(24px) !important;
 }
 
 /* The "Most replayed" graph over a visible timeline: its peaks often fall
    on goals and other key moments. A blurred 40px curve would still show
    where the peaks are, so it is hidden rather than blurred. */
-html.${CLASS_BY_SETTING.hideVideoPreviews} .ytp-heat-map-container {
+html.${CLASS_BY_SETTING.hideVideoPreviews}${UNLESS_REVEALED} .ytp-heat-map-container {
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
@@ -311,7 +358,8 @@ html.${CLASS_BY_SETTING.hideVideoPreviews} .ytp-heat-map-container {
 
 /* Titles stay clickable: blur hides the text without collapsing layout or
    blocking the link underneath. */
-${scopeSelectors(CLASS_BY_SETTING.hideVideoTitles, VIDEO_TITLE_SELECTORS)} {
+${scopeSelectors(CLASS_BY_SETTING.hideVideoTitles, VIDEO_TITLE_SELECTORS)},
+${scopeOpenVideoSelectors(CLASS_BY_SETTING.hideVideoTitles, OPEN_VIDEO_TITLE_SELECTORS)} {
   filter: blur(8px) !important;
 }
 
@@ -417,7 +465,8 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
 /* Skip buttons are inserted into every player and shown only while the
    timeline they stand in for is hidden, and never over the live guard.
    On a live stream whose streamer turned rewinding off the player refuses
-   every seek, so the buttons would do nothing and are not shown either. */
+   every seek, so the buttons would do nothing and are not shown either.
+   An uncovered video shows its own timeline, so they go then too. */
 #movie_player .${SKIP_BUTTONS_CLASS} {
   display: none !important;
 }
@@ -426,7 +475,7 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
    (measured 2026-11-06): 40 px high, 8 px from the top of the 56 px bar,
    rgba(0,0,0,.3) behind, radius 28px, 14 px weight 500 text. The six
    buttons share one pill, as YouTube groups previous, play and next. */
-html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS}) #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS})${UNLESS_REVEALED} #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
   height: 40px !important;
@@ -461,6 +510,44 @@ html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressB
 #movie_player .${SKIP_BUTTONS_CLASS} .yas-skip-button:focus-visible {
   outline: 2px solid #ffffff !important;
   outline-offset: 0 !important;
+}
+
+/* The "Show spoilers for this video" eye: a round pill of the same look as
+   the skip buttons, shown only while protection is on and a video is open
+   (content.js sets "hidden" otherwise). */
+#movie_player .${REVEAL_BUTTON_CLASS} {
+  display: none !important;
+}
+
+html.${CLASS_BY_SETTING.extensionEnabled} #movie_player .${REVEAL_BUTTON_CLASS}:not([hidden]) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  margin: 8px 0 8px 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s cubic-bezier(0.05, 0, 0, 1) !important;
+}
+
+html.${CLASS_BY_SETTING.extensionEnabled} #movie_player .${REVEAL_BUTTON_CLASS}:not([hidden]):hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#movie_player .${REVEAL_BUTTON_CLASS}:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 0 !important;
+}
+
+/* The slash over the eye shows only while the video is uncovered: then a
+   click covers it again. */
+#movie_player .${REVEAL_BUTTON_CLASS}:not([aria-pressed="true"]) .yas-reveal-slash {
+  display: none !important;
 }
 
 html.${COMMENTS_GUARD_OBSCURED_CLASS} ytd-comments#comments {
@@ -804,11 +891,14 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       chatGuardDisabled = false;
     }
 
+    // An uncovered video shows its chat, without counting as "Show
+    // comments": hiding the video again covers the chat again.
     if (
       !normalizedSettings.extensionEnabled ||
       !normalizedSettings.startLiveFromBeginning ||
       !isWatchPage ||
-      chatGuardDisabled
+      chatGuardDisabled ||
+      isOpenVideoRevealed(doc)
     ) {
       removeChatGuardOverlay(doc);
       removeChatGuardObscuring(doc);
@@ -938,10 +1028,11 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     return overlay;
   }
 
-  // Shorts are not live streams, so getLiveStartVideoId (which the live
-  // guard relies on) does not know /shorts/ pages; their comments can still
-  // name a result.
-  function getCommentsGuardVideoId(doc) {
+  // The id of the video open on this page, or null. Used by the comments
+  // guard, the tab title, and "Show spoilers for this video". Shorts are not
+  // live streams, so getLiveStartVideoId (which the live guard relies on)
+  // does not know /shorts/ pages; their comments can still name a result.
+  function getOpenVideoId(doc) {
     if (root.location) {
       const shortsMatch = new URL(root.location.href).pathname.match(/^\/shorts\/([^/]+)/);
 
@@ -958,7 +1049,7 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
 
     // Scrolling Shorts with the comments panel open changes this id too, so
     // the next Short's comments are covered again.
-    const videoId = getCommentsGuardVideoId(doc);
+    const videoId = getOpenVideoId(doc);
 
     if (videoId !== commentsGuardVideoId) {
       // "Show comments" on one video must not uncover the next one.
@@ -966,11 +1057,14 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       commentsGuardShown = false;
     }
 
+    // An uncovered video shows its comments, without counting as "Show
+    // comments": hiding the video again covers them again.
     if (
       !settings.extensionEnabled ||
       !settings.hideComments ||
       !videoId ||
-      commentsGuardShown
+      commentsGuardShown ||
+      isOpenVideoRevealed(doc)
     ) {
       removeCommentsGuard(doc);
       return;
@@ -997,18 +1091,9 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
   let tabTitleObserver = null;
   let observedTitleElement = null;
 
-  function isOnVideoPage() {
-    if (!root.location) {
-      return false;
-    }
-
-    const pathname = new URL(root.location.href).pathname;
-
-    return (
-      pathname === "/watch" ||
-      pathname.startsWith("/live/") ||
-      pathname.startsWith("/shorts/")
-    );
+  // A channel's /live page counts too, once it names its stream.
+  function isOnVideoPage(doc) {
+    return Boolean(getOpenVideoId(doc));
   }
 
   function observeTabTitle(doc, titleElement) {
@@ -1030,14 +1115,17 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
   }
 
   function syncTabTitle(doc) {
-    if (!isOnVideoPage()) {
+    if (!isOnVideoPage(doc)) {
       // YouTube gives every other page its own title. The stashed one
       // belongs to the video just left and must not come back.
       youtubeTabTitle = null;
       return;
     }
 
-    if (!doc.documentElement.classList.contains(CLASS_BY_SETTING.hideVideoTitles)) {
+    if (
+      !doc.documentElement.classList.contains(CLASS_BY_SETTING.hideVideoTitles) ||
+      isOpenVideoRevealed(doc)
+    ) {
       if (youtubeTabTitle !== null && doc.title === HIDDEN_TAB_TITLE) {
         doc.title = youtubeTabTitle;
       }
@@ -1065,6 +1153,135 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     }
   }
 
+  // "Show spoilers for this video" uncovers the open video until another
+  // video, or a page without a video, is open. The video's id is kept in
+  // sessionStorage (this tab only), so a reload of the same video keeps it.
+  // Site data can be blocked; then storage throws and nothing is uncovered.
+  function readRevealedVideoId() {
+    try {
+      return root.sessionStorage.getItem(REVEALED_VIDEO_STORAGE_KEY);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // null forgets the uncovered video.
+  function writeRevealedVideoId(videoId) {
+    try {
+      if (videoId) {
+        root.sessionStorage.setItem(REVEALED_VIDEO_STORAGE_KEY, videoId);
+      } else {
+        root.sessionStorage.removeItem(REVEALED_VIDEO_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.warn("[Anti-Spoiler for YouTube] Could not save the uncovered video.", error);
+    }
+  }
+
+  // At script start. Only a reload keeps the uncovered video: any other
+  // load (a typed address, a link from another site, coming back from
+  // another site) means the user left it.
+  function forgetRevealUnlessReloaded() {
+    const navigation = root.performance.getEntriesByType("navigation")[0];
+
+    if (readRevealedVideoId() && (!navigation || navigation.type !== "reload")) {
+      writeRevealedVideoId(null);
+    }
+  }
+
+  // A page that shows a video, even before it names it: a channel's /live
+  // page learns its stream's id only once the page has loaded.
+  function isOnVideoPath() {
+    const pathname = new URL(root.location.href).pathname;
+
+    return (
+      pathname === "/watch" ||
+      pathname.startsWith("/live/") ||
+      pathname.startsWith("/shorts/") ||
+      shared.CHANNEL_LIVE_PATH_PATTERN.test(pathname)
+    );
+  }
+
+  function isOpenVideoRevealed(doc) {
+    return doc.documentElement.classList.contains(REVEAL_VIDEO_CLASS);
+  }
+
+  // Puts the reveal class on <html> while the open video is the uncovered
+  // one, and forgets the uncovered video once the user has left it.
+  function syncRevealedVideo(settings, doc) {
+    const rootElement = doc.documentElement;
+    const revealedVideoId = readRevealedVideoId();
+
+    if (!revealedVideoId) {
+      rootElement.classList.remove(REVEAL_VIDEO_CLASS);
+      return;
+    }
+
+    const videoId = getOpenVideoId(doc);
+
+    if ((videoId && videoId !== revealedVideoId) || !isOnVideoPath()) {
+      writeRevealedVideoId(null);
+      rootElement.classList.remove(REVEAL_VIDEO_CLASS);
+      return;
+    }
+
+    // While the page has not named its video yet, the id is kept, but
+    // nothing is uncovered until it is known to be the same video.
+    if (settings.extensionEnabled && videoId === revealedVideoId) {
+      rootElement.classList.add(REVEAL_VIDEO_CLASS);
+    } else {
+      rootElement.classList.remove(REVEAL_VIDEO_CLASS);
+    }
+  }
+
+  // What the player button and the popup show: { available, revealed }.
+  // "available" only says a video is open. Whether protection is on is not
+  // asked here: right after the popup switches protection on, this script
+  // may still be re-reading the settings, and the popup checks it itself.
+  function getRevealState(doc) {
+    const available = Boolean(getOpenVideoId(doc));
+
+    return { available, revealed: available && isOpenVideoRevealed(doc) };
+  }
+
+  // The player button, the popup button, and the keyboard shortcut all come
+  // here. The same action again covers the video again. Does nothing while
+  // protection is off.
+  function toggleReveal(doc) {
+    const state = getRevealState(doc);
+
+    if (state.available && lastKnownSettings.extensionEnabled) {
+      if (state.revealed) {
+        // Covering a stream again asks how to watch it again.
+        liveStartController.forgetChoice(getOpenVideoId(doc));
+      }
+
+      writeRevealedVideoId(state.revealed ? null : getOpenVideoId(doc));
+      applyAndSync(lastKnownSettings, doc);
+      syncRevealButton(doc);
+    }
+
+    return getRevealState(doc);
+  }
+
+  function syncRevealButton(doc) {
+    const button = shared.ensureRevealButton(doc, () => toggleReveal(doc));
+
+    if (button) {
+      shared.renderRevealButton(button, getRevealState(doc));
+    }
+  }
+
+  // Messages from the popup and from the background (the keyboard
+  // shortcut). The answer is ready at once, so it is sent synchronously.
+  function answerRevealMessage(message, sender, sendResponse) {
+    if (message.type === "yas-get-reveal") {
+      sendResponse(getRevealState(root.document));
+    } else if (message.type === "yas-toggle-reveal") {
+      sendResponse(toggleReveal(root.document));
+    }
+  }
+
   function applySettings(settings, doc) {
     const currentDocument = doc || root.document;
 
@@ -1082,6 +1299,9 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     enabledClassNames.forEach((className) => {
       rootElement.classList.add(className);
     });
+
+    // Before the guards below: they look at the reveal class.
+    syncRevealedVideo(normalizeSettings(settings), currentDocument);
 
     if (enabledClassNames.includes(CLASS_BY_SETTING.hideVideoTitles)) {
       // A title already under the cursor gets no new mouseover when title
@@ -1141,15 +1361,72 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     });
   }
 
+  // The optional blurs are off by default, so a user who switched them on
+  // would see titles and thumbnails until chrome.storage answers. The last
+  // read is kept in the page's localStorage to blur at once. It can only
+  // add protection: everything else comes from the defaults, so a stale
+  // copy can never open spoilers before the real read.
+  function readStartupSettings() {
+    const settings = normalizeSettings(undefined);
+    let lastSettings = null;
+
+    try {
+      lastSettings = JSON.parse(root.localStorage.getItem(LAST_SETTINGS_STORAGE_KEY));
+    } catch (error) {
+      // Blocked site data or a damaged copy: the defaults stand.
+      return settings;
+    }
+
+    if (lastSettings && lastSettings.hideVideoPreviews === true) {
+      settings.hideVideoPreviews = true;
+    }
+
+    if (lastSettings && lastSettings.hideVideoTitles === true) {
+      settings.hideVideoTitles = true;
+    }
+
+    return settings;
+  }
+
+  function saveStartupSettings(settings) {
+    const normalizedSettings = normalizeSettings(settings);
+
+    try {
+      root.localStorage.setItem(
+        LAST_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          hideVideoPreviews: normalizedSettings.hideVideoPreviews,
+          hideVideoTitles: normalizedSettings.hideVideoTitles,
+        }),
+      );
+    } catch (error) {
+      // Blocked site data: the next load waits for chrome.storage, as before.
+    }
+  }
+
   // Last settings read from storage. Until the first read answers, the
-  // defaults stand in: protection is on, so a page never renders unprotected
-  // while chrome.storage is still busy. A user who turned protection off sees
-  // it lift a moment later, which is the safe direction for a spoiler blocker.
-  let lastKnownSettings = normalizeSettings(undefined);
+  // defaults stand in (plus the optional blurs from the last read): protection
+  // is on, so a page never renders unprotected while chrome.storage is still
+  // busy. A user who turned protection off sees it lift a moment later, which
+  // is the safe direction for a spoiler blocker.
+  let lastKnownSettings = readStartupSettings();
 
   function applyAndSync(settings, doc) {
-    lastKnownSettings = applySettings(settings, doc);
-    liveStartController.sync(lastKnownSettings, doc);
+    const currentDocument = doc || root.document;
+
+    lastKnownSettings = applySettings(settings, currentDocument);
+
+    // An uncovered video gets no live guard. The controller sees the live
+    // setting off, which also ends a guard that is already up.
+    if (isOpenVideoRevealed(currentDocument)) {
+      liveStartController.sync(
+        Object.assign({}, lastKnownSettings, { startLiveFromBeginning: false }),
+        currentDocument,
+      );
+    } else {
+      liveStartController.sync(lastKnownSettings, currentDocument);
+    }
+
     return lastKnownSettings;
   }
 
@@ -1160,7 +1437,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
 
     return shared
       .readSettings()
-      .then((settings) => applyAndSync(settings, doc))
+      .then((settings) => {
+        saveStartupSettings(settings);
+        return applyAndSync(settings, doc);
+      })
       .catch((error) => {
         console.warn("[Anti-Spoiler for YouTube] Could not load settings.", error);
         return applyAndSync(lastKnownSettings, doc);
@@ -1307,20 +1587,36 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       return;
     }
 
+    // The reveal button goes after the skip buttons in the player bar.
     const refresh = () => {
       refreshProtection(root.document);
       shared.ensureSkipButtons(root.document);
+      syncRevealButton(root.document);
     };
 
     root.__youtubeAntiSpoilerInitialized = true;
 
+    forgetRevealUnlessReloaded();
+    // Coming back from another site with Back can restore this page from the
+    // browser's back/forward cache without running the scripts again. That is
+    // never a reload, so the user left the uncovered video.
+    root.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        writeRevealedVideoId(null);
+        refresh();
+      }
+    });
     bindNavigationRefresh(root, refresh);
     bindStorageChanges();
+    root.chrome.runtime.onMessage.addListener(answerRevealMessage);
     observeStyleRemoval(root.document);
     root.document.addEventListener("mouseover", stashHoveredTitleAttribute, true);
     // YouTube rebuilds the player now and then, dropping the skip buttons.
+    // The reveal button is redrawn too: protection or the video may have
+    // changed meanwhile.
     root.setInterval(() => {
       shared.ensureSkipButtons(root.document);
+      syncRevealButton(root.document);
     }, shared.SKIP_BUTTONS_CHECK_MS);
     refresh();
     // Only after protection is in place.
@@ -1339,6 +1635,9 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     COMMENTS_GUARD_OVERLAY_ID,
     COMMENTS_GUARD_CHECK_MS,
     HIDDEN_TAB_TITLE,
+    REVEAL_VIDEO_CLASS,
+    REVEALED_VIDEO_STORAGE_KEY,
+    LAST_SETTINGS_STORAGE_KEY,
     LIVE_GUARD_PAUSE_EVENT: shared.LIVE_GUARD_PAUSE_EVENT,
     LIVE_GUARD_PLAY_EVENT: shared.LIVE_GUARD_PLAY_EVENT,
     LIVE_GUARD_CONTINUE_EVENT: shared.LIVE_GUARD_CONTINUE_EVENT,
@@ -1360,6 +1659,11 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     stashHoveredTitleAttribute,
     restoreStashedTitleAttributes,
     refreshProtection,
+    forgetRevealUnlessReloaded,
+    getRevealState,
+    toggleReveal,
+    syncRevealButton,
+    answerRevealMessage,
     init,
   };
 });

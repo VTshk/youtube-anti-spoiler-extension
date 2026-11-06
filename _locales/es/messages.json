@@ -11,6 +11,10 @@
     "message": "Activar o desactivar la protección contra spoilers",
     "description": "Keyboard shortcut description in chrome://extensions/shortcuts."
   },
+  "manifestRevealCommand": {
+    "message": "Mostrar u ocultar los spoilers del video abierto",
+    "description": "Keyboard shortcut description in chrome://extensions/shortcuts. Uncovers the open video, or covers it again."
+  },
   "popupName": {
     "message": "Anti-Spoiler",
     "description": "Brand name at the top of the popup. Usually left untranslated."
@@ -190,5 +194,21 @@
   "mediaHiddenTitle": {
     "message": "Video de YouTube",
     "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
+  },
+  "popupRevealVideo": {
+    "message": "Mostrar los spoilers de este video",
+    "description": "Popup button under the status line, shown on a YouTube video page. Uncovers the open video only."
+  },
+  "popupHideVideo": {
+    "message": "Volver a ocultar los spoilers",
+    "description": "Popup button under the status line while the open video is uncovered. Covers it again."
+  },
+  "revealShowButton": {
+    "message": "Mostrar los spoilers de este video",
+    "description": "Tooltip and screen reader label of the eye button in the YouTube player. Uncovers the open video only."
+  },
+  "revealHideButton": {
+    "message": "Volver a ocultar los spoilers",
+    "description": "Tooltip and screen reader label of the eye button in the YouTube player while the open video is uncovered. Covers it again."
   }
 }

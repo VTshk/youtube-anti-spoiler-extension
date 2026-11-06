@@ -68,6 +68,7 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
     "src/shared/i18n.js",
     "src/content/live-start-controller.js",
     "src/content/skip-buttons.js",
+    "src/content/reveal-button.js",
     "src/content/content.js",
   ]);
   assert.equal(contentScript.run_at, "document_start");
@@ -79,6 +80,9 @@ test("manifest declares the protection shortcut without new permissions", () => 
   assert.deepEqual(manifest.commands["toggle-protection"].suggested_key, { default: "Alt+Shift+S" });
   assert.equal(manifest.commands["toggle-protection"].description, "__MSG_manifestToggleCommand__");
   assert.equal(en("manifestToggleCommand"), "Turn spoiler protection on or off");
+  assert.deepEqual(manifest.commands["reveal-video"].suggested_key, { default: "Alt+Shift+V" });
+  assert.equal(manifest.commands["reveal-video"].description, "__MSG_manifestRevealCommand__");
+  assert.equal(en("manifestRevealCommand"), "Show or hide spoilers for the open video");
   assert.deepEqual(manifest.permissions, ["storage"]);
   // The popup stores the chosen language's texts, so content scripts need
   // no access to packaged files.

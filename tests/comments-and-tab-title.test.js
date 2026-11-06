@@ -117,6 +117,8 @@ function createPage({
   panels = [],
   titleElement = null,
   title = "",
+  // The id a channel's /live page names its stream by, once it has loaded.
+  watchFlexyVideoId = null,
 } = {}) {
   const body = createElement("body");
   const head = createElement("head");
@@ -170,6 +172,10 @@ function createPage({
 
       if (selector === "title") {
         return this.titleElement;
+      }
+
+      if (selector === "ytd-watch-flexy:not([hidden])" && watchFlexyVideoId) {
+        return { getAttribute: (name) => (name === "video-id" ? watchFlexyVideoId : null) };
       }
 
       return null;
@@ -792,5 +798,124 @@ test("a language change re-translates an open comments cover without rebuilding 
     }
 
     assert.equal(button.textContent, "Show comments");
+  });
+});
+
+// --- F3: tab title on a channel's /live page ---
+
+test("tab title is hidden on a channel's /live page once the page names its stream", () => {
+  withTitleObserver("https://www.youtube.com/@sportschannel/live", () => {
+    const doc = createPage({
+      titleElement: createElement("title"),
+      title: "Final, live - YouTube",
+      watchFlexyVideoId: "stream-1",
+    });
+
+    content.applySettings(TITLE_SETTINGS, doc);
+
+    assert.equal(doc.title, "YouTube");
+  });
+
+  // The channel's own pages are not video pages.
+  withTitleObserver("https://www.youtube.com/@sportschannel/videos", () => {
+    const doc = createPage({ titleElement: createElement("title"), title: "Sports Channel - YouTube" });
+
+    content.applySettings(TITLE_SETTINGS, doc);
+
+    assert.equal(doc.title, "Sports Channel - YouTube");
+  });
+});
+
+// --- "Show spoilers for this video" ---
+
+// The tab's sessionStorage, holding the uncovered video's id. Removed
+// before onPage cleans up, which runs without an address.
+function withSessionStorage(body) {
+  const items = new Map();
+
+  globalThis.sessionStorage = {
+    getItem: (key) => (items.has(key) ? items.get(key) : null),
+    setItem: (key, value) => items.set(key, String(value)),
+    removeItem: (key) => items.delete(key),
+  };
+
+  try {
+    body(items);
+  } finally {
+    delete globalThis.sessionStorage;
+  }
+}
+
+function isRevealed(doc) {
+  return doc.documentElement.classList.contains(content.REVEAL_VIDEO_CLASS);
+}
+
+test("an uncovered video shows its comments, and Hide spoilers again covers them again", () => {
+  onPage("https://www.youtube.com/watch?v=match-1", () => {
+    withSessionStorage((items) => {
+      const commentsPanel = createCommentsPanel();
+      const doc = createPage({ comments: createComments(), panels: [commentsPanel] });
+
+      content.applySettings(BASE_SETTINGS, doc);
+      assert.equal(isCommentsObscured(doc), true);
+
+      items.set(content.REVEALED_VIDEO_STORAGE_KEY, "match-1");
+      content.applySettings(BASE_SETTINGS, doc);
+
+      assert.equal(isRevealed(doc), true);
+      assert.equal(isCommentsObscured(doc), false);
+      assert.equal(getCommentsOverlay(doc), null);
+      assert.equal(getPanelOverlays(commentsPanel).length, 0);
+
+      // Uncovering is not "Show comments": hiding the video again covers them.
+      items.delete(content.REVEALED_VIDEO_STORAGE_KEY);
+      content.applySettings(BASE_SETTINGS, doc);
+
+      assert.equal(isRevealed(doc), false);
+      assert.equal(isCommentsObscured(doc), true);
+      assert.equal(getCommentsOverlay(doc).parentNode, doc.comments);
+      assert.equal(getPanelOverlays(commentsPanel).length, 1);
+    });
+  });
+});
+
+test("comments the user showed stay shown after the video is uncovered and hidden again", () => {
+  onPage("https://www.youtube.com/watch?v=match-1", () => {
+    withSessionStorage((items) => {
+      const doc = createPage({ comments: createComments() });
+
+      content.applySettings(BASE_SETTINGS, doc);
+      clickShowComments(doc);
+
+      items.set(content.REVEALED_VIDEO_STORAGE_KEY, "match-1");
+      content.applySettings(BASE_SETTINGS, doc);
+      items.delete(content.REVEALED_VIDEO_STORAGE_KEY);
+      content.applySettings(BASE_SETTINGS, doc);
+
+      assert.equal(isCommentsObscured(doc), false);
+      assert.equal(getCommentsOverlay(doc), null);
+    });
+  });
+});
+
+test("tab title shows the uncovered video's title and hides it again after Hide spoilers again", () => {
+  withTitleObserver("https://www.youtube.com/watch?v=final", () => {
+    withSessionStorage((items) => {
+      const doc = createPage({
+        titleElement: createElement("title"),
+        title: "Team A 3-0 Team B - YouTube",
+      });
+
+      content.applySettings(TITLE_SETTINGS, doc);
+      assert.equal(doc.title, "YouTube");
+
+      items.set(content.REVEALED_VIDEO_STORAGE_KEY, "final");
+      content.applySettings(TITLE_SETTINGS, doc);
+      assert.equal(doc.title, "Team A 3-0 Team B - YouTube");
+
+      items.delete(content.REVEALED_VIDEO_STORAGE_KEY);
+      content.applySettings(TITLE_SETTINGS, doc);
+      assert.equal(doc.title, "YouTube");
+    });
   });
 });
