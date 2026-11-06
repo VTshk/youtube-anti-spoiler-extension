@@ -20,7 +20,7 @@ Anti-Spoiler for YouTube hides spoiler-prone YouTube interface elements, includi
 12. Under **Advanced settings**, enable **Blur video titles** and confirm that titles are blurred and the browser tab shows `YouTube` on the video page.
 13. Open a live stream that is currently live: the player is covered and muted until **Start from beginning** or **Continue live** is chosen.
 14. Press **Alt+Shift+S** to turn protection off and on.
-15. On a video page, press **Alt+Shift+V** (or the eye button in the player controls, or **Show spoilers for this video** in the popup): the player time, timeline, and comments of this video appear while thumbnails and durations of other videos stay hidden; press it again to hide them.
+15. On a video page, press **Alt+Shift+V** (or the eye button in the player controls): the player time, timeline, and comments of this video appear while thumbnails and durations of other videos stay hidden; press it again to hide them.
 
 No login credentials are required.
 

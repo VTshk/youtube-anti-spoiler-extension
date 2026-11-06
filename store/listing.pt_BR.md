@@ -27,7 +27,7 @@ Recursos:
 - Se quiser, desfoca as prévias dos vídeos, as telas finais e os quadros de prévia da linha do tempo, e oculta o gráfico dos momentos mais repetidos.
 - Se quiser, oculta os títulos dos vídeos, incluindo o título do vídeo aberto, a linha da data e o texto da descrição, o título da aba do navegador e os controles de mídia do Chrome.
 - Ativa ou desativa toda a proteção em uma janela simples ou com Alt+Shift+S.
-- Revela um único vídeo quando você quiser com “Mostrar os spoilers deste vídeo”: com Alt+Shift+V, o botão de olho no player ou o botão da janela. Os outros vídeos continuam protegidos.
+- Revela um único vídeo quando você quiser com “Mostrar os spoilers deste vídeo”: com Alt+Shift+V ou o botão de olho no player. Os outros vídeos continuam protegidos.
 - Escolha entre 10 idiomas da interface e um tema claro, escuro ou automático direto na janela da extensão.
 - Suas configurações ficam sincronizadas com o perfil do Chrome.
 

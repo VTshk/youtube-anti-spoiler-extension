@@ -27,7 +27,7 @@ Fonctionnalités :
 - Floute au choix les aperçus des vidéos, les écrans de fin et les images d’aperçu de la barre de lecture, et masque le graphique des moments les plus revus.
 - Masque au choix les titres des vidéos, y compris le titre de la vidéo ouverte, la ligne de date et le texte de la description, le titre de l’onglet du navigateur et les commandes multimédias de Chrome.
 - Active ou désactive toute la protection depuis une fenêtre simple ou avec Alt+Shift+S.
-- Dévoile une seule vidéo quand vous le voulez avec « Afficher les spoilers de cette vidéo » : avec Alt+Shift+V, le bouton en forme d’œil dans le lecteur ou le bouton de la fenêtre. Les autres vidéos restent protégées.
+- Dévoile une seule vidéo quand vous le voulez avec « Afficher les spoilers de cette vidéo » : avec Alt+Shift+V ou le bouton en forme d’œil dans le lecteur. Les autres vidéos restent protégées.
 - Choisissez l’une des 10 langues de l’interface et un thème clair, sombre ou automatique directement dans la fenêtre de l’extension.
 - Vos paramètres restent synchronisés avec votre profil Chrome.
 

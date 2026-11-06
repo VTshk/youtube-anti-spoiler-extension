@@ -140,9 +140,6 @@ async function loadPopup(
     failThemeWrite = false,
     fetch = fetchPackagedFile,
     uiLanguage = "en-US",
-    // chrome.tabs; without it the popup has no tab to ask, as on a page
-    // where Chrome gives no access.
-    tabs = undefined,
   } = {},
 ) {
   const storageChangeListeners = [];
@@ -192,7 +189,6 @@ async function loadPopup(
         },
       },
       i18n: createChromeI18n(uiLanguage),
-      tabs,
       runtime: {
         lastError: null,
         getURL(relativePath) {
@@ -310,7 +306,6 @@ async function loadPopup(
     languageCode: getElement("[data-language-code]"),
     themeButton: getElement("[data-theme-toggle]"),
     themeIcons: document.querySelectorAll("[data-theme-icon]"),
-    revealButton: getElement("[data-reveal-toggle]"),
     setIconCalls,
     status: getElement("[data-status]"),
     storedSettings,
@@ -454,12 +449,9 @@ test("the whole capsule is the label of the master switch, with the play triangl
 
   // No click handler of its own: one would toggle a second time. The only
   // listener on the capsule follows the pointer for the hover circle, and
-  // the only click listeners are the theme button's and the "Show spoilers
-  // for this video" button's, both outside the capsule.
-  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 2);
+  // the only click listener is the theme button's, outside the capsule.
+  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 1);
   assert.match(POPUP_JS, /themeButton\.addEventListener\("click", changeTheme\)/);
-  assert.match(POPUP_JS, /revealButton\.addEventListener\("click",/);
-  assert.doesNotMatch(hero[1], /data-reveal-toggle/);
   assert.match(POPUP_JS, /hero\.addEventListener\("pointermove"/);
   assert.equal(POPUP_JS.match(/hero\.addEventListener\(/g).length, 1);
 });
@@ -1370,105 +1362,4 @@ test("the live-stream setting carries an English Beta badge in the logo red", ()
     /<span class="row-title"><span data-yas-i18n="popupProtectLive">Protect live streams<\/span> <span class="badge">Beta<\/span><\/span>/,
   );
   assert.match(POPUP_CSS, /\.badge\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--accent\) 16%, var\(--surface\)\);[^}]*color:\s*color-mix\(in srgb, var\(--accent\) 75%, var\(--text\)\);/);
-});
-
-// --- "Show spoilers for this video" ---
-
-// chrome.tabs with one active tab whose content script answers through
-// answer(message); answer may throw, as Chrome rejects when no content
-// script listens in the tab.
-function createTabs(answer, activeTab = { id: 5 }) {
-  const sentMessages = [];
-
-  return {
-    sentMessages,
-    async query(queryInfo) {
-      assert.deepEqual({ ...queryInfo }, { active: true, currentWindow: true });
-      return activeTab ? [activeTab] : [];
-    },
-    async sendMessage(tabId, message) {
-      sentMessages.push({ tabId, type: message.type });
-      return answer(message);
-    },
-  };
-}
-
-test("the popup's Show spoilers button sits under the status line, hidden until the tab answers", () => {
-  assert.match(
-    POPUP_HTML,
-    /data-power-status[\s\S]*?<button type="button" class="reveal" data-reveal-toggle data-yas-i18n="popupRevealVideo" hidden>Show spoilers for this video<\/button>/,
-  );
-});
-
-test("popup keeps Show spoilers hidden when the tab cannot be asked", async () => {
-  const noTabsApi = await loadPopup({});
-  assert.equal(noTabsApi.revealButton.hidden, true);
-
-  const noContentScript = await loadPopup({}, {
-    tabs: createTabs(() => {
-      throw new Error("Could not establish connection. Receiving end does not exist.");
-    }),
-  });
-  assert.equal(noContentScript.revealButton.hidden, true);
-
-  const noActiveTab = await loadPopup({}, {
-    tabs: createTabs(() => ({ available: true, revealed: false }), null),
-  });
-  assert.equal(noActiveTab.revealButton.hidden, true);
-
-  // A YouTube page without a video.
-  const noVideo = await loadPopup({}, {
-    tabs: createTabs(() => ({ available: false, revealed: false })),
-  });
-  assert.equal(noVideo.revealButton.hidden, true);
-});
-
-test("popup shows Show spoilers for a video and toggles it in the active tab", async () => {
-  let revealed = false;
-  const tabs = createTabs((message) => {
-    if (message.type === "yas-toggle-reveal") {
-      revealed = !revealed;
-    }
-
-    return { available: true, revealed };
-  });
-  const { revealButton } = await loadPopup({}, { tabs });
-
-  assert.deepEqual(tabs.sentMessages, [{ tabId: 5, type: "yas-get-reveal" }]);
-  assert.equal(revealButton.hidden, false);
-  assert.equal(revealButton.textContent, "Show spoilers for this video");
-
-  await revealButton.listeners.click();
-  await flushPromises();
-
-  assert.deepEqual(tabs.sentMessages.at(-1), { tabId: 5, type: "yas-toggle-reveal" });
-  assert.equal(revealed, true);
-  assert.equal(revealButton.hidden, false);
-  assert.equal(revealButton.textContent, "Hide spoilers again");
-
-  await revealButton.listeners.click();
-  await flushPromises();
-
-  assert.equal(revealed, false);
-  assert.equal(revealButton.textContent, "Show spoilers for this video");
-});
-
-test("popup hides Show spoilers while protection is off and asks the tab again when it comes back on", async () => {
-  const tabs = createTabs(() => ({ available: true, revealed: false }));
-  const { revealButton, powerToggle } = await loadPopup({ extensionEnabled: false }, { tabs });
-
-  assert.equal(revealButton.hidden, true);
-
-  powerToggle.checked = true;
-  await powerToggle.listeners.change();
-  await flushPromises();
-
-  assert.equal(revealButton.hidden, false);
-  assert.equal(tabs.sentMessages.at(-1).type, "yas-get-reveal");
-
-  powerToggle.checked = false;
-  await powerToggle.listeners.change();
-  await flushPromises();
-
-  assert.equal(revealButton.hidden, true);
 });

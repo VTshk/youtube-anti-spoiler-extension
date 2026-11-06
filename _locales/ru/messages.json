@@ -195,14 +195,6 @@
     "message": "Видео на YouTube",
     "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
   },
-  "popupRevealVideo": {
-    "message": "Показать спойлеры этого видео",
-    "description": "Popup button under the status line, shown on a YouTube video page. Uncovers the open video only."
-  },
-  "popupHideVideo": {
-    "message": "Снова скрыть спойлеры",
-    "description": "Popup button under the status line while the open video is uncovered. Covers it again."
-  },
   "revealShowButton": {
     "message": "Показать спойлеры этого видео",
     "description": "Tooltip and screen reader label of the eye button in the YouTube player. Uncovers the open video only."
