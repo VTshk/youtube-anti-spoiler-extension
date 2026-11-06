@@ -21,7 +21,7 @@ Uzantı; YouTube'daki süre göstergelerini, oynatıcının ilerleme çubukları
 Özellikler:
 
 - YouTube listelerinde, arama sonuçlarında, önerilerde, bölümlerde, transkriptlerde ve oynatıcıda video süresini gizler.
-- Oynatıcıdaki ve önizlemelerdeki ilerleme çubuklarını gizler; zaman çizelgesinin yerine atlama düğmeleri (±10 sn, 1 dk, 10 dk) gösterir.
+- Oynatıcıdaki ve önizlemelerdeki ilerleme çubuklarını gizler; zaman çizelgesinin yerine atlama düğmeleri (±1 dk, ±10 dk) gösterir.
 - Canlı yayınları korur: Baştan başlatmayı ya da canlı yayına devam etmeyi seçene kadar oynatıcı örtülü ve sessiz kalır.
 - Yorumları (videoların altında, yorum panelinde ve Shorts'ta) ve canlı sohbeti "Yorumları göster" düğmesinin arkasına gizler.
 - İsteğe bağlı olarak video önizlemelerini, bitiş ekranlarını ve zaman çizelgesindeki önizleme karelerini bulanıklaştırır; en çok tekrar oynatılan anların grafiğini gizler.
