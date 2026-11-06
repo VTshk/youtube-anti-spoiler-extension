@@ -37,6 +37,7 @@
   const COMMENTS_GUARD_CHECK_MS = 1000;
   const HIDDEN_TAB_TITLE = "YouTube";
   const SKIP_BUTTONS_CLASS = shared.SKIP_BUTTONS_CLASS;
+  const FIT_ATTRIBUTE = shared.FIT_ATTRIBUTE;
   const REVEAL_BUTTON_CLASS = shared.REVEAL_BUTTON_CLASS;
   // "Show spoilers for this video": on <html> while the open video is the
   // one the user uncovered. Rules for the open video are written with
@@ -475,7 +476,7 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
    (measured 2026-11-06): 40 px high, 8 px from the top of the 56 px bar,
    rgba(0,0,0,.3) behind, radius 28px, 14 px weight 500 text. The six
    buttons share one pill, as YouTube groups previous, play and next. */
-html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS})${UNLESS_REVEALED} #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]) .${SKIP_BUTTONS_CLASS} {
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS})${UNLESS_REVEALED} #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]):not([${FIT_ATTRIBUTE}~="no-skip"]) .${SKIP_BUTTONS_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
   height: 40px !important;
@@ -519,7 +520,7 @@ html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressB
   display: none !important;
 }
 
-html.${CLASS_BY_SETTING.extensionEnabled} #movie_player .${REVEAL_BUTTON_CLASS}:not([hidden]) {
+html.${CLASS_BY_SETTING.extensionEnabled} #movie_player:not([${FIT_ATTRIBUTE}~="no-eye"]) .${REVEAL_BUTTON_CLASS}:not([hidden]) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -542,6 +543,29 @@ html.${CLASS_BY_SETTING.extensionEnabled} #movie_player .${REVEAL_BUTTON_CLASS}:
 #movie_player .${REVEAL_BUTTON_CLASS}:focus-visible {
   outline: 2px solid #ffffff !important;
   outline-offset: 0 !important;
+}
+
+/* A narrow player: the buttons give way step by step instead of being cut
+   off (skip-buttons.js decides the steps). The two show rules above skip
+   "no-skip" and "no-eye". */
+#movie_player[${FIT_ATTRIBUTE}~="compact"] .${SKIP_BUTTONS_CLASS},
+#movie_player[${FIT_ATTRIBUTE}~="compact"] .${REVEAL_BUTTON_CLASS} {
+  margin-left: 6px !important;
+}
+
+#movie_player[${FIT_ATTRIBUTE}~="compact"] .${SKIP_BUTTONS_CLASS} .yas-skip-button {
+  padding: 0 5px !important;
+}
+
+#movie_player[${FIT_ATTRIBUTE}~="short"] .${SKIP_BUTTONS_CLASS} .yas-skip-button[data-skip-seconds="-600"],
+#movie_player[${FIT_ATTRIBUTE}~="short"] .${SKIP_BUTTONS_CLASS} .yas-skip-button[data-skip-seconds="600"] {
+  display: none !important;
+}
+
+/* Our pills never shrink: squeezed, the eye lost its round shape. */
+#movie_player .${SKIP_BUTTONS_CLASS},
+#movie_player .${REVEAL_BUTTON_CLASS} {
+  flex-shrink: 0 !important;
 }
 
 /* The slash over the eye shows only while the video is uncovered: then a
@@ -1262,6 +1286,32 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     return getRevealState(doc);
   }
 
+  // Refits the player buttons (skip-buttons.js) when something that changes
+  // what the left controls hold has changed: the player width, the classes
+  // on <html> (settings, live guard, uncovered video), the seek block, or
+  // the eye button. Not on every check: a fit while the volume slider is
+  // open would hide the eye for as long as the slider stays open.
+  function fitPlayerButtonsWhenChanged(doc) {
+    const player = doc.querySelector("#movie_player");
+
+    if (!player) {
+      return;
+    }
+
+    const eyeButton = player.querySelector(`.${REVEAL_BUTTON_CLASS}`);
+    const layout = [
+      player.clientWidth,
+      doc.documentElement.className,
+      player.hasAttribute(SEEK_BLOCKED_ATTRIBUTE),
+      eyeButton ? eyeButton.hidden : "no eye",
+    ].join("|");
+
+    if (player.dataset.yasFitLayout !== layout) {
+      shared.fitPlayerButtons(doc);
+      player.dataset.yasFitLayout = layout;
+    }
+  }
+
   function syncRevealButton(doc) {
     const button = shared.ensureRevealButton(doc, () => toggleReveal(doc));
 
@@ -1588,6 +1638,7 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       refreshProtection(root.document);
       shared.ensureSkipButtons(root.document);
       syncRevealButton(root.document);
+      fitPlayerButtonsWhenChanged(root.document);
     };
 
     root.__youtubeAntiSpoilerInitialized = true;
@@ -1613,7 +1664,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     root.setInterval(() => {
       shared.ensureSkipButtons(root.document);
       syncRevealButton(root.document);
+      fitPlayerButtonsWhenChanged(root.document);
     }, shared.SKIP_BUTTONS_CHECK_MS);
+    // Resizing the window should not wait for the next check.
+    root.addEventListener("resize", () => fitPlayerButtonsWhenChanged(root.document));
     refresh();
     // Only after protection is in place.
     writeMediaTitle(root.document);

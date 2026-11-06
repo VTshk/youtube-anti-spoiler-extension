@@ -70,7 +70,7 @@ The card's red cap also holds two quick buttons:
 
 Time hiding is always active while protection is on. The main settings:
 
-- **Hide progress bar** - hides the player timeline and preview progress bars. While the timeline is hidden, the player controls show `−10m −1m −10s +10s +1m +10m` skip buttons; they never show where the video ends up. They are not shown on live streams where the player does not allow seeking (the streamer turned rewinding off). There is no separate switch for the skip buttons. Enabled by default.
+- **Hide progress bar** - hides the player timeline and preview progress bars. While the timeline is hidden, the player controls show `−10m −1m +1m +10m` skip buttons (for short steps use the player's arrow keys); they never show where the video ends up. On a narrow player they first get tighter, then give way: the eye button goes first, then `−10m` and `+10m`, then the rest, instead of being cut off. They are not shown on live streams where the player does not allow seeking (the streamer turned rewinding off). There is no separate switch for the skip buttons. Enabled by default.
 - **Blur previews** - applies a strong blur to video thumbnails/previews, end screens, and the storyboard frames shown when hovering a visible timeline; hides the "Most replayed" graph above a visible timeline; removes the video's artwork from Chrome's media controls and the system media overlay. Disabled by default.
 - **Protect live streams** - see below. Enabled by default.
 

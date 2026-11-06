@@ -21,7 +21,7 @@ La extensión puede ocultar los indicadores de tiempo de YouTube, las barras de 
 Funciones:
 
 - Oculta la duración de los videos en las listas de YouTube, los resultados de búsqueda, las recomendaciones, los capítulos, las transcripciones y el reproductor.
-- Oculta las barras de progreso del reproductor y de las vistas previas, con botones para saltar (±10 s, 1 min, 10 min) en lugar de la línea de tiempo.
+- Oculta las barras de progreso del reproductor y de las vistas previas, con botones para saltar (±1 min, ±10 min) en lugar de la línea de tiempo.
 - Protege las transmisiones en vivo: el reproductor queda cubierto y silenciado hasta que elijas ver desde el inicio o continuar en vivo.
 - Oculta los comentarios (debajo de los videos, en el panel de comentarios y en Shorts) y el chat en vivo detrás de un botón “Mostrar comentarios”.
 - Si quieres, difumina las vistas previas, las pantallas finales y los fotogramas de vista previa de la línea de tiempo, y oculta el gráfico de los momentos más repetidos.

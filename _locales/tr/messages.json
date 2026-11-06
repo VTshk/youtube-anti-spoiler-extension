@@ -79,6 +79,10 @@
     "message": "Başta duraklatır ve canlı sohbeti gizler",
     "description": "Note under the \"Protect live streams\" setting."
   },
+  "popupBetaNote": {
+    "message": "Hâlâ test aşamasında: her zaman beklendiği gibi çalışmayabilir",
+    "description": "Tooltip on the English \"Beta\" badge next to the \"Protect live streams\" setting."
+  },
   "popupAdvancedSettings": {
     "message": "Gelişmiş ayarlar",
     "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
@@ -174,14 +178,6 @@
   "skipBack1Minute": {
     "message": "1 dakika geri",
     "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
-  },
-  "skipBack10Seconds": {
-    "message": "10 saniye geri",
-    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
-  },
-  "skipForward10Seconds": {
-    "message": "10 saniye ileri",
-    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
   },
   "skipForward1Minute": {
     "message": "1 dakika ileri",

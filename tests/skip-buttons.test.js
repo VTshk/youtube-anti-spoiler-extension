@@ -120,11 +120,11 @@ test("skip buttons are inserted once into the player's left controls", () => {
   assert.equal(container.className, skipButtons.SKIP_BUTTONS_CLASS);
   assert.deepEqual(
     container.children.map((button) => button.textContent),
-    ["−10m", "−1m", "−10s", "+10s", "+1m", "+10m"],
+    ["−10m", "−1m", "+1m", "+10m"],
   );
   assert.deepEqual(
     container.children.map((button) => button.dataset.skipSeconds),
-    ["-600", "-60", "-10", "10", "60", "600"],
+    ["-600", "-60", "60", "600"],
   );
   container.children.forEach((button) => {
     assert.equal(button.type, "button");
@@ -160,8 +160,8 @@ test("skip button click seeks the player's video and does not reach the player",
   assert.equal(video.currentTime, 160);
   assert.deepEqual(calls, { preventDefault: 1, stopPropagation: 1 });
 
-  clickButton(findButton(doc, -10));
-  assert.equal(video.currentTime, 150);
+  clickButton(findButton(doc, -60));
+  assert.equal(video.currentTime, 100);
 });
 
 test("skip button click without a video does nothing", () => {
@@ -169,7 +169,7 @@ test("skip button click without a video does nothing", () => {
 
   skipButtons.ensureSkipButtons(doc);
 
-  const calls = clickButton(findButton(doc, 10));
+  const calls = clickButton(findButton(doc, 60));
 
   assert.deepEqual(calls, { preventDefault: 1, stopPropagation: 1 });
 });
@@ -238,7 +238,7 @@ test("skip buttons are hidden by default and shown only with a hidden timeline, 
     "html.yas-extension-enabled.yas-hide-player-progress-bar" +
     `:not(.${content.LIVE_START_OBSCURED_CLASS})` +
     `:not(.${content.REVEAL_VIDEO_CLASS}) ` +
-    `#movie_player:not([data-yas-seek-blocked]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
+    `#movie_player:not([data-yas-seek-blocked]):not([data-yas-fit~="no-skip"]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
 
   assert.equal(content.LIVE_START_OBSCURED_CLASS, "yas-live-start-obscured");
   assert.match(
@@ -287,6 +287,56 @@ test("skip buttons are drawn like YouTube's player pills, with hover and a focus
   assert.match(ruleOf(buttonSelector), /color: #ffffff !important;/);
   assert.match(ruleOf(`${buttonSelector}:hover`), /background: rgba\(255, 255, 255, 0\.1\) !important;/);
   assert.match(ruleOf(`${buttonSelector}:focus-visible`), /outline: 2px solid #ffffff !important;/);
+});
+
+// A player whose left controls need less room with each fit step: the
+// width the steps leave is what the real CSS would leave.
+function createFitPlayer(availableWidth) {
+  const neededWidth = { "": 400, compact: 370, "compact no-eye": 320, "compact no-eye short": 280, "compact no-eye short no-skip": 110 };
+  const player = {
+    attributes: {},
+    setAttribute(name, value) { this.attributes[name] = value; },
+    removeAttribute(name) { delete this.attributes[name]; },
+    querySelector(selector) { return selector === ".ytp-left-controls" ? controls : null; },
+  };
+  const controls = {
+    clientWidth: availableWidth,
+    get scrollWidth() { return neededWidth[player.attributes["data-yas-fit"] || ""]; },
+  };
+  const doc = { querySelector: (selector) => (selector === "#movie_player" ? player : null) };
+  return { doc, player };
+}
+
+test("on a narrow player the buttons give way step by step until they fit", () => {
+  const fits = (availableWidth) => {
+    const { doc, player } = createFitPlayer(availableWidth);
+    player.attributes["data-yas-fit"] = "compact no-eye";
+    skipButtons.fitPlayerButtons(doc);
+    return player.attributes["data-yas-fit"];
+  };
+
+  // A wide player drops an earlier fit: everything is shown again.
+  assert.equal(fits(500), undefined);
+  assert.equal(fits(380), "compact");
+  assert.equal(fits(330), "compact no-eye");
+  assert.equal(fits(300), "compact no-eye short");
+  assert.equal(fits(200), "compact no-eye short no-skip");
+  // Nothing more to take away: the last step stays.
+  assert.equal(fits(50), "compact no-eye short no-skip");
+});
+
+test("the fit steps tighten the pills, drop the eye, then ±10m, then the skip buttons", () => {
+  const css = content.buildSpoilerCss();
+
+  const has = (text) => assert.ok(css.includes(text), text);
+
+  has('#movie_player[data-yas-fit~="compact"] .yas-skip-buttons .yas-skip-button {\n  padding: 0 5px !important;');
+  has(
+    '#movie_player[data-yas-fit~="short"] .yas-skip-buttons .yas-skip-button[data-skip-seconds="-600"],\n' +
+      '#movie_player[data-yas-fit~="short"] .yas-skip-buttons .yas-skip-button[data-skip-seconds="600"] {\n' +
+      "  display: none !important;",
+  );
+  has("#movie_player .yas-skip-buttons,\n#movie_player .yas-reveal-button {\n  flex-shrink: 0 !important;");
 });
 
 function escapeRegExp(text) {

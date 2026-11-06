@@ -21,7 +21,7 @@ L’extension peut masquer les indications de temps de YouTube, les barres de pr
 Fonctionnalités :
 
 - Masque la durée des vidéos dans les listes YouTube, les résultats de recherche, les recommandations, les chapitres, les transcriptions et le lecteur.
-- Masque les barres de progression du lecteur et des aperçus, avec des boutons de saut (±10 s, 1 min, 10 min) à la place de la barre de lecture.
+- Masque les barres de progression du lecteur et des aperçus, avec des boutons de saut (±1 min, ±10 min) à la place de la barre de lecture.
 - Protège les diffusions en direct : le lecteur reste couvert et muet jusqu’à ce que vous choisissiez de regarder depuis le début ou de continuer en direct.
 - Masque les commentaires (sous les vidéos, dans le panneau des commentaires et sur les Shorts) et le chat en direct derrière un bouton « Afficher les commentaires ».
 - Floute au choix les aperçus des vidéos, les écrans de fin et les images d’aperçu de la barre de lecture, et masque le graphique des moments les plus revus.

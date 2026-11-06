@@ -17,7 +17,7 @@ The extension can hide YouTube time indicators, player progress bars, and previe
 Features:
 
 - Hide video duration in YouTube lists, search results, recommendations, chapters, transcripts, and the player.
-- Hide player and preview progress bars, with skip buttons (±10 s, 1 min, 10 min) in place of the timeline.
+- Hide player and preview progress bars, with skip buttons (±1 min, ±10 min) in place of the timeline.
 - Protect live streams: the player is covered and muted until you choose to start from the beginning or continue live.
 - Hide comments (under videos, in the comments panel, and on Shorts) and live chat behind a "Show comments" button.
 - Optionally blur video previews, end screens, and timeline preview frames, and hide the "Most replayed" graph.

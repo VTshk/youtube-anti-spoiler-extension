@@ -79,6 +79,10 @@
     "message": "Pause au début et chat en direct masqué",
     "description": "Note under the \"Protect live streams\" setting."
   },
+  "popupBetaNote": {
+    "message": "Encore en test : peut ne pas toujours fonctionner comme prévu",
+    "description": "Tooltip on the English \"Beta\" badge next to the \"Protect live streams\" setting."
+  },
   "popupAdvancedSettings": {
     "message": "Paramètres avancés",
     "description": "Title of the collapsible section in the popup that holds the less used settings and the language."
@@ -174,14 +178,6 @@
   "skipBack1Minute": {
     "message": "Reculer de 1 minute",
     "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
-  },
-  "skipBack10Seconds": {
-    "message": "Reculer de 10 secondes",
-    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
-  },
-  "skipForward10Seconds": {
-    "message": "Avancer de 10 secondes",
-    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
   },
   "skipForward1Minute": {
     "message": "Avancer de 1 minute",
