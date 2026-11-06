@@ -128,5 +128,5 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
 - Live (`--lang` de, ru, ja; rig `yas-audit2`, `r2.mjs`): 0 clipped elements, 0 errors; switching the language in the
   popup changes the YouTube cover and skip labels in place.
 - Report with the Russian table and "Not checked": `docs/research/2026-11-06/r2-report.md`.
-- **Waiting for the owner:** read the Russian table (§3 of the report), then commit.
+- The owner approved the Russian strings; committed as `f46df69`.
 - Next: 0.4.0, README, the postponed live checks of 0.3.0 / portion 5.
