@@ -33,6 +33,9 @@ function createPopupElement(tagName) {
     setAttribute(name, value) {
       this.attributes[name] = String(value);
     },
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+    },
     removeAttribute(name) {
       delete this.attributes[name];
     },
@@ -152,6 +155,8 @@ async function loadPopup(
   }
   const elements = createElementsFromPopupHtml();
   const setIconCalls = [];
+  // Every successful chrome.storage.sync.set, in order.
+  const syncWrites = [];
   const fetchedUrls = [];
   // With delayLanguageRead, the language read answers only when the test
   // calls finishLanguageRead().
@@ -211,6 +216,7 @@ async function loadPopup(
               return;
             }
 
+            syncWrites.push(JSON.parse(JSON.stringify(nextSettings)));
             Object.assign(storedSettings, nextSettings);
             callback();
           },
@@ -307,6 +313,8 @@ async function loadPopup(
     themeButton: getElement("[data-theme-toggle]"),
     themeIcons: document.querySelectorAll("[data-theme-icon]"),
     setIconCalls,
+    syncWrites,
+    titlesLinkButton: getElement("[data-titles-link]"),
     status: getElement("[data-status]"),
     storedSettings,
     findText(key) {
@@ -449,9 +457,11 @@ test("the whole capsule is the label of the master switch, with the play triangl
 
   // No click handler of its own: one would toggle a second time. The only
   // listener on the capsule follows the pointer for the hover circle, and
-  // the only click listener is the theme button's, outside the capsule.
-  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 1);
+  // the only click listeners are the theme button's, outside the capsule,
+  // and the titles chain button's in Advanced.
+  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 2);
   assert.match(POPUP_JS, /themeButton\.addEventListener\("click", changeTheme\)/);
+  assert.match(POPUP_JS, /linkButton\.addEventListener\("click"/);
   assert.match(POPUP_JS, /hero\.addEventListener\("pointermove"/);
   assert.equal(POPUP_JS.match(/hero\.addEventListener\(/g).length, 1);
 });
@@ -761,9 +771,11 @@ test("popup reverts a checkbox whose change failed to save", async () => {
 });
 
 test("popup does not undo a setting changed elsewhere while it is open", async () => {
+  // Titles set separately, so their switch shows their own value.
   const { settingToggles, storedSettings, emitStorageChange } = await loadPopup({
     hideVideoTitles: false,
     hideVideoPreviews: false,
+    blurTitlesLinked: false,
   });
   const titleToggle = findToggle(settingToggles, "hideVideoTitles");
   const previewToggle = findToggle(settingToggles, "hideVideoPreviews");
@@ -1078,7 +1090,8 @@ test("popup shows the settings and follows changes made elsewhere before the lan
     powerStatus,
     languageSelect,
   } = await loadPopup(
-    { hideVideoTitles: false, hideVideoPreviews: false },
+    // Titles set separately, so their switch shows their own value.
+    { hideVideoTitles: false, hideVideoPreviews: false, blurTitlesLinked: false },
     { storedLanguage: stored, delayLanguageRead: true },
   );
   const titleToggle = findToggle(settingToggles, "hideVideoTitles");
@@ -1163,7 +1176,7 @@ test("the language chip and the theme button sit in the capsule, outside its lab
 test("the labels written in the popup HTML match the English messages", () => {
   const labels = [...POPUP_HTML.matchAll(/data-yas-i18n-label="([A-Za-z0-9]+)"\s+aria-label="([^"]+)"/g)];
 
-  assert.equal(labels.length, 4);
+  assert.equal(labels.length, 5);
   labels.forEach(([, key, text]) => {
     assert.equal(text, en(key), key);
   });
@@ -1378,4 +1391,197 @@ test("the Beta badge's hover tooltip is translated", async () => {
 
   assert.equal(badge.attributes.title, "TEST BETA");
   assert.equal(badge.attributes["aria-label"], "TEST BETA");
+});
+
+// --- Title blur linked to preview blur (the chain button) ---
+
+function findNote(elements, attribute) {
+  return elements.find((element) => Object.prototype.hasOwnProperty.call(element.dataset, attribute));
+}
+
+test("the titles row has a chain button between its text and its switch", () => {
+  const row = POPUP_HTML.match(/<div class="row">([\s\S]*?)\r?\n        <\/div>/);
+
+  assert.ok(row, "the titles row is a div, so the chain button is not inside the switch's label");
+  // The text is the switch's label; the chain button comes before the switch.
+  assert.match(
+    row[1],
+    /<label class="row-text" for="hide-video-titles">[\s\S]*?data-blur-titles-note data-yas-i18n="popupBlurTitlesNote"[\s\S]*?<\/label>\s*<button type="button" class="link-button" data-titles-link aria-pressed="true" data-yas-i18n-label="popupTitlesLinked" aria-label="Linked to preview blur\. Click to set separately\." title="Linked to preview blur\. Click to set separately\.">\s*<svg[^>]*stroke="currentColor"[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<\/button>\s*<span class="toggle">\s*<input type="checkbox" id="hide-video-titles" data-setting="hideVideoTitles">/,
+  );
+  assert.match(POPUP_HTML, /<span class="row-note" data-blur-previews-note data-yas-i18n="popupBlurPreviewsNote">/);
+
+  // A soft red square while linked, a plain outline while not, faded while
+  // read-only.
+  assert.match(POPUP_CSS, /\.link-button\s*\{[^}]*width:\s*26px;[^}]*height:\s*26px;[^}]*border:\s*1px solid var\(--control-border\);[^}]*cursor:\s*pointer;/);
+  assert.match(POPUP_CSS, /\.link-button svg\s*\{\s*width:\s*16px;\s*height:\s*16px;/);
+  assert.match(POPUP_CSS, /\.link-button\[aria-pressed="true"\]\s*\{[^}]*border-color:\s*var\(--accent\);/);
+  assert.match(POPUP_CSS, /\.link-button:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
+  assert.match(POPUP_CSS, /\.link-button:disabled\s*\{[^}]*opacity:\s*0\.45;[^}]*cursor:\s*default;/);
+});
+
+test("while linked, the titles switch is disabled and shows the previews value", async () => {
+  const { settingToggles, titlesLinkButton } = await loadPopup({ hideVideoPreviews: true });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+  const previewToggle = findToggle(settingToggles, "hideVideoPreviews");
+
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "true");
+  assert.equal(titlesLinkButton.attributes.title, "Linked to preview blur. Click to set separately.");
+  assert.equal(titlesLinkButton.attributes["aria-label"], "Linked to preview blur. Click to set separately.");
+  assert.equal(titleToggle.disabled, true);
+  assert.equal(titleToggle.checked, true);
+
+  // Turning previews off turns the shown titles value off too.
+  previewToggle.checked = false;
+  await previewToggle.listeners.change();
+  assert.equal(titleToggle.checked, false);
+  assert.equal(titleToggle.disabled, true);
+
+  previewToggle.checked = true;
+  await previewToggle.listeners.change();
+  assert.equal(titleToggle.checked, true);
+});
+
+test("unlinking saves the link and the previews value as the titles value in one write", async () => {
+  const { settingToggles, titlesLinkButton, storedSettings, syncWrites } = await loadPopup({
+    hideVideoPreviews: true,
+    hideVideoTitles: false,
+  });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+
+  await titlesLinkButton.listeners.click();
+
+  assert.equal(syncWrites.length, 1);
+  assert.equal(syncWrites[0].blurTitlesLinked, false);
+  assert.equal(syncWrites[0].hideVideoTitles, true);
+  assert.equal(storedSettings.blurTitlesLinked, false);
+  assert.equal(storedSettings.hideVideoTitles, true);
+  // Nothing changes on the page: the switch keeps showing on, now its own.
+  assert.equal(titleToggle.checked, true);
+  assert.equal(titleToggle.disabled, false);
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "false");
+  assert.equal(titlesLinkButton.attributes.title, "Set separately. Click to link to previews.");
+  assert.equal(titlesLinkButton.attributes["aria-label"], "Set separately. Click to link to previews.");
+
+  // Set separately, the switch saves its own value.
+  titleToggle.checked = false;
+  await titleToggle.listeners.change();
+  assert.equal(storedSettings.hideVideoTitles, false);
+  assert.equal(storedSettings.hideVideoPreviews, true);
+});
+
+test("linking saves only the link and the switch shows the previews value again", async () => {
+  const { settingToggles, titlesLinkButton, storedSettings, syncWrites } = await loadPopup({
+    blurTitlesLinked: false,
+    hideVideoPreviews: false,
+    hideVideoTitles: true,
+  });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "false");
+  assert.equal(titleToggle.checked, true);
+  assert.equal(titleToggle.disabled, false);
+
+  await titlesLinkButton.listeners.click();
+
+  assert.equal(syncWrites.length, 1);
+  assert.equal(syncWrites[0].blurTitlesLinked, true);
+  // The own value is kept for the next time titles are set separately.
+  assert.equal(storedSettings.hideVideoTitles, true);
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "true");
+  assert.equal(titleToggle.checked, false);
+  assert.equal(titleToggle.disabled, true);
+});
+
+test("a quick second click on the chain button undoes the first", async () => {
+  const { titlesLinkButton, storedSettings } = await loadPopup({ hideVideoPreviews: true });
+
+  const firstSave = titlesLinkButton.listeners.click();
+  const secondSave = titlesLinkButton.listeners.click();
+  await Promise.all([firstSave, secondSave]);
+
+  assert.equal(storedSettings.blurTitlesLinked, true);
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "true");
+});
+
+test("the notes under both blur settings say when titles are linked", async () => {
+  const { elements, titlesLinkButton } = await loadPopup({});
+  const previewsNote = findNote(elements, "blurPreviewsNote");
+  const titlesNote = findNote(elements, "blurTitlesNote");
+
+  assert.equal(previewsNote.textContent, "Thumbnails, hover previews and titles");
+  assert.equal(previewsNote.dataset.yasI18n, "popupBlurPreviewsNoteLinked");
+  assert.equal(titlesNote.textContent, "With preview blur");
+  assert.equal(titlesNote.dataset.yasI18n, "popupBlurTitlesNoteLinked");
+
+  await titlesLinkButton.listeners.click();
+
+  assert.equal(previewsNote.textContent, "Thumbnails and hover previews");
+  assert.equal(previewsNote.dataset.yasI18n, "popupBlurPreviewsNote");
+  assert.equal(titlesNote.textContent, "In lists, on the video page and in end cards");
+  assert.equal(titlesNote.dataset.yasI18n, "popupBlurTitlesNote");
+});
+
+test("settings saved with title blur on before the chain button open unlinked", async () => {
+  const { settingToggles, titlesLinkButton } = await loadPopup({ hideVideoTitles: true });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "false");
+  assert.equal(titleToggle.checked, true);
+  assert.equal(titleToggle.disabled, false);
+});
+
+test("the chain button is disabled while the popup is read-only", async () => {
+  const { titlesLinkButton } = await loadPopup({}, { failRead: true });
+
+  assert.equal(titlesLinkButton.disabled, true);
+  assert.equal(titlesLinkButton.listeners.click, undefined);
+});
+
+test("popup follows a link change made elsewhere", async () => {
+  const { elements, settingToggles, titlesLinkButton, emitStorageChange } = await loadPopup({
+    hideVideoPreviews: false,
+    hideVideoTitles: false,
+  });
+  const titleToggle = findToggle(settingToggles, "hideVideoTitles");
+
+  // Another popup unlinks titles and turns them on.
+  emitStorageChange({
+    blurTitlesLinked: { oldValue: true, newValue: false },
+    hideVideoTitles: { oldValue: false, newValue: true },
+  });
+
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "false");
+  assert.equal(titleToggle.checked, true);
+  assert.equal(titleToggle.disabled, false);
+  assert.equal(findNote(elements, "blurTitlesNote").textContent, "In lists, on the video page and in end cards");
+
+  // And links them again.
+  emitStorageChange({ blurTitlesLinked: { oldValue: false, newValue: true } });
+
+  assert.equal(titlesLinkButton.attributes["aria-pressed"], "true");
+  assert.equal(titleToggle.checked, false);
+  assert.equal(titleToggle.disabled, true);
+  assert.equal(findNote(elements, "blurTitlesNote").textContent, "With preview blur");
+});
+
+test("popup re-translates the chain button and the notes after a language change", async () => {
+  const { elements, titlesLinkButton, emitStorageChange } = await loadPopup({});
+
+  emitStorageChange(
+    {
+      uiLanguage: {
+        newValue: createTestLanguage("de", {
+          popupTitlesLinked: "TEST LINKED",
+          popupBlurPreviewsNoteLinked: "TEST PREVIEWS NOTE",
+          popupBlurTitlesNoteLinked: "TEST TITLES NOTE",
+        }),
+      },
+    },
+    "local",
+  );
+
+  assert.equal(titlesLinkButton.attributes.title, "TEST LINKED");
+  assert.equal(titlesLinkButton.attributes["aria-label"], "TEST LINKED");
+  assert.equal(findNote(elements, "blurPreviewsNote").textContent, "TEST PREVIEWS NOTE");
+  assert.equal(findNote(elements, "blurTitlesNote").textContent, "TEST TITLES NOTE");
 });

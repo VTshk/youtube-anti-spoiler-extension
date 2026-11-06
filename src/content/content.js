@@ -73,7 +73,9 @@
     hideComments: "yas-hide-comments",
   });
 
-  const SETTING_KEYS = Object.freeze(Object.keys(CLASS_BY_SETTING));
+  // Every stored setting, not only those with a class: blurTitlesLinked
+  // alone changes which classes the page gets.
+  const SETTING_KEYS = shared.SETTING_KEYS;
 
   const THUMBNAIL_DURATION_SELECTORS = Object.freeze([
     "ytd-thumbnail-overlay-time-status-renderer",
@@ -275,8 +277,10 @@
   ].join(", ");
   const STASHED_TITLE_ATTRIBUTE = "data-yas-title";
 
+  // Title blur follows the previews while linked, so the classes come from
+  // the effective settings.
   function getEnabledClassNames(settings) {
-    const normalizedSettings = normalizeSettings(settings);
+    const normalizedSettings = shared.getEffectiveSettings(normalizeSettings(settings));
 
     if (!normalizedSettings.extensionEnabled) {
       return [];
@@ -1287,20 +1291,27 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
   }
 
   // Refits the player buttons (skip-buttons.js) when something that changes
-  // what the left controls hold has changed: the player width, the classes
-  // on <html> (settings, live guard, uncovered video), the seek block, or
-  // the eye button. Not on every check: a fit while the volume slider is
-  // open would hide the eye for as long as the slider stays open.
+  // what the left controls hold has changed: the room they have, the width
+  // of YouTube's own controls in them (it hides the chapter title on a
+  // narrow player a moment after the resize), the classes on <html>
+  // (settings, live guard, uncovered video), the seek block, or the eye
+  // button. Not on every check, and the volume control is left out: a fit
+  // while its slider is open would hide the eye for as long as it stays open.
   function fitPlayerButtonsWhenChanged(doc) {
     const player = doc.querySelector("#movie_player");
+    const controls = player && player.querySelector(".ytp-left-controls");
 
-    if (!player) {
+    if (!controls) {
       return;
     }
 
-    const eyeButton = player.querySelector(`.${REVEAL_BUTTON_CLASS}`);
+    const eyeButton = controls.querySelector(`.${REVEAL_BUTTON_CLASS}`);
+    const youtubeControlWidths = [...controls.children]
+      .filter((control) => !control.matches(`.${SKIP_BUTTONS_CLASS}, .${REVEAL_BUTTON_CLASS}, .ytp-volume-area`))
+      .map((control) => control.offsetWidth);
     const layout = [
-      player.clientWidth,
+      controls.clientWidth,
+      youtubeControlWidths.join(","),
       doc.documentElement.className,
       player.hasAttribute(SEEK_BLOCKED_ATTRIBUTE),
       eyeButton ? eyeButton.hidden : "no eye",
@@ -1427,6 +1438,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       settings.hideVideoPreviews = true;
     }
 
+    // The copy holds the title blur the page last used, linked or not, so
+    // here it stands on its own.
+    settings.blurTitlesLinked = false;
+
     if (lastSettings && lastSettings.hideVideoTitles === true) {
       settings.hideVideoTitles = true;
     }
@@ -1434,8 +1449,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     return settings;
   }
 
+  // Saves the blurs the page actually uses: with titles linked, the title
+  // blur is the previews value.
   function saveStartupSettings(settings) {
-    const normalizedSettings = normalizeSettings(settings);
+    const normalizedSettings = shared.getEffectiveSettings(normalizeSettings(settings));
 
     try {
       root.localStorage.setItem(

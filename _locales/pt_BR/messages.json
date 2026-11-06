@@ -55,6 +55,10 @@
     "message": "Miniaturas e prévias ao passar o mouse",
     "description": "Note under the \"Blur previews\" setting."
   },
+  "popupBlurPreviewsNoteLinked": {
+    "message": "Miniaturas, prévias ao passar o mouse e títulos",
+    "description": "Note under the \"Blur previews\" setting while video titles are linked to it, so they are blurred too."
+  },
   "popupBlurTitles": {
     "message": "Desfocar títulos dos vídeos",
     "description": "Popup setting title: blurs video titles."
@@ -62,6 +66,18 @@
   "popupBlurTitlesNote": {
     "message": "Em listas, na página do vídeo e nas telas finais",
     "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupBlurTitlesNoteLinked": {
+    "message": "Junto com o desfoque das prévias",
+    "description": "Note under the \"Blur video titles\" setting while it is linked to \"Blur previews\" and follows it."
+  },
+  "popupTitlesLinked": {
+    "message": "Vinculado ao desfoque das prévias. Clique para ajustar separadamente.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur follows \"Blur previews\"."
+  },
+  "popupTitlesUnlinked": {
+    "message": "Ajustado separadamente. Clique para vincular às prévias.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur is set on its own."
   },
   "popupHideComments": {
     "message": "Ocultar comentários",

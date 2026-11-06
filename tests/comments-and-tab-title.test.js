@@ -711,6 +711,22 @@ test("tab title is hidden on live and Shorts pages too", () => {
   });
 });
 
+test("tab title follows preview blur while titles are linked to it", () => {
+  withTitleObserver("https://www.youtube.com/watch?v=final", () => {
+    const doc = createPage({
+      titleElement: createElement("title"),
+      title: "Team A 3-0 Team B - YouTube",
+    });
+    const linked = { ...BASE_SETTINGS, hideComments: false, blurTitlesLinked: true };
+
+    content.applySettings({ ...linked, hideVideoPreviews: true, hideVideoTitles: false }, doc);
+    assert.equal(doc.title, "YouTube");
+
+    content.applySettings({ ...linked, hideVideoPreviews: false, hideVideoTitles: true }, doc);
+    assert.equal(doc.title, "Team A 3-0 Team B - YouTube");
+  });
+});
+
 test("tab title is left alone on other pages and when titles are not hidden", () => {
   withTitleObserver("https://www.youtube.com/feed/subscriptions", () => {
     const doc = createPage({

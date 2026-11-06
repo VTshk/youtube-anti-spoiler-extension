@@ -527,6 +527,46 @@ p {
   outline-offset: 2px;
 }
 
+/* The chain button next to "Blur video titles": a plain outline while
+   titles are set separately, the soft red of the Beta badge while they are
+   linked to "Blur previews". */
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.link-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.link-button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+}
+
+.link-button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Read-only (settings failed to load). */
+.link-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* The contact line under the cards: tiny and paler than the notes, so it
    does not pull the eye from the settings. The owner chose an 8 px label
    and a 9 px address (2026-11-06). */

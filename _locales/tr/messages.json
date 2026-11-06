@@ -55,6 +55,10 @@
     "message": "Küçük resimler ve fareyle önizleme",
     "description": "Note under the \"Blur previews\" setting."
   },
+  "popupBlurPreviewsNoteLinked": {
+    "message": "Küçük resimler, fareyle önizleme ve başlıklar",
+    "description": "Note under the \"Blur previews\" setting while video titles are linked to it, so they are blurred too."
+  },
   "popupBlurTitles": {
     "message": "Video başlıklarını bulanıklaştır",
     "description": "Popup setting title: blurs video titles."
@@ -62,6 +66,18 @@
   "popupBlurTitlesNote": {
     "message": "Listelerde, video sayfasında ve bitiş ekranlarında",
     "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupBlurTitlesNoteLinked": {
+    "message": "Önizleme bulanıklığıyla birlikte",
+    "description": "Note under the \"Blur video titles\" setting while it is linked to \"Blur previews\" and follows it."
+  },
+  "popupTitlesLinked": {
+    "message": "Önizleme bulanıklığına bağlı. Ayrı ayarlamak için tıklayın.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur follows \"Blur previews\"."
+  },
+  "popupTitlesUnlinked": {
+    "message": "Ayrı ayarlanıyor. Önizlemelere bağlamak için tıklayın.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur is set on its own."
   },
   "popupHideComments": {
     "message": "Yorumları gizle",

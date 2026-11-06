@@ -10,6 +10,7 @@ test("settings defaults hide spoiler-prone time by default", () => {
     hidePlayerProgressBar: true,
     hideVideoPreviews: false,
     hideVideoTitles: false,
+    blurTitlesLinked: true,
     startLiveFromBeginning: true,
     hideComments: true,
   });
@@ -34,6 +35,7 @@ test("normalizeSettings keeps known boolean settings and fills missing defaults"
       hidePlayerProgressBar: true,
       hideVideoPreviews: true,
       hideVideoTitles: true,
+      blurTitlesLinked: false,
       startLiveFromBeginning: false,
       hideComments: false,
     },
@@ -52,6 +54,7 @@ test("normalizeSettings ignores legacy time settings and keeps hideTime enabled"
       hidePlayerProgressBar: true,
       hideVideoPreviews: false,
       hideVideoTitles: false,
+      blurTitlesLinked: true,
       startLiveFromBeginning: true,
       hideComments: true,
     },
@@ -134,6 +137,7 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     "hidePlayerProgressBar",
     "hideVideoPreviews",
     "hideVideoTitles",
+    "blurTitlesLinked",
     "startLiveFromBeginning",
     "hideComments",
     "hideThumbnailDuration",
@@ -146,7 +150,77 @@ test("readSettings asks storage for current and legacy setting keys", async () =
     hidePlayerProgressBar: false,
     hideVideoPreviews: false,
     hideVideoTitles: false,
+    blurTitlesLinked: true,
     startLiveFromBeginning: true,
     hideComments: true,
   });
 });
+
+// --- Title blur linked to preview blur ---
+
+test("title blur is linked to preview blur by default", () => {
+  assert.equal(settings.DEFAULT_SETTINGS.blurTitlesLinked, true);
+  assert.equal(settings.normalizeSettings({}).blurTitlesLinked, true);
+});
+
+test("settings saved before the chain button keep title blur on only where it was on", () => {
+  // Title blur on: stays on, set separately.
+  assert.deepEqual(
+    pickTitleSettings(settings.normalizeSettings({ hideVideoTitles: true })),
+    { hideVideoTitles: true, blurTitlesLinked: false },
+  );
+  // Off (the popup saved false for everyone) or never saved: linked.
+  assert.deepEqual(
+    pickTitleSettings(settings.normalizeSettings({ hideVideoTitles: false })),
+    { hideVideoTitles: false, blurTitlesLinked: true },
+  );
+  assert.deepEqual(
+    pickTitleSettings(settings.normalizeSettings({ hideVideoPreviews: true })),
+    { hideVideoTitles: false, blurTitlesLinked: true },
+  );
+  // A damaged value counts as missing.
+  assert.equal(settings.normalizeSettings({ blurTitlesLinked: "yes" }).blurTitlesLinked, true);
+});
+
+test("a stored link value always wins over the migration", () => {
+  assert.deepEqual(
+    pickTitleSettings(settings.normalizeSettings({ hideVideoTitles: true, blurTitlesLinked: true })),
+    { hideVideoTitles: true, blurTitlesLinked: true },
+  );
+  assert.deepEqual(
+    pickTitleSettings(settings.normalizeSettings({ hideVideoTitles: false, blurTitlesLinked: false })),
+    { hideVideoTitles: false, blurTitlesLinked: false },
+  );
+});
+
+test("getEffectiveSettings blurs titles with previews while linked and keeps the own value otherwise", () => {
+  const cases = [
+    // [linked, previews, own titles value, effective titles]
+    [true, true, false, true],
+    [true, false, true, false],
+    [false, true, false, false],
+    [false, false, true, true],
+  ];
+
+  cases.forEach(([linked, previews, titles, expected]) => {
+    const stored = settings.normalizeSettings({
+      blurTitlesLinked: linked,
+      hideVideoPreviews: previews,
+      hideVideoTitles: titles,
+    });
+    const effective = settings.getEffectiveSettings(stored);
+
+    assert.equal(effective.hideVideoTitles, expected, JSON.stringify({ linked, previews, titles }));
+    // Everything else is passed through, and the stored copy is not changed.
+    assert.equal(effective.hideVideoPreviews, previews);
+    assert.equal(effective.blurTitlesLinked, linked);
+    assert.equal(stored.hideVideoTitles, titles);
+  });
+});
+
+function pickTitleSettings(normalized) {
+  return {
+    hideVideoTitles: normalized.hideVideoTitles,
+    blurTitlesLinked: normalized.blurTitlesLinked,
+  };
+}

@@ -41,6 +41,11 @@
     return root.document.querySelector("[data-theme-toggle]");
   }
 
+  // The chain button that links title blur to preview blur.
+  function getTitlesLinkButton() {
+    return root.document.querySelector("[data-titles-link]");
+  }
+
   function getEnabledIconPaths() {
     return {
       16: "/icons/icon16.png",
@@ -96,6 +101,35 @@
     toggles.forEach((toggle) => {
       toggle.checked = Boolean(settings[toggle.dataset.setting]);
     });
+
+    renderTitlesLink(settings, toggles);
+  }
+
+  // While linked, titles are blurred together with previews: the titles
+  // switch shows the previews value and cannot be changed on its own, and
+  // the notes say so (Advanced is closed by default, so the previews note
+  // mentions titles too).
+  function renderTitlesLink(settings, toggles) {
+    const linked = settings.blurTitlesLinked;
+    const titlesToggle = toggles.find((toggle) => toggle.dataset.setting === "hideVideoTitles");
+    const linkButton = getTitlesLinkButton();
+
+    if (linked) {
+      titlesToggle.checked = settings.hideVideoPreviews;
+    }
+
+    titlesToggle.disabled = linked;
+    linkButton.setAttribute("aria-pressed", String(linked));
+    // setLabel and setText keep the keys, so a language change re-translates.
+    namespace.setLabel(linkButton, linked ? "popupTitlesLinked" : "popupTitlesUnlinked");
+    namespace.setText(
+      root.document.querySelector("[data-blur-previews-note]"),
+      linked ? "popupBlurPreviewsNoteLinked" : "popupBlurPreviewsNote",
+    );
+    namespace.setText(
+      root.document.querySelector("[data-blur-titles-note]"),
+      linked ? "popupBlurTitlesNoteLinked" : "popupBlurTitlesNote",
+    );
   }
 
   function renderPower(settings, powerToggle, powerStatus, powerNote, settingsPanels) {
@@ -153,6 +187,28 @@
         await saveSettings({ [toggle.dataset.setting]: toggle.checked });
         renderSettings(currentSettings, toggles);
       });
+    });
+  }
+
+  // Unlinking starts the titles from the previews value, so nothing changes
+  // on the page at that moment. The button flips at once, like a switch,
+  // and the next click reads it, so a quick second click undoes the first.
+  function bindTitlesLinkSaving(linkButton, toggles) {
+    linkButton.addEventListener("click", async () => {
+      const link = linkButton.getAttribute("aria-pressed") !== "true";
+
+      linkButton.setAttribute("aria-pressed", String(link));
+
+      if (link) {
+        await saveSettings({ blurTitlesLinked: true });
+      } else {
+        await saveSettings({
+          blurTitlesLinked: false,
+          hideVideoTitles: currentSettings.hideVideoPreviews,
+        });
+      }
+
+      renderSettings(currentSettings, toggles);
     });
   }
 
@@ -224,6 +280,7 @@
 
     languageSelect.disabled = true;
     themeButton.disabled = true;
+    getTitlesLinkButton().disabled = true;
   }
 
   // The theme is kept in storage.local under `uiTheme`: "light" or "dark".
@@ -502,6 +559,7 @@
     setStatus("");
 
     bindToggleSaving(toggles);
+    bindTitlesLinkSaving(getTitlesLinkButton(), toggles);
     bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels);
     bindHeroPointer(getHero());
     bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels);

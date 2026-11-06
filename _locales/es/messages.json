@@ -55,6 +55,10 @@
     "message": "Miniaturas y vistas previas al pasar el cursor",
     "description": "Note under the \"Blur previews\" setting."
   },
+  "popupBlurPreviewsNoteLinked": {
+    "message": "Miniaturas, vistas previas al pasar el cursor y títulos",
+    "description": "Note under the \"Blur previews\" setting while video titles are linked to it, so they are blurred too."
+  },
   "popupBlurTitles": {
     "message": "Difuminar títulos de videos",
     "description": "Popup setting title: blurs video titles."
@@ -62,6 +66,18 @@
   "popupBlurTitlesNote": {
     "message": "En listas, en la página del video y en pantallas finales",
     "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupBlurTitlesNoteLinked": {
+    "message": "Junto con las vistas previas",
+    "description": "Note under the \"Blur video titles\" setting while it is linked to \"Blur previews\" and follows it."
+  },
+  "popupTitlesLinked": {
+    "message": "Vinculado al difuminado de las vistas previas. Haz clic para ajustarlo por separado.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur follows \"Blur previews\"."
+  },
+  "popupTitlesUnlinked": {
+    "message": "Se ajusta por separado. Haz clic para vincularlo a las vistas previas.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur is set on its own."
   },
   "popupHideComments": {
     "message": "Ocultar comentarios",

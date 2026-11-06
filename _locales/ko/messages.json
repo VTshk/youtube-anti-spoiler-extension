@@ -55,6 +55,10 @@
     "message": "썸네일과 마우스 오버 미리보기",
     "description": "Note under the \"Blur previews\" setting."
   },
+  "popupBlurPreviewsNoteLinked": {
+    "message": "썸네일, 마우스 오버 미리보기, 제목",
+    "description": "Note under the \"Blur previews\" setting while video titles are linked to it, so they are blurred too."
+  },
   "popupBlurTitles": {
     "message": "동영상 제목 흐리게 표시",
     "description": "Popup setting title: blurs video titles."
@@ -62,6 +66,18 @@
   "popupBlurTitlesNote": {
     "message": "목록, 동영상 페이지, 최종 화면",
     "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupBlurTitlesNoteLinked": {
+    "message": "미리보기 흐림과 함께 적용",
+    "description": "Note under the \"Blur video titles\" setting while it is linked to \"Blur previews\" and follows it."
+  },
+  "popupTitlesLinked": {
+    "message": "미리보기 흐림과 연결되어 있습니다. 클릭하면 따로 설정할 수 있습니다",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur follows \"Blur previews\"."
+  },
+  "popupTitlesUnlinked": {
+    "message": "따로 설정되어 있습니다. 클릭하면 미리보기와 연결됩니다",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur is set on its own."
   },
   "popupHideComments": {
     "message": "댓글 숨기기",

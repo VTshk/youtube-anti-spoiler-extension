@@ -546,6 +546,49 @@ test("getEnabledClassNames keeps time hiding enabled when stored setting is fals
   );
 });
 
+// --- Title blur linked to preview blur ---
+
+function hasTitlesClass(settings) {
+  return content.getEnabledClassNames(settings).includes(content.CLASS_BY_SETTING.hideVideoTitles);
+}
+
+test("linked titles are blurred together with previews", () => {
+  assert.equal(
+    hasTitlesClass({ blurTitlesLinked: true, hideVideoPreviews: true, hideVideoTitles: false }),
+    true,
+  );
+  // The own titles value does not count while linked.
+  assert.equal(
+    hasTitlesClass({ blurTitlesLinked: true, hideVideoPreviews: false, hideVideoTitles: true }),
+    false,
+  );
+});
+
+test("titles set separately follow their own switch", () => {
+  assert.equal(
+    hasTitlesClass({ blurTitlesLinked: false, hideVideoPreviews: true, hideVideoTitles: false }),
+    false,
+  );
+  assert.equal(
+    hasTitlesClass({ blurTitlesLinked: false, hideVideoPreviews: false, hideVideoTitles: true }),
+    true,
+  );
+});
+
+test("applySettings puts the linked title blur on <html> and takes it off with previews", () => {
+  const doc = createLiveDocument({});
+  const titlesClass = content.CLASS_BY_SETTING.hideVideoTitles;
+
+  content.applySettings({ extensionEnabled: true, blurTitlesLinked: true, hideVideoPreviews: true }, doc);
+  assert.equal(doc.documentElement.classList.contains(titlesClass), true);
+
+  content.applySettings(
+    { extensionEnabled: true, blurTitlesLinked: true, hideVideoPreviews: false, hideVideoTitles: true },
+    doc,
+  );
+  assert.equal(doc.documentElement.classList.contains(titlesClass), false);
+});
+
 test("getLiveStartTarget allows a protected YouTube watch page that has not been attempted", () => {
   assert.deepEqual(
     content.getLiveStartTarget(

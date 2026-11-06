@@ -55,6 +55,10 @@
     "message": "Miniatures et aperçus au survol",
     "description": "Note under the \"Blur previews\" setting."
   },
+  "popupBlurPreviewsNoteLinked": {
+    "message": "Miniatures, aperçus au survol et titres",
+    "description": "Note under the \"Blur previews\" setting while video titles are linked to it, so they are blurred too."
+  },
   "popupBlurTitles": {
     "message": "Flouter les titres des vidéos",
     "description": "Popup setting title: blurs video titles."
@@ -62,6 +66,18 @@
   "popupBlurTitlesNote": {
     "message": "Dans les listes, sur la page de la vidéo et sur les écrans de fin",
     "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupBlurTitlesNoteLinked": {
+    "message": "Avec le flou des aperçus",
+    "description": "Note under the \"Blur video titles\" setting while it is linked to \"Blur previews\" and follows it."
+  },
+  "popupTitlesLinked": {
+    "message": "Lié au flou des aperçus. Cliquez pour le régler séparément.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur follows \"Blur previews\"."
+  },
+  "popupTitlesUnlinked": {
+    "message": "Réglé séparément. Cliquez pour le lier aux aperçus.",
+    "description": "Screen reader label and tooltip of the chain button next to \"Blur video titles\" while title blur is set on its own."
   },
   "popupHideComments": {
     "message": "Masquer les commentaires",

@@ -71,7 +71,7 @@
         <label class="row">
           <span class="row-text">
             <span class="row-title" data-yas-i18n="popupBlurPreviews">Blur previews</span>
-            <span class="row-note" data-yas-i18n="popupBlurPreviewsNote">Thumbnails and hover previews</span>
+            <span class="row-note" data-blur-previews-note data-yas-i18n="popupBlurPreviewsNote">Thumbnails and hover previews</span>
           </span>
           <span class="toggle">
             <input type="checkbox" data-setting="hideVideoPreviews">
@@ -99,16 +99,23 @@
         <summary class="advanced-summary">
           <span data-yas-i18n="popupAdvancedSettings">Advanced settings</span>
         </summary>
-        <label class="row">
-          <span class="row-text">
+        <!-- A div, not a label: a label belongs to its first control, and the
+             chain button comes before the switch. The text is the switch's label.
+             While the chain is pressed, titles follow "Blur previews" and the
+             switch only shows that value. -->
+        <div class="row">
+          <label class="row-text" for="hide-video-titles">
             <span class="row-title" data-yas-i18n="popupBlurTitles">Blur video titles</span>
-            <span class="row-note" data-yas-i18n="popupBlurTitlesNote">In lists, on the video page and in end cards</span>
-          </span>
+            <span class="row-note" data-blur-titles-note data-yas-i18n="popupBlurTitlesNote">In lists, on the video page and in end cards</span>
+          </label>
+          <button type="button" class="link-button" data-titles-link aria-pressed="true" data-yas-i18n-label="popupTitlesLinked" aria-label="Linked to preview blur. Click to set separately." title="Linked to preview blur. Click to set separately.">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </button>
           <span class="toggle">
-            <input type="checkbox" data-setting="hideVideoTitles">
+            <input type="checkbox" id="hide-video-titles" data-setting="hideVideoTitles">
             <span aria-hidden="true"></span>
           </span>
-        </label>
+        </div>
         <label class="row">
           <span class="row-text">
             <span class="row-title" data-yas-i18n="popupHideComments">Hide comments</span>

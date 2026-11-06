@@ -13,6 +13,9 @@
     hidePlayerProgressBar: true,
     hideVideoPreviews: false,
     hideVideoTitles: false,
+    // Titles are blurred together with previews (the chain button in the
+    // popup). Unlinked, hideVideoTitles is the user's own choice.
+    blurTitlesLinked: true,
     startLiveFromBeginning: true,
     hideComments: true,
   });
@@ -42,9 +45,29 @@
       hidePlayerProgressBar: getBoolean(raw, "hidePlayerProgressBar"),
       hideVideoPreviews: getBoolean(raw, "hideVideoPreviews"),
       hideVideoTitles: getBoolean(raw, "hideVideoTitles"),
+      // Settings saved before the chain button existed have no link value.
+      // Whoever had title blur on keeps it on their own; everyone else
+      // (the popup saved `false` for them) starts linked to previews.
+      blurTitlesLinked:
+        typeof raw.blurTitlesLinked === "boolean"
+          ? raw.blurTitlesLinked
+          : raw.hideVideoTitles !== true,
       startLiveFromBeginning: getBoolean(raw, "startLiveFromBeginning"),
       hideComments: getBoolean(raw, "hideComments"),
     };
+  }
+
+  // What the page acts on: while linked, titles are blurred exactly when
+  // previews are. Storage and the popup keep the user's own hideVideoTitles
+  // for the unlinked case. Takes normalized settings.
+  function getEffectiveSettings(settings) {
+    const effectiveSettings = Object.assign({}, settings);
+
+    if (settings.blurTitlesLinked) {
+      effectiveSettings.hideVideoTitles = settings.hideVideoPreviews;
+    }
+
+    return effectiveSettings;
   }
 
   function getStorageArea(storageArea) {
@@ -118,6 +141,7 @@
     LEGACY_SETTING_KEYS,
     STORAGE_READ_KEYS,
     normalizeSettings,
+    getEffectiveSettings,
     readSettings,
     writeSettings,
   };

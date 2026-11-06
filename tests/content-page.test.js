@@ -144,6 +144,8 @@ function startContentScripts({
   const doc = createPage({ controls });
   const windowListeners = {};
   const messageListeners = [];
+  const storageChangeListeners = [];
+  let settingsReads = 0;
   const intervals = [];
   let pendingSettingsRead = null;
   const context = {
@@ -184,6 +186,7 @@ function startContentScripts({
       storage: {
         sync: {
           get(keys, callback) {
+            settingsReads += 1;
             pendingSettingsRead = callback;
           },
         },
@@ -192,7 +195,11 @@ function startContentScripts({
             callback({});
           },
         },
-        onChanged: { addListener() {} },
+        onChanged: {
+          addListener(listener) {
+            storageChangeListeners.push(listener);
+          },
+        },
       },
     },
   };
@@ -228,6 +235,13 @@ function startContentScripts({
     navigate(nextHref) {
       context.location.href = nextHref;
       windowListeners["yt-navigate-finish"]();
+    },
+    get settingsReads() {
+      return settingsReads;
+    },
+    // Another part of the extension (the popup) saved settings.
+    changeStoredSettings(changes) {
+      storageChangeListeners.forEach((listener) => listener(changes, "sync"));
     },
     runInterval() {
       intervals.forEach((callback) => callback());
@@ -490,6 +504,19 @@ test("titles and previews saved as hidden are blurred before chrome.storage answ
   assert.equal(page.classes.has("yas-hide-video-previews"), true);
 });
 
+test("a saved copy with previews blurred and titles not keeps titles readable before the real read", () => {
+  // Titles set separately and off: the copy says so, and the default link
+  // to previews must not blur them anyway.
+  const page = startContentScripts({
+    localItems: {
+      [LAST_SETTINGS_KEY]: JSON.stringify({ hideVideoPreviews: true, hideVideoTitles: false }),
+    },
+  });
+
+  assert.equal(page.classes.has("yas-hide-video-previews"), true);
+  assert.equal(page.classes.has("yas-hide-video-titles"), false);
+});
+
 test("the real settings read corrects the saved copy", async () => {
   const page = startContentScripts({
     localItems: { [LAST_SETTINGS_KEY]: JSON.stringify({ hideVideoPreviews: false, hideVideoTitles: true }) },
@@ -541,8 +568,37 @@ test("every settings read saves only the two optional blurs for the next load", 
     hideVideoTitles: true,
   });
 
+  // Titles linked to previews: the copy keeps the title blur the page used.
+  const linkedOn = startContentScripts();
+  await linkedOn.answerSettings({ blurTitlesLinked: true, hideVideoPreviews: true, hideVideoTitles: false });
+  assert.deepEqual(JSON.parse(linkedOn.localItems[LAST_SETTINGS_KEY]), {
+    hideVideoPreviews: true,
+    hideVideoTitles: true,
+  });
+
+  const linkedOff = startContentScripts();
+  await linkedOff.answerSettings({ blurTitlesLinked: true, hideVideoPreviews: false, hideVideoTitles: true });
+  assert.deepEqual(JSON.parse(linkedOff.localItems[LAST_SETTINGS_KEY]), {
+    hideVideoPreviews: false,
+    hideVideoTitles: false,
+  });
+
   // Blocked site data: the read still applies.
   const blocked = startContentScripts({ localStorageBlocked: true });
   await blocked.answerSettings({ hideVideoTitles: true });
   assert.equal(blocked.classes.has("yas-hide-video-titles"), true);
+});
+
+test("a change of only the title link reaches the page", async () => {
+  const page = startContentScripts();
+  await page.answerSettings({ hideVideoPreviews: true, blurTitlesLinked: false, hideVideoTitles: false });
+  assert.equal(page.classes.has("yas-hide-video-titles"), false);
+
+  // The popup links titles to previews again: only blurTitlesLinked changes.
+  const readsBefore = page.settingsReads;
+  page.changeStoredSettings({ blurTitlesLinked: { oldValue: false, newValue: true } });
+  assert.equal(page.settingsReads, readsBefore + 1, "the page reads the settings again");
+  await page.answerSettings({ hideVideoPreviews: true, blurTitlesLinked: true, hideVideoTitles: false });
+
+  assert.equal(page.classes.has("yas-hide-video-titles"), true);
 });
