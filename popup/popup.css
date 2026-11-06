@@ -509,19 +509,32 @@ p {
   outline-offset: 2px;
 }
 
-/* The contact line under the cards: small, muted, no card of its own. */
+/* The contact line under the cards: tiny and paler than the notes, so it
+   does not pull the eye from the settings. The owner chose an 8 px label
+   and a 9 px address (2026-11-06). */
 .contact {
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: 12px;
+  margin-top: 8px;
+  color: color-mix(in srgb, var(--muted) 85%, var(--bg));
+  font-size: 9px;
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
 }
 
+.contact span {
+  font-size: 8px;
+}
+
+/* Same colour as the label; a faint underline alone marks the link. */
 .contact a {
-  color: var(--text);
+  color: inherit;
   text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.contact a:hover {
+  color: var(--text);
 }
 
 .contact a:focus-visible {
