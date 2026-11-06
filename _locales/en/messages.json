@@ -1,10 +1,10 @@
 {
   "manifestName": {
-    "message": "Anti-Spoiler for YouTube",
+    "message": "Anti-Spoiler for YouTube™ – Hide Video Length & Progress Bar",
     "description": "Extension name in Chrome, the Web Store and the toolbar button tooltip."
   },
   "manifestDescription": {
-    "message": "Hides spoiler-prone YouTube elements: time, progress bars, previews, titles, comments, and live-stream results.",
+    "message": "Hide video length and the progress bar on YouTube to avoid spoilers in sports and esports replays.",
     "description": "Extension description in Chrome and the Web Store. At most 132 characters."
   },
   "manifestToggleCommand": {

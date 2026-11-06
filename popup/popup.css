@@ -569,14 +569,26 @@ p {
 
 /* The contact line under the cards: tiny and paler than the notes, so it
    does not pull the eye from the settings. The owner chose an 8 px label
-   and a 9 px address (2026-11-06). */
+   and a 9 px address, set apart by a thin line 24 px shorter than the
+   cards on each side (2026-11-06). */
 .contact {
-  margin-top: 8px;
+  position: relative;
+  margin-top: 14px;
+  padding-top: 10px;
   color: color-mix(in srgb, var(--muted) 85%, var(--bg));
   font-size: 9px;
   line-height: 1.25;
   text-align: center;
   overflow-wrap: anywhere;
+}
+
+.contact::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  border-top: 1px solid var(--line);
 }
 
 .contact span {

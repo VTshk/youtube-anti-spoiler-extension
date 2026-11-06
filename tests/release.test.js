@@ -1,7 +1,6 @@
 const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
@@ -11,27 +10,28 @@ function readText(relativePath) {
   return fs.readFileSync(path.join(rootPath, relativePath), "utf8");
 }
 
+// Entry names exactly as stored in the ZIP's central directory. Unpacking on
+// Windows would hide backslash separators, which break the package on the
+// Chrome Web Store (it unpacks on Linux, where "\" is part of a file name).
 function getZipEntryNames(zipPath) {
-  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "yas-release-"));
+  const zip = fs.readFileSync(zipPath);
+  // End of central directory record: the last 22 bytes when there is no comment.
+  const end = zip.length - 22;
+  assert.equal(zip.readUInt32LE(end), 0x06054b50, "end of central directory record");
+  const entryCount = zip.readUInt16LE(end + 10);
+  let offset = zip.readUInt32LE(end + 16);
+  const names = [];
 
-  try {
-    execFileSync("powershell", [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      `Expand-Archive -LiteralPath '${zipPath.replaceAll("'", "''")}' -DestinationPath '${tempDirectory.replaceAll("'", "''")}' -Force`,
-    ], {
-      cwd: rootPath,
-      stdio: "pipe",
-    });
-
-    return fs.readdirSync(tempDirectory, { recursive: true })
-      .map((entry) => entry.replaceAll("\\", "/"))
-      .sort();
-  } finally {
-    fs.rmSync(tempDirectory, { recursive: true, force: true });
+  for (let index = 0; index < entryCount; index += 1) {
+    assert.equal(zip.readUInt32LE(offset), 0x02014b50, "central directory header");
+    const nameLength = zip.readUInt16LE(offset + 28);
+    const extraLength = zip.readUInt16LE(offset + 30);
+    const commentLength = zip.readUInt16LE(offset + 32);
+    names.push(zip.toString("utf8", offset + 46, offset + 46 + nameLength));
+    offset += 46 + nameLength + extraLength + commentLength;
   }
+
+  return names.sort();
 }
 
 test("store release documents cover Chrome Web Store dashboard fields", () => {
@@ -93,6 +93,7 @@ test("release build script creates a runtime-only Chrome Web Store zip", () => {
   const entries = getZipEntryNames(zipPath);
 
   assert.equal(fs.existsSync(zipPath), true);
+  assert.deepEqual(entries.filter((entry) => entry.includes("\\")), [], "entry names use / only");
   assert.ok(entries.includes("manifest.json"));
   assert.ok(entries.includes("popup/popup.html"));
   assert.ok(entries.includes("popup/popup.css"));

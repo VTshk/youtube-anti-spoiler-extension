@@ -13,7 +13,8 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
   // Chrome fills the name in from _locales; English is the default.
   assert.equal(manifest.default_locale, "en");
   assert.equal(manifest.name, "__MSG_manifestName__");
-  assert.equal(en("manifestName"), "Anti-Spoiler for YouTube");
+  // The store title comes from the manifest name (owner, 2026-11-06: the long name with keywords).
+  assert.equal(en("manifestName"), "Anti-Spoiler for YouTube™ – Hide Video Length & Progress Bar");
   // The MAIN-world content script needs Chrome 111+; without this floor the
   // bridge silently loads isolated on older Chrome and the live guard degrades.
   assert.equal(manifest.minimum_chrome_version, "111");
