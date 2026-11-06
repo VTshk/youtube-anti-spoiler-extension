@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>D — Tiles</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #eeeef0; --surface: #ffffff; --text: #222222; --muted: #5e5e66; --line: #d9d9de;
+    --accent: #c85252; --band: #222222; --control-border: #76767e; --focus: #222222;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --surface: #232326; --text: #f7f7f8; --muted: #bdbdc6; --line: #3a3a40;
+      --band: #000000; --control-border: #9999a3; --focus: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { width: 368px; margin: 0; background: var(--bg); color: var(--text); }
+  .shell { padding: 12px; }
+
+  .top { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 52px; height: 28px; }
+  .name { flex: 1; font-size: 15px; font-weight: 700; }
+  .status { margin: 10px 0 12px; padding: 7px 12px; border-radius: 10px; background: var(--band); color: #fff; font-size: 12px; }
+  .status b { font-weight: 700; }
+
+  .switch { position: relative; width: 44px; height: 26px; flex: 0 0 auto; }
+  .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 13px; background: #8a8a92; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(18px); }
+
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 12px; margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 6px 0; cursor: pointer; }
+  .row + .row { border-top: 1px dashed var(--line); }
+  .row-text { flex: 1; }
+  .row-title { font-size: 14px; font-weight: 600; }
+  .row-note { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tile {
+    position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 104px;
+    padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); cursor: pointer;
+  }
+  .tile:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tile-icon { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--bg); }
+  .tile-icon svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tile .check { position: absolute; top: 12px; right: 12px; }
+  .tile .row-title { font-size: 13.5px; }
+
+  .check { appearance: none; margin: 0; width: 20px; height: 20px; flex: 0 0 auto; border: 2px solid var(--control-border); border-radius: 6px; display: grid; place-items: center; cursor: pointer; }
+  .check::after { content: ""; width: 5px; height: 10px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0; }
+  .check:checked { background: var(--accent); border-color: var(--accent); }
+  .check:checked::after { opacity: 1; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .footer { margin: 10px 2px 0; font-size: 12px; color: var(--muted); }
+  kbd { font: inherit; font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <img class="logo" src="../../../../icons/icon.svg" alt="">
+    <div class="name">Anti-Spoiler</div>
+    <label class="switch"><input type="checkbox" role="switch" aria-label="Protection" checked><span></span></label>
+  </header>
+  <div class="status"><b>Protection on</b> · video time and duration are hidden</div>
+
+  <div class="card">
+    <label class="row">
+      <span class="row-text"><div class="row-title">Hide progress bar</div><div class="row-note">In the player and in previews</div></span>
+      <input class="check" type="checkbox" checked>
+    </label>
+    <label class="row">
+      <span class="row-text"><div class="row-title">Skip buttons</div><div class="row-note">−10m −1m −10s +10s +1m +10m</div></span>
+      <input class="check" type="checkbox" checked>
+    </label>
+  </div>
+
+  <div class="tiles">
+    <label class="tile">
+      <span class="tile-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 15l5-4 4 3 3-2 6 4"/></svg></span>
+      <span><div class="row-title">Blur previews</div><div class="row-note">Thumbnails and hovers</div></span>
+      <input class="check" type="checkbox">
+    </label>
+    <label class="tile">
+      <span class="tile-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h13"/></svg></span>
+      <span><div class="row-title">Blur titles</div><div class="row-note">Lists and video page</div></span>
+      <input class="check" type="checkbox">
+    </label>
+    <label class="tile">
+      <span class="tile-icon"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/></svg></span>
+      <span><div class="row-title">Hide comments</div><div class="row-note">Show with one click</div></span>
+      <input class="check" type="checkbox" checked>
+    </label>
+    <label class="tile">
+      <span class="tile-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg></span>
+      <span><div class="row-title">Live streams</div><div class="row-note">Pause, hide live chat</div></span>
+      <input class="check" type="checkbox" checked>
+    </label>
+  </div>
+
+  <p class="footer">Turn on or off: <kbd>Alt+Shift+S</kbd></p>
+</main>
+</body>
+</html>

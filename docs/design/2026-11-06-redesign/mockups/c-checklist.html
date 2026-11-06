@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C — Quiet checklist</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #faf7f2; --text: #222222; --muted: #655d57; --line: #e4dcd2;
+    --mark: #222222; --mark-on: #ffffff; --control-border: #776b62; --focus: #222222;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1917; --text: #fff9f2; --muted: #c5b9ac; --line: #3a332d;
+      --mark: #fff9f2; --mark-on: #1c1917; --control-border: #a99b8d; --focus: #fff9f2;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { width: 340px; margin: 0; background: var(--bg); color: var(--text); }
+  .shell { padding: 18px 18px 14px; }
+
+  .header { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 74px; height: 40px; }
+  .name { font-size: 19px; font-weight: 700; line-height: 1.1; }
+  .name small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .rule { width: 64px; height: 4px; border-radius: 2px; background: var(--text); margin: 14px 0 12px; }
+
+  .power { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  .power-text { flex: 1; }
+  .power-title { font-size: 16px; font-weight: 700; }
+  .power-note { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .switch { position: relative; width: 40px; height: 24px; flex: 0 0 auto; }
+  .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 12px; border: 2px solid var(--control-border); }
+  .switch span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--control-border); transition: transform .15s; }
+  .switch input:checked + span { background: #c85252; border-color: #c85252; }
+  .switch input:checked + span::after { background: #fff; transform: translateX(16px); }
+
+  .list { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .row { display: flex; gap: 12px; align-items: flex-start; padding: 7px 0; cursor: pointer; }
+  .row.nested { padding-left: 32px; }
+  .row-title { font-size: 14px; font-weight: 600; }
+  .row-note { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .check { appearance: none; margin: 1px 0 0; width: 20px; height: 20px; flex: 0 0 auto; border: 2px solid var(--control-border); border-radius: 4px; display: grid; place-items: center; cursor: pointer; }
+  .check::after { content: ""; width: 5px; height: 10px; margin-top: -2px; border: solid var(--mark-on); border-width: 0 2px 2px 0; transform: rotate(45deg); opacity: 0; }
+  .check:checked { background: var(--mark); border-color: var(--mark); }
+  .check:checked::after { opacity: 1; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .footer { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  kbd { font: inherit; font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="header">
+    <img class="logo" src="../../../../icons/icon.svg" alt="">
+    <div class="name">Anti-Spoiler<small>for YouTube</small></div>
+  </header>
+  <div class="rule"></div>
+
+  <section class="power">
+    <div class="power-text">
+      <div class="power-title">Protection on</div>
+      <div class="power-note">Video time and duration are hidden</div>
+    </div>
+    <label class="switch"><input type="checkbox" role="switch" aria-label="Protection" checked><span></span></label>
+  </section>
+
+  <section class="list" aria-label="Player">
+    <label class="row"><input class="check" type="checkbox" checked>
+      <span><div class="row-title">Hide progress bar</div><div class="row-note">In the player and in previews</div></span></label>
+    <label class="row nested"><input class="check" type="checkbox" checked>
+      <span><div class="row-title">Skip buttons</div><div class="row-note">Jump 10 s, 1 min or 10 min</div></span></label>
+  </section>
+
+  <section class="list" aria-label="Around videos">
+    <label class="row"><input class="check" type="checkbox">
+      <span><div class="row-title">Blur previews</div><div class="row-note">Thumbnails and hover previews</div></span></label>
+    <label class="row"><input class="check" type="checkbox">
+      <span><div class="row-title">Blur video titles</div><div class="row-note">In lists, on the video page and in end cards</div></span></label>
+    <label class="row"><input class="check" type="checkbox" checked>
+      <span><div class="row-title">Hide comments</div><div class="row-note">Show them with one click</div></span></label>
+  </section>
+
+  <section class="list" aria-label="Live streams">
+    <label class="row"><input class="check" type="checkbox" checked>
+      <span><div class="row-title">Protect live streams</div><div class="row-note">Pause at the start and hide live chat</div></span></label>
+  </section>
+
+  <p class="footer">Turn on or off: <kbd>Alt+Shift+S</kbd></p>
+</main>
+</body>
+</html>

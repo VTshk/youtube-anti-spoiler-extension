@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Варианты дизайна попапа</title>
+<style>
+  body { margin: 0; padding: 24px; background: #dcdcde; font-family: system-ui, "Segoe UI", sans-serif; color: #222; width: max-content; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  p.lead { margin: 0 0 20px; color: #555; font-size: 14px; }
+  .row { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 28px; }
+  figure { margin: 0; }
+  figcaption { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  figcaption span { display: block; font-size: 12px; font-weight: 400; color: #555; max-width: 340px; }
+  img { width: 340px; display: block; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+</style>
+</head>
+<body>
+  <h1>Попап Anti-Spoiler: варианты</h1>
+  <p class="lead">Светлая тема сверху, тёмная снизу. Логотип не меняется.</p>
+  <div class="row">
+    <figure><figcaption>Сейчас<span>Как есть в 0.3.0</span></figcaption><img src="shots/current-light.png"></figure>
+    <figure><figcaption>A. Полоса защиты<span>Тёмная полоса из логотипа с главным переключателем, три группы, перемотка вложена. Выбор Astra; у Argon — похожий.</span></figcaption><img src="shots/a-band-light.png"></figure>
+    <figure><figcaption>B. Капсула логотипа<span>Шапка повторяет логотип целиком: красная капсула с тёмной полосой. Настройки в карточках, вместо галочек — переключатели. Выбор Argon.</span></figcaption><img src="shots/b-capsule-light.png"></figure>
+    <figure><figcaption>C. Тихий список<span>Минимум оформления: тёплый фон, галочки слева, красный только в логотипе и главном переключателе.</span></figcaption><img src="shots/c-checklist-light.png"></figure>
+    <figure><figcaption>D. Плитки<span>Самый короткий: карточка плеера и 4 плитки с иконками. Хуже всего переносит длинные переводы.</span></figcaption><img src="shots/d-tiles-light.png"></figure>
+  </div>
+  <div class="row">
+    <figure><figcaption>&nbsp;<span>Тёмной темы сейчас нет</span></figcaption></figure>
+    <figure><img src="shots/a-band-dark.png"></figure>
+    <figure><img src="shots/b-capsule-dark.png"></figure>
+    <figure><img src="shots/c-checklist-dark.png"></figure>
+    <figure><img src="shots/d-tiles-dark.png"></figure>
+  </div>
+</body>
+</html>

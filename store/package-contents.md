@@ -5,6 +5,7 @@ The Chrome Web Store ZIP package should contain only runtime extension files.
 ## Included
 
 - `manifest.json`
+- `_locales/`
 - `icons/`
 - `popup/`
 - `src/`

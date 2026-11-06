@@ -1,6 +1,6 @@
 (function initBackground(root) {
   if (!root.YouTubeAntiSpoiler && typeof root.importScripts === "function") {
-    root.importScripts("/src/shared/settings.js");
+    root.importScripts("/src/shared/settings.js", "/src/shared/i18n.js");
   }
 
   const namespace = root.YouTubeAntiSpoiler;
@@ -103,7 +103,86 @@
     });
   }
 
+  function readStoredLanguage() {
+    return new Promise((resolve, reject) => {
+      root.chrome.storage.local.get("uiLanguage", (items) => {
+        const error = root.chrome.runtime.lastError;
+
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+
+        resolve(items.uiLanguage || null);
+      });
+    });
+  }
+
+  // null removes the choice: back to the browser language.
+  function writeStoredLanguage(uiLanguage) {
+    return new Promise((resolve, reject) => {
+      const done = () => {
+        const error = root.chrome.runtime.lastError;
+
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+
+        resolve();
+      };
+
+      if (uiLanguage) {
+        root.chrome.storage.local.set({ uiLanguage }, done);
+      } else {
+        root.chrome.storage.local.remove("uiLanguage", done);
+      }
+    });
+  }
+
+  // The popup stores a copy of the chosen language's texts. An update may
+  // add or change texts, so the copy is loaded again from the new files.
+  // A language the new version no longer has is dropped.
+  async function refreshStoredLanguage() {
+    try {
+      const uiLanguage = await readStoredLanguage();
+
+      if (!uiLanguage) {
+        return;
+      }
+
+      const isSupported = namespace.SUPPORTED_LANGUAGES.some(
+        (language) => language.code === uiLanguage.code,
+      );
+
+      if (!isSupported) {
+        await writeStoredLanguage(null);
+        return;
+      }
+
+      const messages = await namespace.fetchMessages(uiLanguage.code);
+      await writeStoredLanguage({ code: uiLanguage.code, messages });
+    } catch (error) {
+      console.error("[Anti-Spoiler for YouTube] Could not refresh the language texts.", error);
+    }
+  }
+
+  function bindInstalled() {
+    if (!root.chrome.runtime || !root.chrome.runtime.onInstalled) {
+      return;
+    }
+
+    root.chrome.runtime.onInstalled.addListener((details) => {
+      if (details.reason === "update") {
+        return refreshStoredLanguage();
+      }
+
+      return undefined;
+    });
+  }
+
   refreshActionIcon();
   bindStorageChanges();
   bindCommands();
+  bindInstalled();
 })(globalThis);

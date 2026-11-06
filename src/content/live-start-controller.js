@@ -1,6 +1,7 @@
 (function initLiveStartController(root, factory) {
   if (typeof module !== "undefined" && module.exports) {
     require("../shared/settings.js");
+    require("../shared/i18n.js");
   }
 
   const api = factory(root);
@@ -11,6 +12,8 @@
     module.exports = api;
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function createLiveStartModule(root) {
+  // i18n.js is loaded before this file (see manifest.json).
+  const { setText } = root.YouTubeAntiSpoiler;
   const LIVE_START_OBSCURED_CLASS = "yas-live-start-obscured";
   const LIVE_GUARD_OVERLAY_ID = "youtube-anti-spoiler-live-guard";
   const LIVE_GUARD_PAUSE_EVENT = "youtube-anti-spoiler-live-guard-pause";
@@ -30,6 +33,7 @@
   const LIVE_GUARD_PLAYER_GONE_MS = 3000;
   const LIVE_GUARD_COMPACT_WIDTH_PX = 480;
   const LIVE_GUARD_AD_NOTE_ID = "youtube-anti-spoiler-live-guard-ad-note";
+  const LIVE_GUARD_TITLE_ID = "youtube-anti-spoiler-live-guard-title";
   // A jump on a live stream can make YouTube reload the media at the new
   // position: then "seeked" never fires, only "loadeddata"/"canplay" do
   // (live check 2026-11-05).
@@ -982,19 +986,19 @@
       playbackLockDocument = null;
     }
 
-    function appendTextElement(doc, parent, tagName, className, text) {
+    function appendTextElement(doc, parent, tagName, className, textKey) {
       const element = doc.createElement(tagName);
       element.className = className;
-      element.textContent = text;
+      setText(element, textKey);
       parent.appendChild(element);
       return element;
     }
 
-    function appendActionButton(doc, parent, action, text, handler) {
+    function appendActionButton(doc, parent, action, textKey, handler) {
       const button = doc.createElement("button");
       button.type = "button";
       button.dataset.liveGuardAction = action;
-      button.textContent = text;
+      setText(button, textKey);
       button.addEventListener("click", (event) => {
         if (event && typeof event.preventDefault === "function") {
           event.preventDefault();
@@ -1257,21 +1261,30 @@
       const copy = overlay.querySelector(".yas-live-guard-copy");
       const status = overlay.querySelector(".yas-live-guard-status");
       const rewindState = getRewindState(video);
-      let statusText = "";
+      let statusKey = "";
 
       if (rewindState === "checking") {
-        statusText = "Checking whether the stream can be rewound…";
+        statusKey = "liveGuardChecking";
       } else if (rewindState === "unavailable") {
-        statusText = "This stream can't be rewound. Continue live or leave the page.";
+        statusKey = "liveGuardCannotRewind";
       } else if (activeGuard.seekFailed) {
-        statusText = "Couldn't jump to the beginning.";
+        statusKey = "liveGuardJumpFailed";
       }
 
       startButton.hidden = rewindState === "unavailable";
       startButton.disabled = rewindState !== "available";
       startButton.style.opacity = startButton.disabled ? "0.5" : "";
-      status.textContent = statusText;
-      status.hidden = !statusText;
+
+      // Set with its key on every update, so a language change shows the
+      // text of the current state, not of an earlier one.
+      if (statusKey) {
+        setText(status, statusKey);
+      } else {
+        status.textContent = "";
+        delete status.dataset.yasI18n;
+      }
+
+      status.hidden = !statusKey;
       // The mini-player is too small for the explanation; title and buttons stay.
       copy.hidden = parseFloat(overlay.style.width) < LIVE_GUARD_COMPACT_WIDTH_PX;
     }
@@ -1298,7 +1311,9 @@
       overlay.className = "yas-live-guard-overlay";
       overlay.setAttribute("role", "dialog");
       overlay.setAttribute("aria-modal", "true");
-      overlay.setAttribute("aria-label", "Live spoiler protection");
+      // Named by its visible title. A translated aria-label would come with
+      // a title attribute (setLabel), whose tooltip would cover the player.
+      overlay.setAttribute("aria-labelledby", LIVE_GUARD_TITLE_ID);
 
       if (!applyLiveGuardBounds(doc, overlay)) {
         debugLog("renderOverlay: player bounds not ready — will retry");
@@ -1309,47 +1324,37 @@
       panel.className = "yas-live-guard-panel";
       overlay.appendChild(panel);
 
-      appendTextElement(
-        doc,
-        panel,
-        "p",
-        "yas-live-guard-title",
-        "Spoiler protection is active",
-      );
+      const title = appendTextElement(doc, panel, "p", "yas-live-guard-title", "liveGuardTitle");
+      title.id = LIVE_GUARD_TITLE_ID;
       appendTextElement(
         doc,
         panel,
         "p",
         "yas-live-guard-copy",
-        activeGuard.statusUnknown
-          ? "Couldn't tell whether this is a live stream."
-          : "This live stream was paused before showing the current moment.",
+        activeGuard.statusUnknown ? "liveGuardUnknownStatus" : "liveGuardPaused",
       );
 
-      const status = appendTextElement(
-        doc,
-        panel,
-        "p",
-        "yas-live-guard-copy yas-live-guard-status",
-        "",
-      );
+      // Its text comes from updateLiveGuardOverlay.
+      const status = doc.createElement("p");
+      status.className = "yas-live-guard-copy yas-live-guard-status";
       status.hidden = true;
+      panel.appendChild(status);
 
       const actions = doc.createElement("div");
       actions.className = "yas-live-guard-actions";
       panel.appendChild(actions);
 
-      appendActionButton(doc, actions, "start", "Start from beginning", () => {
+      appendActionButton(doc, actions, "start", "liveGuardStartButton", () => {
         startFromBeginning(doc);
       });
 
       if (activeGuard.statusUnknown) {
         // Resume where the video is: there may be no live edge to jump to.
-        appendActionButton(doc, actions, "play", "Play", () => {
+        appendActionButton(doc, actions, "play", "liveGuardPlayButton", () => {
           playFromCurrentPosition(doc);
         });
       } else {
-        appendActionButton(doc, actions, "continue", "Continue live", () => {
+        appendActionButton(doc, actions, "continue", "liveGuardContinueButton", () => {
           continueLive(doc);
         });
       }
@@ -1383,7 +1388,7 @@
       }
 
       const label = doc.createElement("span");
-      label.textContent = "Ad — the choice will appear after it";
+      setText(label, "liveGuardAdNote");
       Object.assign(label.style, {
         display: "inline-block",
         padding: "6px 10px",

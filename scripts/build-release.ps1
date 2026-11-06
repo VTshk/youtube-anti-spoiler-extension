@@ -11,6 +11,7 @@ $ZipPath = Join-Path $DistPath "$PackageName.zip"
 
 $RuntimeEntries = @(
   "manifest.json",
+  "_locales",
   "icons",
   "popup",
   "src"

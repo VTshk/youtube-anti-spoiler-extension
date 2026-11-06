@@ -3,19 +3,24 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
+const { en } = require("./helpers/english-messages.js");
+
 test("manifest declares a Chrome MV3 YouTube content script with storage permission", () => {
   const manifestPath = path.join(__dirname, "..", "manifest.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
   assert.equal(manifest.manifest_version, 3);
-  assert.equal(manifest.name, "Anti-Spoiler for YouTube");
+  // Chrome fills the name in from _locales; English is the default.
+  assert.equal(manifest.default_locale, "en");
+  assert.equal(manifest.name, "__MSG_manifestName__");
+  assert.equal(en("manifestName"), "Anti-Spoiler for YouTube");
   // The MAIN-world content script needs Chrome 111+; without this floor the
   // bridge silently loads isolated on older Chrome and the live guard degrades.
   assert.equal(manifest.minimum_chrome_version, "111");
   assert.deepEqual(manifest.permissions, ["storage"]);
   assert.deepEqual(manifest.host_permissions, ["https://www.youtube.com/*"]);
   assert.equal(manifest.action.default_popup, "popup/popup.html");
-  assert.equal(manifest.action.default_title, "Anti-Spoiler for YouTube");
+  assert.equal(manifest.action.default_title, "__MSG_manifestName__");
   assert.deepEqual(manifest.background, {
     service_worker: "src/background/background.js",
   });
@@ -59,6 +64,8 @@ test("manifest declares a Chrome MV3 YouTube content script with storage permiss
   assert.deepEqual(contentScript.matches, ["https://www.youtube.com/*"]);
   assert.deepEqual(contentScript.js, [
     "src/shared/settings.js",
+    // Before every script that shows text.
+    "src/shared/i18n.js",
     "src/content/live-start-controller.js",
     "src/content/skip-buttons.js",
     "src/content/content.js",
@@ -70,5 +77,10 @@ test("manifest declares the protection shortcut without new permissions", () => 
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "manifest.json"), "utf8"));
 
   assert.deepEqual(manifest.commands["toggle-protection"].suggested_key, { default: "Alt+Shift+S" });
+  assert.equal(manifest.commands["toggle-protection"].description, "__MSG_manifestToggleCommand__");
+  assert.equal(en("manifestToggleCommand"), "Turn spoiler protection on or off");
   assert.deepEqual(manifest.permissions, ["storage"]);
+  // The popup stores the chosen language's texts, so content scripts need
+  // no access to packaged files.
+  assert.equal(manifest.web_accessible_resources, undefined);
 });

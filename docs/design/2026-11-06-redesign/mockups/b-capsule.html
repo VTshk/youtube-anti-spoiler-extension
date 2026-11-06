@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B — Logo capsule</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f4f2f0; --surface: #ffffff; --text: #18181b; --muted: #57534e; --line: #e8e4e0;
+    --accent: #c85252; --band: #222222; --control-border: #757067; --focus: #18181b;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --surface: #1e1e22; --text: #f4f4f5; --muted: #a8a29e; --line: #2e2e34;
+      --control-border: #8a8a94; --focus: #ffffff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { width: 352px; margin: 0; background: var(--bg); color: var(--text); }
+  .shell { padding: 12px; }
+
+  /* The hero repeats the logo: a red capsule crossed by a dark band. */
+  .hero { border-radius: 18px; overflow: hidden; background: var(--accent); }
+  .hero-top { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; color: #fff; }
+  .hero-top svg { width: 22px; height: 22px; flex: 0 0 auto; }
+  .hero-name { font-size: 15px; font-weight: 800; letter-spacing: .02em; }
+  .hero-name small { font-weight: 500; opacity: .9; }
+  .hero-band { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: var(--band); color: #fff; }
+  .hero-band-text { flex: 1; }
+  .hero-title { font-size: 15px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .hero-note { font-size: 12px; color: #c9c9c9; margin-top: 2px; }
+  .hero-bottom { height: 10px; }
+
+  .switch { position: relative; width: 46px; height: 26px; flex: 0 0 auto; }
+  .switch input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 13px; background: #555; }
+  .switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+
+  .group-title { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 4px 6px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 9px 12px; cursor: pointer; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row-text { flex: 1; }
+  .row-title { font-size: 14px; font-weight: 600; }
+  .row-note { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .row.nested { padding-left: 30px; position: relative; }
+  .row.nested::before { content: ""; position: absolute; left: 16px; top: 8px; bottom: 8px; border-left: 2px solid var(--accent); border-radius: 2px; }
+
+  .toggle { position: relative; width: 36px; height: 20px; flex: 0 0 auto; }
+  .toggle input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+  .toggle span { position: absolute; inset: 0; border-radius: 10px; border: 2px solid var(--control-border); }
+  .toggle span::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--control-border); transition: transform .15s; }
+  .toggle input:checked + span { background: var(--accent); border-color: var(--accent); }
+  .toggle input:checked + span::after { background: #fff; transform: translateX(16px); }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .footer { margin: 12px 4px 0; font-size: 12px; color: var(--muted); }
+  kbd { font: inherit; font-weight: 600; color: var(--text); padding: 1px 6px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="hero">
+    <div class="hero-top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16l13-8z" fill="#fff"/></svg>
+      <div class="hero-name">Anti-Spoiler <small>for YouTube</small></div>
+    </div>
+    <div class="hero-band">
+      <div class="hero-band-text">
+        <div class="hero-title">Protection on</div>
+        <div class="hero-note">Video time and duration are hidden</div>
+      </div>
+      <label class="switch"><input type="checkbox" role="switch" aria-label="Protection" checked><span></span></label>
+    </div>
+    <div class="hero-bottom"></div>
+  </section>
+
+  <h2 class="group-title">Player</h2>
+  <div class="card">
+    <label class="row">
+      <span class="row-text"><div class="row-title">Hide progress bar</div><div class="row-note">In the player and in previews</div></span>
+      <span class="toggle"><input type="checkbox" checked><span></span></span>
+    </label>
+    <label class="row nested">
+      <span class="row-text"><div class="row-title">Skip buttons</div><div class="row-note">Jump 10 s, 1 min or 10 min</div></span>
+      <span class="toggle"><input type="checkbox" checked><span></span></span>
+    </label>
+  </div>
+
+  <h2 class="group-title">Around videos</h2>
+  <div class="card">
+    <label class="row">
+      <span class="row-text"><div class="row-title">Blur previews</div><div class="row-note">Thumbnails and hover previews</div></span>
+      <span class="toggle"><input type="checkbox"><span></span></span>
+    </label>
+    <label class="row">
+      <span class="row-text"><div class="row-title">Blur video titles</div><div class="row-note">In lists, on the video page and in end cards</div></span>
+      <span class="toggle"><input type="checkbox"><span></span></span>
+    </label>
+    <label class="row">
+      <span class="row-text"><div class="row-title">Hide comments</div><div class="row-note">Show them with one click</div></span>
+      <span class="toggle"><input type="checkbox" checked><span></span></span>
+    </label>
+  </div>
+
+  <h2 class="group-title">Live streams</h2>
+  <div class="card">
+    <label class="row">
+      <span class="row-text"><div class="row-title">Protect live streams</div><div class="row-note">Pause at the start and hide live chat</div></span>
+      <span class="toggle"><input type="checkbox" checked><span></span></span>
+    </label>
+  </div>
+
+  <p class="footer">Turn on or off: <kbd>Alt+Shift+S</kbd></p>
+</main>
+</body>
+</html>

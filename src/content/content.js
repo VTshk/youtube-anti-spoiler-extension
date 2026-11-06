@@ -3,6 +3,7 @@
     // In Node (tests) the shared namespace is not pre-populated by the browser's
     // script load order, so pull in the dependencies content.js relies on.
     require("../shared/settings.js");
+    require("../shared/i18n.js");
     require("./live-start-controller.js");
     require("./skip-buttons.js");
   }
@@ -353,8 +354,8 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
   place-items: center !important;
   box-sizing: border-box !important;
   padding: 24px !important;
-  background: rgba(15, 15, 15, 0.82) !important;
-  color: #f8f8f8 !important;
+  background: rgba(0, 0, 0, 0.85) !important;
+  color: #f4f4f5 !important;
   font-family: Roboto, Arial, sans-serif !important;
   text-align: center !important;
 }
@@ -373,30 +374,42 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
   text-align: center !important;
 }
 
+/* The live chat cover shows the comments-cover texts, so it has the same
+   look as the comments cover below. */
 #${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-panel {
   display: grid !important;
   gap: 12px !important;
   justify-items: center !important;
+  padding: 12px 16px 12px 20px !important;
+  border-radius: 12px !important;
+  box-shadow: inset 4px 0 0 #c85252 !important;
+  background: #222222 !important;
 }
 
 #${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-title {
   margin: 0 !important;
-  font-size: 16px !important;
+  color: #f4f4f5 !important;
+  font-size: 14px !important;
   line-height: 1.3 !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
 }
 
 #${CHAT_GUARD_OVERLAY_ID} button {
-  min-height: 34px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  border-radius: 6px !important;
-  padding: 0 12px !important;
-  background: #f8f8f8 !important;
-  color: #0f0f0f !important;
+  min-height: 32px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  padding: 0 14px !important;
+  background: #b33939 !important;
+  color: #ffffff !important;
   font: inherit !important;
   font-size: 13px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 2px !important;
 }
 
 /* Skip buttons are inserted into every player and shown only while the
@@ -476,10 +489,17 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
   text-align: center !important;
 }
 
+/* An opaque card: it reads the same over YouTube's light and dark themes.
+   The red bar is an inset shadow: a left border on a rounded card would be
+   drawn as a curved sliver. */
 .${COMMENTS_GUARD_OVERLAY_CLASS} .yas-comments-guard-panel {
   display: grid !important;
   gap: 12px !important;
   justify-items: center !important;
+  padding: 12px 16px 12px 20px !important;
+  border-radius: 12px !important;
+  box-shadow: inset 4px 0 0 #c85252 !important;
+  background: #222222 !important;
 }
 
 /* Under the video the comments block can be thousands of pixels tall; the
@@ -492,40 +512,55 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
 
 .${COMMENTS_GUARD_OVERLAY_CLASS} .yas-comments-guard-title {
   margin: 0 !important;
-  font-size: 16px !important;
+  color: #f4f4f5 !important;
+  font-size: 14px !important;
   line-height: 1.3 !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
 }
 
+/* White on #b33939 is 5.90:1; the logo red #c85252 would be too light. */
 .${COMMENTS_GUARD_OVERLAY_CLASS} button {
-  min-height: 34px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  border-radius: 6px !important;
-  padding: 0 12px !important;
-  background: #f8f8f8 !important;
-  color: #0f0f0f !important;
+  min-height: 32px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  padding: 0 14px !important;
+  background: #b33939 !important;
+  color: #ffffff !important;
   font: inherit !important;
   font-size: 13px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
 }
 
+.${COMMENTS_GUARD_OVERLAY_CLASS} button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 2px !important;
+}
+
+/* The red strip on top repeats the logo. */
 #${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-panel {
   width: min(420px, calc(100vw - 48px)) !important;
   display: grid !important;
   gap: 14px !important;
+  box-sizing: border-box !important;
+  padding: 20px !important;
+  border: 1px solid #333338 !important;
+  border-top: 6px solid #c85252 !important;
+  border-radius: 16px !important;
+  background: #1e1e22 !important;
 }
 
 #${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-title {
   margin: 0 !important;
-  font-size: 22px !important;
+  color: #f4f4f5 !important;
+  font-size: 20px !important;
   line-height: 1.25 !important;
   font-weight: 700 !important;
 }
 
 #${LIVE_GUARD_OVERLAY_ID} .yas-live-guard-copy {
   margin: 0 !important;
-  color: #d9d9d9 !important;
+  color: #a8a29e !important;
   font-size: 14px !important;
   line-height: 1.45 !important;
 }
@@ -537,22 +572,30 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
   gap: 10px !important;
 }
 
+/* Secondary buttons ("Continue live", "Play"). */
 #${LIVE_GUARD_OVERLAY_ID} button {
   min-height: 40px !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  border-radius: 6px !important;
-  padding: 0 14px !important;
-  background: #f8f8f8 !important;
-  color: #0f0f0f !important;
+  border: 1px solid #8a8a94 !important;
+  border-radius: 999px !important;
+  padding: 0 18px !important;
+  background: transparent !important;
+  color: #f4f4f5 !important;
   font: inherit !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   cursor: pointer !important;
 }
 
-#${LIVE_GUARD_OVERLAY_ID} button[data-live-guard-action="continue"] {
-  background: transparent !important;
-  color: #f8f8f8 !important;
+/* The primary button. White on #b33939 is 5.90:1. */
+#${LIVE_GUARD_OVERLAY_ID} button[data-live-guard-action="start"] {
+  border-color: #b33939 !important;
+  background: #b33939 !important;
+  color: #ffffff !important;
+}
+
+#${LIVE_GUARD_OVERLAY_ID} button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: 2px !important;
 }
 `.trim();
   }
@@ -673,12 +716,12 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     panel.className = "yas-chat-guard-panel";
     overlay.appendChild(panel);
 
-    appendChatGuardElement(doc, panel, "p", "yas-chat-guard-title", "Comments hidden");
+    appendChatGuardElement(doc, panel, "p", "yas-chat-guard-title", "commentsHiddenTitle");
 
     const button = doc.createElement("button");
     button.type = "button";
     button.dataset.chatGuardAction = "show";
-    button.textContent = "Show comments";
+    shared.setText(button, "commentsShowButton");
     button.addEventListener("click", (event) => {
       if (event && typeof event.preventDefault === "function") {
         event.preventDefault();
@@ -695,10 +738,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     return true;
   }
 
-  function appendChatGuardElement(doc, parent, tagName, className, text) {
+  function appendChatGuardElement(doc, parent, tagName, className, textKey) {
     const element = doc.createElement(tagName);
     element.className = className;
-    element.textContent = text;
+    shared.setText(element, textKey);
     parent.appendChild(element);
     return element;
   }
@@ -857,13 +900,13 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
 
     const title = doc.createElement("p");
     title.className = "yas-comments-guard-title";
-    title.textContent = "Comments hidden";
+    shared.setText(title, "commentsHiddenTitle");
     panel.appendChild(title);
 
     const button = doc.createElement("button");
     button.type = "button";
     button.dataset.commentsGuardAction = "show";
-    button.textContent = "Show comments";
+    shared.setText(button, "commentsShowButton");
     button.addEventListener("click", (event) => {
       event.preventDefault();
       // One choice for the whole video: every cover goes, under the video
@@ -1116,6 +1159,36 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     return loadAndApplySettings(currentDocument);
   }
 
+  // The language picked in the popup. The popup stores it in storage.local
+  // together with its texts; content scripts only read it. Protection never
+  // waits for it: until it arrives the in-page controls show the browser
+  // language, then only their texts change.
+  function loadLanguage(doc) {
+    root.chrome.storage.local.get("uiLanguage", (items) => {
+      const error = root.chrome.runtime.lastError;
+
+      if (error) {
+        console.warn("[Anti-Spoiler for YouTube] Could not load the language.", error.message);
+        return;
+      }
+
+      showLanguage(items.uiLanguage, doc);
+    });
+  }
+
+  // uiLanguage is { code, messages }, or undefined for the browser language.
+  function showLanguage(uiLanguage, doc) {
+    shared.setMessages(uiLanguage ? uiLanguage.messages : null);
+    shared.applyTranslations(doc);
+    writeMediaTitle(doc);
+  }
+
+  // The MAIN-world bridge has no chrome.i18n; it reads the title it shows in
+  // the media controls from this attribute.
+  function writeMediaTitle(doc) {
+    doc.documentElement.dataset.yasMediaTitle = shared.getText("mediaHiddenTitle");
+  }
+
   function bindNavigationRefresh(win, refresh) {
     const currentWindow = win || root;
 
@@ -1151,6 +1224,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     }
 
     root.chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === "local" && changes.uiLanguage) {
+        showLanguage(changes.uiLanguage.newValue, root.document);
+      }
+
       const settingChanged = SETTING_KEYS.some((key) =>
         Object.prototype.hasOwnProperty.call(changes, key),
       );
@@ -1228,6 +1305,9 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
       shared.ensureSkipButtons(root.document);
     }, shared.SKIP_BUTTONS_CHECK_MS);
     refresh();
+    // Only after protection is in place.
+    writeMediaTitle(root.document);
+    loadLanguage(root.document);
   }
 
   return {

@@ -23,6 +23,10 @@
   const EXTENSION_ENABLED_CLASS = "yas-extension-enabled";
   const HIDE_VIDEO_TITLES_CLASS = "yas-hide-video-titles";
   const HIDE_VIDEO_PREVIEWS_CLASS = "yas-hide-video-previews";
+  // The MAIN world has no chrome.i18n either: content.js writes the hidden
+  // media title, in the user's language, into this attribute on <html>.
+  const MEDIA_TITLE_ATTRIBUTE = "data-yas-media-title";
+  // Until content.js has written it.
   const HIDDEN_MEDIA_TITLE = "YouTube video";
   // Put on #movie_player while the player refuses to seek (a live stream
   // whose streamer turned rewinding off); content.js hides the skip buttons
@@ -566,6 +570,10 @@
     return win.document.documentElement.classList.contains(className);
   }
 
+  function getHiddenMediaTitle(win) {
+    return win.document.documentElement.getAttribute(MEDIA_TITLE_ATTRIBUTE) || HIDDEN_MEDIA_TITLE;
+  }
+
   function hideSpoilersInMetadata(win, metadata) {
     const hideTitle = hasRootClass(win, HIDE_VIDEO_TITLES_CLASS);
     const hideArtwork = hasRootClass(win, HIDE_VIDEO_PREVIEWS_CLASS);
@@ -576,7 +584,7 @@
 
     // A new object, so YouTube's own metadata is never changed.
     return new win.MediaMetadata({
-      title: hideTitle ? HIDDEN_MEDIA_TITLE : metadata.title,
+      title: hideTitle ? getHiddenMediaTitle(win) : metadata.title,
       artist: metadata.artist,
       album: metadata.album,
       artwork: hideArtwork ? [] : metadata.artwork,
@@ -627,7 +635,8 @@
 
     // YouTube sets the metadata and position once per video, so a setting
     // switched mid-video would not reach the media controls until the next
-    // one. content.js switches settings through the classes on <html>.
+    // one. content.js switches settings through the classes on <html>, and
+    // the language through the media title attribute.
     new win.MutationObserver(() => {
       const session = win.navigator.mediaSession;
 
@@ -638,7 +647,7 @@
       }
     }).observe(win.document.documentElement, {
       attributes: true,
-      attributeFilter: ["class"],
+      attributeFilter: ["class", MEDIA_TITLE_ATTRIBUTE],
     });
 
     return true;
@@ -721,6 +730,7 @@
     getPlayerSeekableEnd,
     getLiveState,
     HIDDEN_MEDIA_TITLE,
+    MEDIA_TITLE_ATTRIBUTE,
     initLivePlayerBridge,
     isNearSeekTarget,
     parseSeekDetail,

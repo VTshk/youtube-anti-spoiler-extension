@@ -1,6 +1,11 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
+const { installEnglishI18n } = require("./helpers/english-messages.js");
+
+// The in-page texts come from _locales/en through chrome.i18n.
+installEnglishI18n();
+
 const content = require("../src/content/content.js");
 // Timing constants and ids that content.js does not re-export.
 const liveStart = require("../src/content/live-start-controller.js");
@@ -199,9 +204,13 @@ function createLiveDocument({
     getElementById(id) {
       return body.querySelector(`#${id}`);
     },
-    // No hovered or stashed titles in these pages.
-    querySelectorAll() {
-      return [];
+    // No hovered or stashed titles in these pages; applyTranslations looks
+    // up every element that carries a message key.
+    querySelectorAll(selector) {
+      const datasetName = { "[data-yas-i18n]": "yasI18n", "[data-yas-i18n-label]": "yasI18nLabel" }[selector];
+      const collect = (element) => element.children.flatMap((child) => [child, ...collect(child)]);
+
+      return datasetName ? collect(body).filter((element) => element.dataset[datasetName]) : [];
     },
     querySelector(selector) {
       if (selector === "video") {
@@ -4729,4 +4738,59 @@ test("buildSpoilerCss hides the Most replayed graph with previews and keeps blur
   assert.doesNotMatch(previewRule, /heat-map/);
   assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-tooltip-bg(,| \{)/);
   assert.match(previewRule, /html\.yas-hide-video-previews \.ytp-storyboard-framepreview-img(,| \{)/);
+});
+
+test("a language change re-translates an open live guard panel in its current state", () => {
+  const clock = createFakeClock();
+  const win = createGuardWindow("https://www.youtube.com/watch?v=language-switch");
+  const video = createLiveVideo({ readyState: 0, seekable: { length: 0 } });
+  const doc = createLiveDocument({
+    video,
+    player: createElement("div"),
+    liveBroadcastContent: "True",
+    metadataVideoId: "language-switch",
+  });
+  const controller = content.createLiveStartController(win, clock.options);
+  const shared = globalThis.YouTubeAntiSpoiler;
+  const testTexts = {
+    liveGuardTitle: "TEST TITLE",
+    liveGuardChecking: "TEST CHECKING",
+    liveGuardCannotRewind: "TEST CANNOT REWIND",
+    liveGuardContinueButton: "TEST CONTINUE",
+  };
+
+  controller.sync(LIVE_SETTINGS, doc);
+
+  const overlay = getLiveOverlay(doc);
+  const title = overlay.querySelector(".yas-live-guard-title");
+  const status = overlay.querySelector(".yas-live-guard-status");
+
+  try {
+    shared.setMessages(testTexts);
+    shared.applyTranslations(doc);
+
+    // The same panel, not a rebuilt one.
+    assert.equal(getLiveOverlay(doc), overlay);
+    assert.equal(title.textContent, "TEST TITLE");
+    assert.equal(status.textContent, "TEST CHECKING");
+    assert.equal(getLiveOverlayButton(doc, "continue").textContent, "TEST CONTINUE");
+    // Named by its visible title; no tooltip over the player.
+    assert.equal(overlay.attributes["aria-labelledby"], title.id);
+    assert.equal(overlay.attributes.title, undefined);
+
+    // The state moves on; a later language change shows the new state's text.
+    shared.setMessages(null);
+    clock.advance(content.LIVE_START_TIMEOUT_MS);
+
+    assert.equal(getLiveOverlay(doc), overlay);
+    assert.equal(status.textContent, "This stream can't be rewound. Continue live or leave the page.");
+
+    shared.setMessages(testTexts);
+    shared.applyTranslations(doc);
+
+    assert.equal(status.textContent, "TEST CANNOT REWIND");
+    assertGuardHolds(doc, video);
+  } finally {
+    shared.setMessages(null);
+  }
 });

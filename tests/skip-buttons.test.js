@@ -1,6 +1,11 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
+const { en, installEnglishI18n } = require("./helpers/english-messages.js");
+
+// The button labels come from _locales/en through chrome.i18n.
+installEnglishI18n();
+
 const skipButtons = require("../src/content/skip-buttons.js");
 const content = require("../src/content/content.js");
 

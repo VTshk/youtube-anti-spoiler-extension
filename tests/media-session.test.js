@@ -35,11 +35,22 @@ function createMediaWindow(rootClasses = []) {
     this.artwork = init.artwork;
   }
 
-  // content.js changes the classes on <html>; the patch watches them.
-  const classObservers = [];
+  // content.js changes the classes and the media title attribute on <html>;
+  // the patch watches them. Like a real MutationObserver, only the
+  // attributes named in attributeFilter are reported.
+  const rootAttributes = {};
+  const rootObservers = [];
 
   function FakeMutationObserver(callback) {
-    this.observe = () => classObservers.push(callback);
+    this.observe = (target, options) => rootObservers.push({ callback, options });
+  }
+
+  function notifyRootObservers(attributeName) {
+    rootObservers.forEach(({ callback, options }) => {
+      if (options.attributeFilter.includes(attributeName)) {
+        callback([]);
+      }
+    });
   }
 
   return {
@@ -52,7 +63,11 @@ function createMediaWindow(rootClasses = []) {
         classes.delete(className);
       }
 
-      classObservers.forEach((callback) => callback([]));
+      notifyRootObservers("class");
+    },
+    setRootAttribute(name, value) {
+      rootAttributes[name] = value;
+      notifyRootObservers(name);
     },
     document: {
       documentElement: {
@@ -60,6 +75,11 @@ function createMediaWindow(rootClasses = []) {
           contains(className) {
             return classes.has(className);
           },
+        },
+        getAttribute(name) {
+          return Object.prototype.hasOwnProperty.call(rootAttributes, name)
+            ? rootAttributes[name]
+            : null;
         },
       },
     },
@@ -184,4 +204,30 @@ test("media session follows settings switched mid-video without a new call from 
 
   assert.equal(win.navigator.mediaSession.metadata.title, "Team A 3-0 Team B | Highlights");
   assert.equal(win.navigator.mediaSession.metadata.artwork.length, 1);
+});
+
+test("media session shows the hidden title content.js wrote in the user's language", () => {
+  const win = createMediaWindow(["yas-extension-enabled", "yas-hide-video-titles"]);
+  win.setRootAttribute(bridge.MEDIA_TITLE_ATTRIBUTE, "Vidéo YouTube");
+
+  bridge.patchMediaSession(win);
+  win.navigator.mediaSession.metadata = createYouTubeMetadata(win);
+
+  assert.equal(win.navigator.mediaSession.metadata.title, "Vidéo YouTube");
+});
+
+test("media session follows a language change with no new metadata from YouTube", () => {
+  const win = createMediaWindow(["yas-extension-enabled", "yas-hide-video-titles"]);
+
+  bridge.patchMediaSession(win);
+  win.navigator.mediaSession.metadata = createYouTubeMetadata(win);
+  // Before content.js has written the attribute.
+  assert.equal(win.navigator.mediaSession.metadata.title, "YouTube video");
+
+  // Only the attribute changes: same classes, no new assignment by YouTube.
+  win.setRootAttribute(bridge.MEDIA_TITLE_ATTRIBUTE, "Видео YouTube");
+
+  assert.equal(bridge.MEDIA_TITLE_ATTRIBUTE, "data-yas-media-title");
+  assert.equal(win.navigator.mediaSession.metadata.title, "Видео YouTube");
+  assert.equal(win.navigator.mediaSession.metadata.artist, "Sports Channel");
 });

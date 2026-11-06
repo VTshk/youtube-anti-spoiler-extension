@@ -1,12 +1,19 @@
 (function initSkipButtons(root, factory) {
-  const api = factory();
+  if (typeof module !== "undefined" && module.exports) {
+    require("../shared/i18n.js");
+  }
+
+  const api = factory(root);
 
   root.YouTubeAntiSpoiler = Object.assign(root.YouTubeAntiSpoiler || {}, api);
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   }
-})(typeof globalThis !== "undefined" ? globalThis : this, function createSkipButtons() {
+})(typeof globalThis !== "undefined" ? globalThis : this, function createSkipButtons(root) {
+  // i18n.js is loaded before this file (see manifest.json).
+  const { setLabel } = root.YouTubeAntiSpoiler;
+
   // With the timeline hidden there is no way to jump around a video, so
   // these buttons sit next to the player's own controls. They never show
   // where the video ends up: the time stays hidden on purpose.
@@ -14,12 +21,12 @@
   const SKIP_BUTTONS_CHECK_MS = 1000;
 
   const SKIP_STEPS = Object.freeze([
-    { label: "−10m", seconds: -600, name: "Back 10 minutes" },
-    { label: "−1m", seconds: -60, name: "Back 1 minute" },
-    { label: "−10s", seconds: -10, name: "Back 10 seconds" },
-    { label: "+10s", seconds: 10, name: "Forward 10 seconds" },
-    { label: "+1m", seconds: 60, name: "Forward 1 minute" },
-    { label: "+10m", seconds: 600, name: "Forward 10 minutes" },
+    { label: "−10m", seconds: -600, labelKey: "skipBack10Minutes" },
+    { label: "−1m", seconds: -60, labelKey: "skipBack1Minute" },
+    { label: "−10s", seconds: -10, labelKey: "skipBack10Seconds" },
+    { label: "+10s", seconds: 10, labelKey: "skipForward10Seconds" },
+    { label: "+1m", seconds: 60, labelKey: "skipForward1Minute" },
+    { label: "+10m", seconds: 600, labelKey: "skipForward10Minutes" },
   ]);
 
   // Live streams can only be rewound inside their DVR window, which is what
@@ -57,9 +64,10 @@
     const button = doc.createElement("button");
     button.type = "button";
     button.className = "yas-skip-button";
+    // The short label stays as it is in every language; the tooltip and
+    // the screen reader label are translated.
     button.textContent = step.label;
-    button.title = step.name;
-    button.setAttribute("aria-label", step.name);
+    setLabel(button, step.labelKey);
     button.dataset.skipSeconds = String(step.seconds);
 
     button.addEventListener("click", (event) => {

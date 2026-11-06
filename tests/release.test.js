@@ -98,6 +98,8 @@ test("release build script creates a runtime-only Chrome Web Store zip", () => {
   assert.ok(entries.includes("popup/popup.css"));
   assert.ok(entries.includes("popup/popup.js"));
   assert.ok(entries.includes("src/shared/settings.js"));
+  assert.ok(entries.includes("src/shared/i18n.js"));
+  assert.ok(entries.includes("_locales/en/messages.json"));
   assert.ok(entries.includes("src/content/content.js"));
   assert.ok(entries.includes("src/content/live-player-bridge.js"));
   assert.ok(entries.includes("src/content/skip-buttons.js"));

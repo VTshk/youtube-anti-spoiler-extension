@@ -1,6 +1,11 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
+const { installEnglishI18n } = require("./helpers/english-messages.js");
+
+// The in-page texts come from _locales/en through chrome.i18n.
+installEnglishI18n();
+
 const content = require("../src/content/content.js");
 
 // Settings for these tests: the live guard and its chat cover stay off, so
@@ -148,6 +153,12 @@ function createPage({
 
       if (selector === `.${OVERLAY_CLASS}`) {
         return body.findAllByClass(OVERLAY_CLASS);
+      }
+
+      // applyTranslations looks up every element that carries a message key.
+      if (selector === "[data-yas-i18n]") {
+        const collect = (element) => element.children.flatMap((child) => [child, ...collect(child)]);
+        return collect(body).filter((element) => element.dataset.yasI18n);
       }
 
       return [];
@@ -754,5 +765,32 @@ test("tab title is replaced as soon as the parser adds <title>, without another 
     assert.equal(doc.title, "YouTube");
     assert.notEqual(observers.observing(doc.titleElement), null);
     assert.equal(observers.observing(doc.documentElement), null);
+  });
+});
+
+test("a language change re-translates an open comments cover without rebuilding it", () => {
+  onPage("https://www.youtube.com/watch?v=language-switch", () => {
+    const doc = createPage({ comments: createComments() });
+    const shared = globalThis.YouTubeAntiSpoiler;
+
+    content.applySettings(BASE_SETTINGS, doc);
+    const overlay = getCommentsOverlay(doc);
+    const panel = overlay.findByClass("yas-comments-guard-panel");
+    const button = panel.children.find((child) => child.dataset.commentsGuardAction === "show");
+
+    try {
+      shared.setMessages({ commentsHiddenTitle: "TEST COMMENTS", commentsShowButton: "TEST SHOW" });
+      shared.applyTranslations(doc);
+
+      assert.equal(getCommentsOverlay(doc), overlay);
+      assert.equal(panel.findByClass("yas-comments-guard-title").textContent, "TEST COMMENTS");
+      assert.equal(button.textContent, "TEST SHOW");
+      assert.equal(isCommentsObscured(doc), true);
+    } finally {
+      shared.setMessages(null);
+      shared.applyTranslations(doc);
+    }
+
+    assert.equal(button.textContent, "Show comments");
   });
 });
