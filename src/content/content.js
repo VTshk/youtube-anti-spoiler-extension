@@ -1234,10 +1234,8 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     }
   }
 
-  // What the player button and the popup show: { available, revealed }.
-  // "available" only says a video is open. Whether protection is on is not
-  // asked here: right after the popup switches protection on, this script
-  // may still be re-reading the settings, and the popup checks it itself.
+  // What the player button shows: { available, revealed }.
+  // "available" only says a video is open; toggleReveal checks protection.
   function getRevealState(doc) {
     const available = Boolean(getOpenVideoId(doc));
 
@@ -1272,12 +1270,10 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     }
   }
 
-  // Messages from the popup and from the background (the keyboard
-  // shortcut). The answer is ready at once, so it is sent synchronously.
+  // The message from the background when the keyboard shortcut is pressed.
+  // The answer is ready at once, so it is sent synchronously.
   function answerRevealMessage(message, sender, sendResponse) {
-    if (message.type === "yas-get-reveal") {
-      sendResponse(getRevealState(root.document));
-    } else if (message.type === "yas-toggle-reveal") {
+    if (message.type === "yas-toggle-reveal") {
       sendResponse(toggleReveal(root.document));
     }
   }

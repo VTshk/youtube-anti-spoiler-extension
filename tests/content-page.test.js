@@ -260,7 +260,6 @@ test("a reload of the uncovered video keeps it uncovered", () => {
   });
 
   assert.equal(isRevealed(page), true);
-  assert.deepEqual({ ...page.send({ type: "yas-get-reveal" }) }, { available: true, revealed: true });
 });
 
 test("any load other than a reload forgets the uncovered video", () => {
@@ -341,7 +340,7 @@ test("a channel's /live page keeps the uncovered stream until it names it, then 
 test("the toggle message uncovers the open video and the same message covers it again", () => {
   const page = startContentScripts();
 
-  assert.deepEqual({ ...page.send({ type: "yas-get-reveal" }) }, { available: true, revealed: false });
+  assert.equal(isRevealed(page), false);
 
   assert.deepEqual({ ...page.send({ type: "yas-toggle-reveal" }) }, { available: true, revealed: true });
   assert.equal(isRevealed(page), true);
@@ -361,10 +360,8 @@ test("the toggle does nothing without a video or with protection off", async () 
   const page = startContentScripts();
   await page.answerSettings({ extensionEnabled: false });
 
-  // "available" only says a video is open; the popup checks protection itself,
-  // because right after it switches protection on this script may still be
-  // re-reading the settings. The toggle itself does nothing while it is off.
-  assert.deepEqual({ ...page.send({ type: "yas-get-reveal" }) }, { available: true, revealed: false });
+  // "available" only says a video is open; the toggle does nothing while
+  // protection is off.
   assert.deepEqual({ ...page.send({ type: "yas-toggle-reveal" }) }, { available: true, revealed: false });
   assert.equal(REVEALED_VIDEO_KEY in page.sessionItems, false);
   assert.equal(isRevealed(page), false);

@@ -9,7 +9,7 @@ Chrome Extension (Manifest V3) that hides YouTube elements that can spoil sports
 - comments under videos, in the comments panel, on Shorts, and live chat, behind a **Show comments** button;
 - the live edge of live streams, behind a **Start from beginning** / **Continue live** choice.
 
-One video can be uncovered at a time with **Show spoilers for this video** (the eye button in the player, the popup, or **Alt+Shift+V**); other videos stay protected.
+One video can be uncovered at a time with **Show spoilers for this video** (the eye button in the player or **Alt+Shift+V**); other videos stay protected.
 
 Settings are stored in `chrome.storage.sync`, so they survive browser restarts and sync with the Chrome profile when sync is enabled.
 
@@ -85,11 +85,12 @@ While protection is on, the extension does not pass the playback position to Chr
 
 ### Show spoilers for this video
 
-To watch one video with nothing hidden - say, a match whose result you already know - uncover it with any of these:
+To watch one video with nothing hidden - say, a match whose result you already know - uncover it with either of these:
 
 - the eye button in the player controls, after the skip buttons;
-- **Show spoilers for this video** in the popup, under the status line (shown only on a YouTube video page while protection is on);
 - the keyboard shortcut **Alt+Shift+V**; change it at `chrome://extensions/shortcuts`.
+
+While a live stream shows the **Start from beginning** / **Continue live** choice, the choice covers the player controls, so use the shortcut.
 
 For the open video this shows the player time, the timeline with its chapters (the skip buttons give way to it), the time, frames, and chapter names in the timeline preview, the "Most replayed" graph, the title in the player and above the video, the line under it, the description, Key moments and the chapter list, transcript timestamps, the comments (also in the comments panel and on Shorts) and live chat, the browser tab title, and the title, artwork, and position in Chrome's media controls. A live stream gets no **Start from beginning** / **Continue live** choice and plays from where it is once you press play.
 

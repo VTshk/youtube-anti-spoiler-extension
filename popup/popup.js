@@ -41,10 +41,6 @@
     return root.document.querySelector("[data-theme-toggle]");
   }
 
-  function getRevealButton() {
-    return root.document.querySelector("[data-reveal-toggle]");
-  }
-
   function getEnabledIconPaths() {
     return {
       16: "/icons/icon16.png",
@@ -122,46 +118,6 @@
     });
   }
 
-  // "Show spoilers for this video" works in the active tab: its content
-  // script answers { available, revealed }. Answers null when there is no
-  // one to ask (no tab, not YouTube, a tab opened before the extension was
-  // installed); the button then stays hidden.
-  async function askActiveTab(message) {
-    try {
-      const [tab] = await root.chrome.tabs.query({ active: true, currentWindow: true });
-
-      if (!tab) {
-        return null;
-      }
-
-      return (await root.chrome.tabs.sendMessage(tab.id, message)) || null;
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function renderReveal(revealButton, revealState) {
-    const shown = Boolean(
-      revealState && revealState.available && currentSettings.extensionEnabled,
-    );
-
-    revealButton.hidden = !shown;
-
-    if (shown) {
-      namespace.setText(revealButton, revealState.revealed ? "popupHideVideo" : "popupRevealVideo");
-    }
-  }
-
-  async function refreshReveal(revealButton) {
-    renderReveal(revealButton, await askActiveTab({ type: "yas-get-reveal" }));
-  }
-
-  function bindReveal(revealButton) {
-    revealButton.addEventListener("click", async () => {
-      renderReveal(revealButton, await askActiveTab({ type: "yas-toggle-reveal" }));
-    });
-  }
-
   // Saves run one after another: each one applies its changes on top of
   // what the previous one stored, so two quick clicks cannot undo each other.
   let saveQueue = Promise.resolve(true);
@@ -200,7 +156,7 @@
     });
   }
 
-  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels, revealButton) {
+  function bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels) {
     if (!powerToggle) {
       return;
     }
@@ -208,7 +164,6 @@
     powerToggle.addEventListener("change", async () => {
       await saveSettings({ extensionEnabled: powerToggle.checked });
       renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
-      refreshReveal(revealButton);
     });
   }
 
@@ -229,7 +184,7 @@
 
   // Another popup or Chrome sync may change settings while this popup is
   // open; keep the form current so the next save does not undo that change.
-  function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels, revealButton) {
+  function bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels) {
     if (!root.chrome || !root.chrome.storage || !root.chrome.storage.onChanged) {
       return;
     }
@@ -255,10 +210,6 @@
       );
       renderSettings(currentSettings, toggles);
       renderPower(currentSettings, powerToggle, powerStatus, powerNote, settingsPanels);
-
-      if (changes.extensionEnabled) {
-        refreshReveal(revealButton);
-      }
     });
   }
 
@@ -510,7 +461,6 @@
     const settingsPanels = getSettingsPanels();
     const languageSelect = getLanguageSelect();
     const themeButton = getThemeButton();
-    const revealButton = getRevealButton();
 
     fillLanguageOptions(languageSelect);
 
@@ -552,13 +502,11 @@
     setStatus("");
 
     bindToggleSaving(toggles);
-    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels, revealButton);
+    bindPowerSaving(powerToggle, powerStatus, powerNote, settingsPanels);
     bindHeroPointer(getHero());
-    bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels, revealButton);
+    bindExternalChanges(toggles, powerToggle, powerStatus, powerNote, settingsPanels);
     languageSelect.addEventListener("change", () => changeLanguage(languageSelect));
     themeButton.addEventListener("click", changeTheme);
-    bindReveal(revealButton);
-    refreshReveal(revealButton);
   }
 
   if (root.document.readyState === "loading") {

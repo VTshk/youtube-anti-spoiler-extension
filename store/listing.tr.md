@@ -27,7 +27,7 @@ Uzantı; YouTube'daki süre göstergelerini, oynatıcının ilerleme çubukları
 - İsteğe bağlı olarak video önizlemelerini, bitiş ekranlarını ve zaman çizelgesindeki önizleme karelerini bulanıklaştırır; en çok tekrar oynatılan anların grafiğini gizler.
 - İsteğe bağlı olarak video başlıklarını gizler; açık videonun başlığı, tarih satırı ve açıklama metni, tarayıcı sekmesinin başlığı ve Chrome'un medya kontrolleri de buna dahildir.
 - Tüm korumayı basit bir açılır pencereden veya Alt+Shift+S ile açıp kapatmanızı sağlar.
-- "Bu videonun spoiler'larını göster" ile istediğinizde tek bir videonun spoiler'larını gösterir: Alt+Shift+V, oynatıcıdaki göz düğmesi veya açılır penceredeki düğme ile. Diğer videolar korunmaya devam eder.
+- "Bu videonun spoiler'larını göster" ile istediğinizde tek bir videonun spoiler'larını gösterir: Alt+Shift+V veya oynatıcıdaki göz düğmesi ile. Diğer videolar korunmaya devam eder.
 - Açılır pencerede 10 arayüz dilinden birini ve açık, koyu veya otomatik temayı seçmenizi sağlar.
 - Ayarlarınız Chrome profiliniz üzerinden senkronize edilir.
 
