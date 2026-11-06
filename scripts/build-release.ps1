@@ -43,7 +43,19 @@ if (Test-Path -LiteralPath $ZipPath) {
   Remove-Item -LiteralPath $ZipPath -Force
 }
 
-Compress-Archive -Path (Join-Path $StagePath "*") -DestinationPath $ZipPath -CompressionLevel Optimal
+# Not Compress-Archive: in Windows PowerShell 5.1 it writes entry names with
+# backslashes ("_locales\en\messages.json"). The Chrome Web Store unpacks on
+# Linux, where those are file names, not folders. Entries use "/" here.
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+$Zip = [System.IO.Compression.ZipFile]::Open($ZipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+try {
+  Get-ChildItem -LiteralPath $StagePath -Recurse -File | ForEach-Object {
+    $EntryName = $_.FullName.Substring($StagePath.Length + 1).Replace("\", "/")
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($Zip, $_.FullName, $EntryName, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+  }
+} finally {
+  $Zip.Dispose()
+}
 Remove-Item -LiteralPath $StagePath -Recurse -Force
 
 Write-Output "Created $ZipPath"
