@@ -1,0 +1,206 @@
+{
+  "manifestName": {
+    "message": "Anti-Spoiler untuk YouTube",
+    "description": "Extension name in Chrome, the Web Store and the toolbar button tooltip."
+  },
+  "manifestDescription": {
+    "message": "Menyembunyikan elemen YouTube yang bisa jadi spoiler: waktu, bilah progres, pratinjau, judul, komentar, dan hasil live streaming.",
+    "description": "Extension description in Chrome and the Web Store. At most 132 characters."
+  },
+  "manifestToggleCommand": {
+    "message": "Aktifkan atau nonaktifkan perlindungan spoiler",
+    "description": "Keyboard shortcut description in chrome://extensions/shortcuts."
+  },
+  "popupName": {
+    "message": "Anti-Spoiler",
+    "description": "Brand name at the top of the popup. Usually left untranslated."
+  },
+  "popupStatusOn": {
+    "message": "Perlindungan aktif",
+    "description": "Popup status title while protection is on. Shown in capitals."
+  },
+  "popupStatusOff": {
+    "message": "Perlindungan nonaktif",
+    "description": "Popup status title while protection is off. Shown in capitals."
+  },
+  "popupNoteOn": {
+    "message": "Waktu dan durasi video disembunyikan",
+    "description": "Line under the status title while protection is on."
+  },
+  "popupNoteOff": {
+    "message": "YouTube ditampilkan seperti biasa",
+    "description": "Line under the status title while protection is off."
+  },
+  "popupMasterSwitchLabel": {
+    "message": "Perlindungan spoiler",
+    "description": "Screen reader label and tooltip of the main on/off switch in the popup."
+  },
+  "popupGroupPlayer": {
+    "message": "Pemutar",
+    "description": "Popup heading over the video player settings. Shown in capitals."
+  },
+  "popupGroupAroundVideos": {
+    "message": "Di sekitar video",
+    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
+  },
+  "popupGroupLive": {
+    "message": "Live streaming",
+    "description": "Popup heading over the live stream settings. Shown in capitals."
+  },
+  "popupHideProgressBar": {
+    "message": "Sembunyikan bilah progres",
+    "description": "Popup setting title: hides the video timeline."
+  },
+  "popupHideProgressBarNote": {
+    "message": "Di pemutar dan pratinjau",
+    "description": "Note under the \"Hide progress bar\" setting."
+  },
+  "popupSkipButtons": {
+    "message": "Tombol lompat",
+    "description": "Popup setting title: buttons that jump back or forward in the video."
+  },
+  "popupSkipButtonsNote": {
+    "message": "Lompat 10 dtk, 1 mnt, atau 10 mnt",
+    "description": "Note under the \"Skip buttons\" setting."
+  },
+  "popupSkipButtonsRequires": {
+    "message": "Perlu \"Sembunyikan bilah progres\"",
+    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
+  },
+  "popupBlurPreviews": {
+    "message": "Buramkan pratinjau",
+    "description": "Popup setting title: blurs video thumbnails."
+  },
+  "popupBlurPreviewsNote": {
+    "message": "Thumbnail dan pratinjau saat kursor diarahkan",
+    "description": "Note under the \"Blur previews\" setting."
+  },
+  "popupBlurTitles": {
+    "message": "Buramkan judul video",
+    "description": "Popup setting title: blurs video titles."
+  },
+  "popupBlurTitlesNote": {
+    "message": "Di daftar, halaman video, dan layar akhir",
+    "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupHideComments": {
+    "message": "Sembunyikan komentar",
+    "description": "Popup setting title: covers the comments under videos."
+  },
+  "popupHideCommentsNote": {
+    "message": "Tampilkan dengan sekali klik",
+    "description": "Note under the \"Hide comments\" setting."
+  },
+  "popupProtectLive": {
+    "message": "Lindungi live streaming",
+    "description": "Popup setting title: pauses live streams before they show the current moment."
+  },
+  "popupProtectLiveNote": {
+    "message": "Jeda di awal dan sembunyikan live chat",
+    "description": "Note under the \"Protect live streams\" setting."
+  },
+  "popupShortcutLabel": {
+    "message": "Pintasan:",
+    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
+  },
+  "popupShortcutNotSet": {
+    "message": "Atur pintasan di chrome://extensions/shortcuts",
+    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  },
+  "popupLanguageLabel": {
+    "message": "Bahasa",
+    "description": "Popup footer label of the language list."
+  },
+  "popupLanguageBrowser": {
+    "message": "Bahasa browser",
+    "description": "First choice in the popup language list: follow the browser's language."
+  },
+  "popupSaveError": {
+    "message": "Tidak dapat menyimpan setelan",
+    "description": "Popup error when a setting could not be saved."
+  },
+  "popupLoadError": {
+    "message": "Tidak dapat memuat setelan — tutup lalu buka lagi jendela ini",
+    "description": "Popup error when the settings could not be read; the popup is then read-only."
+  },
+  "popupLanguageError": {
+    "message": "Tidak dapat mengubah bahasa",
+    "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "liveGuardTitle": {
+    "message": "Perlindungan spoiler aktif",
+    "description": "Title of the panel over a paused live stream on YouTube."
+  },
+  "liveGuardPaused": {
+    "message": "Live streaming ini dijeda sebelum menampilkan momen saat ini.",
+    "description": "Explanation in the live stream panel."
+  },
+  "liveGuardUnknownStatus": {
+    "message": "Tidak dapat memastikan apakah ini live streaming.",
+    "description": "Explanation in the live stream panel when the extension cannot tell whether the video is live."
+  },
+  "liveGuardChecking": {
+    "message": "Memeriksa apakah streaming bisa diputar mundur…",
+    "description": "Status in the live stream panel while the rewind window is loading."
+  },
+  "liveGuardCannotRewind": {
+    "message": "Streaming ini tidak bisa diputar mundur. Lanjutkan live atau tinggalkan halaman.",
+    "description": "Status in the live stream panel when the stream has no rewind window."
+  },
+  "liveGuardJumpFailed": {
+    "message": "Tidak dapat melompat ke awal.",
+    "description": "Status in the live stream panel after \"Start from beginning\" failed."
+  },
+  "liveGuardStartButton": {
+    "message": "Mulai dari awal",
+    "description": "Live stream panel button: play the stream from its earliest point."
+  },
+  "liveGuardContinueButton": {
+    "message": "Lanjutkan live",
+    "description": "Live stream panel button: jump to the live moment."
+  },
+  "liveGuardPlayButton": {
+    "message": "Putar",
+    "description": "Live stream panel button: play from where the video is, when it is unclear whether it is live."
+  },
+  "liveGuardAdNote": {
+    "message": "Iklan — pilihan akan muncul setelahnya",
+    "description": "Small note over a live stream while an ad plays; the panel appears after the ad."
+  },
+  "commentsHiddenTitle": {
+    "message": "Komentar disembunyikan",
+    "description": "Title of the cover over the comments under a video, in the comments panel and over live chat."
+  },
+  "commentsShowButton": {
+    "message": "Tampilkan komentar",
+    "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "skipBack10Minutes": {
+    "message": "Mundur 10 menit",
+    "description": "Tooltip and screen reader label of the −10m skip button in the YouTube player."
+  },
+  "skipBack1Minute": {
+    "message": "Mundur 1 menit",
+    "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
+  },
+  "skipBack10Seconds": {
+    "message": "Mundur 10 detik",
+    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
+  },
+  "skipForward10Seconds": {
+    "message": "Maju 10 detik",
+    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
+  },
+  "skipForward1Minute": {
+    "message": "Maju 1 menit",
+    "description": "Tooltip and screen reader label of the +1m skip button in the YouTube player."
+  },
+  "skipForward10Minutes": {
+    "message": "Maju 10 menit",
+    "description": "Tooltip and screen reader label of the +10m skip button in the YouTube player."
+  },
+  "mediaHiddenTitle": {
+    "message": "Video YouTube",
+    "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
+  }
+}

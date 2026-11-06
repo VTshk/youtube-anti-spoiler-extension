@@ -115,6 +115,14 @@ test("manifest texts come from the English messages", () => {
   assert.ok(EN_MESSAGES_FILE.manifestDescription.message.length <= 132);
 });
 
+// The Web Store limits: a name of 75 characters, a description of 132.
+test("every locale keeps the store name and description within the store limits", () => {
+  readLocaleFiles().forEach(({ code, messages }) => {
+    assert.ok(messages.manifestName.message.length <= 75, code);
+    assert.ok(messages.manifestDescription.message.length <= 132, code);
+  });
+});
+
 test("every message key used in the code exists, and every English key is used", () => {
   const usedKeys = new Set();
 
@@ -163,9 +171,14 @@ test("getHtmlLang turns a folder name into a language tag", () => {
 test("getHtmlLang for the browser language names the language Chrome shows", () => {
   assert.equal(loadI18n({ uiLanguage: "en-US" }).getHtmlLang("auto"), "en");
   assert.equal(loadI18n({ uiLanguage: "en" }).getHtmlLang("auto"), "en");
-  // Only English exists so far, so a Russian browser sees English.
-  assert.equal(loadI18n({ uiLanguage: "ru" }).getHtmlLang("auto"), "en");
-  assert.equal(loadI18n({ uiLanguage: "pt-BR" }).getHtmlLang("auto"), "en");
+  assert.equal(loadI18n({ uiLanguage: "ru" }).getHtmlLang("auto"), "ru");
+  assert.equal(loadI18n({ uiLanguage: "pt-BR" }).getHtmlLang("auto"), "pt-BR");
+  // The base language when the exact locale is missing, as Chrome does.
+  assert.equal(loadI18n({ uiLanguage: "es-419" }).getHtmlLang("auto"), "es");
+  assert.equal(loadI18n({ uiLanguage: "de-AT" }).getHtmlLang("auto"), "de");
+  // Chrome does not fall back from pt-PT to pt_BR, so English is shown.
+  assert.equal(loadI18n({ uiLanguage: "pt-PT" }).getHtmlLang("auto"), "en");
+  assert.equal(loadI18n({ uiLanguage: "zh-CN" }).getHtmlLang("auto"), "en");
 });
 
 test("setText and setLabel keep the key, and applyTranslations re-reads it", () => {

@@ -11,6 +11,15 @@
   // under _locales; `nativeName` is how speakers of the language call it.
   const SUPPORTED_LANGUAGES = Object.freeze([
     { code: "en", nativeName: "English" },
+    { code: "ru", nativeName: "Русский" },
+    { code: "es", nativeName: "Español" },
+    { code: "pt_BR", nativeName: "Português (Brasil)" },
+    { code: "de", nativeName: "Deutsch" },
+    { code: "fr", nativeName: "Français" },
+    { code: "ja", nativeName: "日本語" },
+    { code: "ko", nativeName: "한국어" },
+    { code: "id", nativeName: "Bahasa Indonesia" },
+    { code: "tr", nativeName: "Türkçe" },
   ]);
 
   // Texts of the language picked in the popup, { key: text }. Null means

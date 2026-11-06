@@ -1,0 +1,206 @@
+{
+  "manifestName": {
+    "message": "Anti-Spoiler para YouTube",
+    "description": "Extension name in Chrome, the Web Store and the toolbar button tooltip."
+  },
+  "manifestDescription": {
+    "message": "Oculta lo que puede hacer spoiler en YouTube: tiempo, barras de progreso, vistas previas, títulos, comentarios y resultados en vivo.",
+    "description": "Extension description in Chrome and the Web Store. At most 132 characters."
+  },
+  "manifestToggleCommand": {
+    "message": "Activar o desactivar la protección contra spoilers",
+    "description": "Keyboard shortcut description in chrome://extensions/shortcuts."
+  },
+  "popupName": {
+    "message": "Anti-Spoiler",
+    "description": "Brand name at the top of the popup. Usually left untranslated."
+  },
+  "popupStatusOn": {
+    "message": "Protección activada",
+    "description": "Popup status title while protection is on. Shown in capitals."
+  },
+  "popupStatusOff": {
+    "message": "Protección desactivada",
+    "description": "Popup status title while protection is off. Shown in capitals."
+  },
+  "popupNoteOn": {
+    "message": "El tiempo y la duración del video están ocultos",
+    "description": "Line under the status title while protection is on."
+  },
+  "popupNoteOff": {
+    "message": "YouTube se muestra con normalidad",
+    "description": "Line under the status title while protection is off."
+  },
+  "popupMasterSwitchLabel": {
+    "message": "Protección contra spoilers",
+    "description": "Screen reader label and tooltip of the main on/off switch in the popup."
+  },
+  "popupGroupPlayer": {
+    "message": "Reproductor",
+    "description": "Popup heading over the video player settings. Shown in capitals."
+  },
+  "popupGroupAroundVideos": {
+    "message": "Alrededor de los videos",
+    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
+  },
+  "popupGroupLive": {
+    "message": "Transmisiones en vivo",
+    "description": "Popup heading over the live stream settings. Shown in capitals."
+  },
+  "popupHideProgressBar": {
+    "message": "Ocultar la barra de progreso",
+    "description": "Popup setting title: hides the video timeline."
+  },
+  "popupHideProgressBarNote": {
+    "message": "En el reproductor y en las vistas previas",
+    "description": "Note under the \"Hide progress bar\" setting."
+  },
+  "popupSkipButtons": {
+    "message": "Botones para saltar",
+    "description": "Popup setting title: buttons that jump back or forward in the video."
+  },
+  "popupSkipButtonsNote": {
+    "message": "Saltos de 10 s, 1 min o 10 min",
+    "description": "Note under the \"Skip buttons\" setting."
+  },
+  "popupSkipButtonsRequires": {
+    "message": "Requiere “Ocultar la barra de progreso”",
+    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
+  },
+  "popupBlurPreviews": {
+    "message": "Difuminar vistas previas",
+    "description": "Popup setting title: blurs video thumbnails."
+  },
+  "popupBlurPreviewsNote": {
+    "message": "Miniaturas y vistas previas al pasar el cursor",
+    "description": "Note under the \"Blur previews\" setting."
+  },
+  "popupBlurTitles": {
+    "message": "Difuminar títulos de videos",
+    "description": "Popup setting title: blurs video titles."
+  },
+  "popupBlurTitlesNote": {
+    "message": "En listas, en la página del video y en pantallas finales",
+    "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupHideComments": {
+    "message": "Ocultar comentarios",
+    "description": "Popup setting title: covers the comments under videos."
+  },
+  "popupHideCommentsNote": {
+    "message": "Se muestran con un clic",
+    "description": "Note under the \"Hide comments\" setting."
+  },
+  "popupProtectLive": {
+    "message": "Proteger transmisiones en vivo",
+    "description": "Popup setting title: pauses live streams before they show the current moment."
+  },
+  "popupProtectLiveNote": {
+    "message": "Pausa al inicio y oculta el chat en vivo",
+    "description": "Note under the \"Protect live streams\" setting."
+  },
+  "popupShortcutLabel": {
+    "message": "Atajo:",
+    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
+  },
+  "popupShortcutNotSet": {
+    "message": "Configura un atajo en chrome://extensions/shortcuts",
+    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  },
+  "popupLanguageLabel": {
+    "message": "Idioma",
+    "description": "Popup footer label of the language list."
+  },
+  "popupLanguageBrowser": {
+    "message": "Idioma del navegador",
+    "description": "First choice in the popup language list: follow the browser's language."
+  },
+  "popupSaveError": {
+    "message": "No se pudo guardar la configuración",
+    "description": "Popup error when a setting could not be saved."
+  },
+  "popupLoadError": {
+    "message": "No se pudo cargar la configuración: cierra y vuelve a abrir la ventana",
+    "description": "Popup error when the settings could not be read; the popup is then read-only."
+  },
+  "popupLanguageError": {
+    "message": "No se pudo cambiar el idioma",
+    "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "liveGuardTitle": {
+    "message": "La protección contra spoilers está activa",
+    "description": "Title of the panel over a paused live stream on YouTube."
+  },
+  "liveGuardPaused": {
+    "message": "Esta transmisión en vivo se pausó antes de mostrar el momento actual.",
+    "description": "Explanation in the live stream panel."
+  },
+  "liveGuardUnknownStatus": {
+    "message": "No se pudo saber si es una transmisión en vivo.",
+    "description": "Explanation in the live stream panel when the extension cannot tell whether the video is live."
+  },
+  "liveGuardChecking": {
+    "message": "Comprobando si se puede retroceder la transmisión…",
+    "description": "Status in the live stream panel while the rewind window is loading."
+  },
+  "liveGuardCannotRewind": {
+    "message": "Esta transmisión no se puede retroceder. Continúa en vivo o sal de la página.",
+    "description": "Status in the live stream panel when the stream has no rewind window."
+  },
+  "liveGuardJumpFailed": {
+    "message": "No se pudo ir al inicio.",
+    "description": "Status in the live stream panel after \"Start from beginning\" failed."
+  },
+  "liveGuardStartButton": {
+    "message": "Ver desde el inicio",
+    "description": "Live stream panel button: play the stream from its earliest point."
+  },
+  "liveGuardContinueButton": {
+    "message": "Continuar en vivo",
+    "description": "Live stream panel button: jump to the live moment."
+  },
+  "liveGuardPlayButton": {
+    "message": "Reproducir",
+    "description": "Live stream panel button: play from where the video is, when it is unclear whether it is live."
+  },
+  "liveGuardAdNote": {
+    "message": "Anuncio: podrás elegir cuando termine",
+    "description": "Small note over a live stream while an ad plays; the panel appears after the ad."
+  },
+  "commentsHiddenTitle": {
+    "message": "Comentarios ocultos",
+    "description": "Title of the cover over the comments under a video, in the comments panel and over live chat."
+  },
+  "commentsShowButton": {
+    "message": "Mostrar comentarios",
+    "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "skipBack10Minutes": {
+    "message": "Retroceder 10 minutos",
+    "description": "Tooltip and screen reader label of the −10m skip button in the YouTube player."
+  },
+  "skipBack1Minute": {
+    "message": "Retroceder 1 minuto",
+    "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
+  },
+  "skipBack10Seconds": {
+    "message": "Retroceder 10 segundos",
+    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
+  },
+  "skipForward10Seconds": {
+    "message": "Avanzar 10 segundos",
+    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
+  },
+  "skipForward1Minute": {
+    "message": "Avanzar 1 minuto",
+    "description": "Tooltip and screen reader label of the +1m skip button in the YouTube player."
+  },
+  "skipForward10Minutes": {
+    "message": "Avanzar 10 minutos",
+    "description": "Tooltip and screen reader label of the +10m skip button in the YouTube player."
+  },
+  "mediaHiddenTitle": {
+    "message": "Video de YouTube",
+    "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
+  }
+}

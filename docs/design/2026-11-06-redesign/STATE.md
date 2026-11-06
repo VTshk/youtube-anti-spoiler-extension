@@ -117,3 +117,16 @@ cap to `#b33939` (5.90:1) or make the title 19 px bold, which counts as large te
 4. Live check with `--lang=<code>`: popup screenshots for `de` and `ru` (the longest strings) and `ja` (CJK).
 5. Then: version 0.4.0, README, and the postponed live checks of 0.3.0 and portion 5 (the owner: «проверим завтра все
    уже под конец»).
+
+## Progress, 2026-11-06: R2 done, uncommitted
+
+- 9 locales (`_locales/<code>/messages.json`, 51 keys, descriptions copied), `SUPPORTED_LANGUAGES` has all 10, store pages
+  `store/listing.<code>.md`. `npm test`: 258/258.
+- Proofreading: Argon (ru, ja, ko; id, tr) and Astra (es, pt_BR, de, fr). 30 findings in all; every one was checked
+  against the strings. 28 were accepted and 2 were accepted in part ("Most replayed" left descriptive where no source
+  confirmed the label).
+- Live (`--lang` de, ru, ja; rig `yas-audit2`, `r2.mjs`): 0 clipped elements, 0 errors; switching the language in the
+  popup changes the YouTube cover and skip labels in place.
+- Report with the Russian table and "Not checked": `docs/research/2026-11-06/r2-report.md`.
+- **Waiting for the owner:** read the Russian table (§3 of the report), then commit.
+- Next: 0.4.0, README, the postponed live checks of 0.3.0 / portion 5.

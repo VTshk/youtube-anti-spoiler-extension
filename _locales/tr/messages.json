@@ -1,0 +1,206 @@
+{
+  "manifestName": {
+    "message": "YouTube için Anti-Spoiler",
+    "description": "Extension name in Chrome, the Web Store and the toolbar button tooltip."
+  },
+  "manifestDescription": {
+    "message": "Spoiler verebilecek YouTube öğelerini gizler: süre, ilerleme çubukları, önizlemeler, başlıklar, yorumlar ve canlı yayın sonuçları.",
+    "description": "Extension description in Chrome and the Web Store. At most 132 characters."
+  },
+  "manifestToggleCommand": {
+    "message": "Spoiler korumasını aç veya kapat",
+    "description": "Keyboard shortcut description in chrome://extensions/shortcuts."
+  },
+  "popupName": {
+    "message": "Anti-Spoiler",
+    "description": "Brand name at the top of the popup. Usually left untranslated."
+  },
+  "popupStatusOn": {
+    "message": "Koruma açık",
+    "description": "Popup status title while protection is on. Shown in capitals."
+  },
+  "popupStatusOff": {
+    "message": "Koruma kapalı",
+    "description": "Popup status title while protection is off. Shown in capitals."
+  },
+  "popupNoteOn": {
+    "message": "Video zamanı ve süresi gizlenir",
+    "description": "Line under the status title while protection is on."
+  },
+  "popupNoteOff": {
+    "message": "YouTube normal şekilde gösterilir",
+    "description": "Line under the status title while protection is off."
+  },
+  "popupMasterSwitchLabel": {
+    "message": "Spoiler koruması",
+    "description": "Screen reader label and tooltip of the main on/off switch in the popup."
+  },
+  "popupGroupPlayer": {
+    "message": "Oynatıcı",
+    "description": "Popup heading over the video player settings. Shown in capitals."
+  },
+  "popupGroupAroundVideos": {
+    "message": "Videoların çevresi",
+    "description": "Popup heading over the settings for previews, titles and comments. Shown in capitals."
+  },
+  "popupGroupLive": {
+    "message": "Canlı yayınlar",
+    "description": "Popup heading over the live stream settings. Shown in capitals."
+  },
+  "popupHideProgressBar": {
+    "message": "İlerleme çubuğunu gizle",
+    "description": "Popup setting title: hides the video timeline."
+  },
+  "popupHideProgressBarNote": {
+    "message": "Oynatıcıda ve önizlemelerde",
+    "description": "Note under the \"Hide progress bar\" setting."
+  },
+  "popupSkipButtons": {
+    "message": "Atlama düğmeleri",
+    "description": "Popup setting title: buttons that jump back or forward in the video."
+  },
+  "popupSkipButtonsNote": {
+    "message": "10 sn, 1 dk veya 10 dk atlar",
+    "description": "Note under the \"Skip buttons\" setting."
+  },
+  "popupSkipButtonsRequires": {
+    "message": "\"İlerleme çubuğunu gizle\" açık olmalı",
+    "description": "Note under the \"Skip buttons\" setting while it is unavailable because the progress bar is shown."
+  },
+  "popupBlurPreviews": {
+    "message": "Önizlemeleri bulanıklaştır",
+    "description": "Popup setting title: blurs video thumbnails."
+  },
+  "popupBlurPreviewsNote": {
+    "message": "Küçük resimler ve üzerine gelince açılan önizlemeler",
+    "description": "Note under the \"Blur previews\" setting."
+  },
+  "popupBlurTitles": {
+    "message": "Video başlıklarını bulanıklaştır",
+    "description": "Popup setting title: blurs video titles."
+  },
+  "popupBlurTitlesNote": {
+    "message": "Listelerde, video sayfasında ve bitiş ekranlarında",
+    "description": "Note under the \"Blur video titles\" setting."
+  },
+  "popupHideComments": {
+    "message": "Yorumları gizle",
+    "description": "Popup setting title: covers the comments under videos."
+  },
+  "popupHideCommentsNote": {
+    "message": "Tek tıklamayla gösterilir",
+    "description": "Note under the \"Hide comments\" setting."
+  },
+  "popupProtectLive": {
+    "message": "Canlı yayınları koru",
+    "description": "Popup setting title: pauses live streams before they show the current moment."
+  },
+  "popupProtectLiveNote": {
+    "message": "Başta duraklatır ve canlı sohbeti gizler",
+    "description": "Note under the \"Protect live streams\" setting."
+  },
+  "popupShortcutLabel": {
+    "message": "Kısayol:",
+    "description": "Popup footer label in front of the keyboard shortcut, for example Alt+Shift+S."
+  },
+  "popupShortcutNotSet": {
+    "message": "chrome://extensions/shortcuts adresinden bir kısayol ayarlayın",
+    "description": "Popup footer text when no keyboard shortcut is set. Keep the address as it is."
+  },
+  "popupLanguageLabel": {
+    "message": "Dil",
+    "description": "Popup footer label of the language list."
+  },
+  "popupLanguageBrowser": {
+    "message": "Tarayıcı dili",
+    "description": "First choice in the popup language list: follow the browser's language."
+  },
+  "popupSaveError": {
+    "message": "Ayarlar kaydedilemedi",
+    "description": "Popup error when a setting could not be saved."
+  },
+  "popupLoadError": {
+    "message": "Ayarlar yüklenemedi — pencereyi kapatıp yeniden açın",
+    "description": "Popup error when the settings could not be read; the popup is then read-only."
+  },
+  "popupLanguageError": {
+    "message": "Dil değiştirilemedi",
+    "description": "Popup error when the chosen language could not be loaded or saved."
+  },
+  "liveGuardTitle": {
+    "message": "Spoiler koruması etkin",
+    "description": "Title of the panel over a paused live stream on YouTube."
+  },
+  "liveGuardPaused": {
+    "message": "Bu canlı yayın, şu anki anı göstermeden önce duraklatıldı.",
+    "description": "Explanation in the live stream panel."
+  },
+  "liveGuardUnknownStatus": {
+    "message": "Bunun canlı yayın olup olmadığı anlaşılamadı.",
+    "description": "Explanation in the live stream panel when the extension cannot tell whether the video is live."
+  },
+  "liveGuardChecking": {
+    "message": "Yayının geri sarılıp sarılamayacağı kontrol ediliyor…",
+    "description": "Status in the live stream panel while the rewind window is loading."
+  },
+  "liveGuardCannotRewind": {
+    "message": "Bu yayın geri sarılamıyor. Canlı izlemeye devam edin veya sayfadan ayrılın.",
+    "description": "Status in the live stream panel when the stream has no rewind window."
+  },
+  "liveGuardJumpFailed": {
+    "message": "Başa gidilemedi.",
+    "description": "Status in the live stream panel after \"Start from beginning\" failed."
+  },
+  "liveGuardStartButton": {
+    "message": "Baştan başlat",
+    "description": "Live stream panel button: play the stream from its earliest point."
+  },
+  "liveGuardContinueButton": {
+    "message": "Canlı yayına devam et",
+    "description": "Live stream panel button: jump to the live moment."
+  },
+  "liveGuardPlayButton": {
+    "message": "Oynat",
+    "description": "Live stream panel button: play from where the video is, when it is unclear whether it is live."
+  },
+  "liveGuardAdNote": {
+    "message": "Reklam — seçim reklamdan sonra görünecek",
+    "description": "Small note over a live stream while an ad plays; the panel appears after the ad."
+  },
+  "commentsHiddenTitle": {
+    "message": "Yorumlar gizlendi",
+    "description": "Title of the cover over the comments under a video, in the comments panel and over live chat."
+  },
+  "commentsShowButton": {
+    "message": "Yorumları göster",
+    "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "skipBack10Minutes": {
+    "message": "10 dakika geri",
+    "description": "Tooltip and screen reader label of the −10m skip button in the YouTube player."
+  },
+  "skipBack1Minute": {
+    "message": "1 dakika geri",
+    "description": "Tooltip and screen reader label of the −1m skip button in the YouTube player."
+  },
+  "skipBack10Seconds": {
+    "message": "10 saniye geri",
+    "description": "Tooltip and screen reader label of the −10s skip button in the YouTube player."
+  },
+  "skipForward10Seconds": {
+    "message": "10 saniye ileri",
+    "description": "Tooltip and screen reader label of the +10s skip button in the YouTube player."
+  },
+  "skipForward1Minute": {
+    "message": "1 dakika ileri",
+    "description": "Tooltip and screen reader label of the +1m skip button in the YouTube player."
+  },
+  "skipForward10Minutes": {
+    "message": "10 dakika ileri",
+    "description": "Tooltip and screen reader label of the +10m skip button in the YouTube player."
+  },
+  "mediaHiddenTitle": {
+    "message": "YouTube videosu",
+    "description": "Title shown in the browser's and the system's media controls instead of the real video title while titles are hidden."
+  }
+}

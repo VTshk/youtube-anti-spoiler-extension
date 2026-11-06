@@ -742,18 +742,31 @@ test("popup lists Browser language first, then every language under its own name
   assert.equal(findText("popupLanguageLabel").textContent, "Language");
   assert.deepEqual(
     languageSelect.children.map((option) => [option.value, option.textContent]),
-    [["en", "English"]],
+    [
+      ["en", "English"],
+      ["ru", "Русский"],
+      ["es", "Español"],
+      ["pt_BR", "Português (Brasil)"],
+      ["de", "Deutsch"],
+      ["fr", "Français"],
+      ["ja", "日本語"],
+      ["ko", "한국어"],
+      ["id", "Bahasa Indonesia"],
+      ["tr", "Türkçe"],
+    ],
   );
   assert.equal(languageSelect.value, "auto");
   assert.equal(document.documentElement.lang, "en");
 });
 
 test("popup follows the browser language when no language is stored", async () => {
-  const { document, findText } = await loadPopup({}, { uiLanguage: "ru" });
+  const { document, findText, fetchedUrls } = await loadPopup({}, { uiLanguage: "ru" });
 
-  // Only English exists so far, and that is what Chrome shows.
-  assert.equal(document.documentElement.lang, "en");
+  // Chrome itself picks the Russian texts, so the popup loads no file.
+  // The test chrome.i18n always answers in English.
+  assert.equal(document.documentElement.lang, "ru");
   assert.equal(findText("popupGroupPlayer").textContent, "Player");
+  assert.deepEqual(fetchedUrls, []);
 });
 
 test("popup shows the stored language at startup", async () => {
