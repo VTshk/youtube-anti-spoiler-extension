@@ -3616,6 +3616,41 @@ test("live guard engages when an upcoming stream goes live", () => {
   assertGuardHolds(doc, video);
 });
 
+test("an upcoming stream that starts playing is covered at once, not on the next slow tick", () => {
+  // Regression review 2026-11-09: past the timeout the guard checks once a
+  // second, and the stream played uncovered and aloud until then.
+  const { clock, doc, guard, video } = armGuardOnBlockedVideo("starts", {
+    videoId: "starts",
+    isLive: null,
+    playabilityStatus: "LIVE_STREAM_OFFLINE",
+  });
+
+  clock.advance(2 * content.LIVE_START_TIMEOUT_MS);
+  guard.bridgeAnswer = { videoId: "starts", isLive: true, playabilityStatus: "OK" };
+  doc.dispatchEvent({ type: "playing", target: video });
+
+  assert.notEqual(getLiveOverlay(doc), null);
+  assertGuardHolds(doc, video);
+});
+
+test("the cover comes back when the player stops reporting an error", () => {
+  // Regression review 2026-11-09: an in-site move from a page with YouTube's
+  // error message; the cover dropped for the message must not stay down once
+  // the player can play, even before the stream shows a live signal.
+  const { clock, doc, guard } = armGuardOnBlockedVideo("after-error", {
+    videoId: null,
+    isLive: null,
+    playabilityStatus: "LOGIN_REQUIRED",
+  });
+
+  assert.equal(isLiveObscured(doc), false);
+
+  guard.bridgeAnswer = { videoId: null, isLive: null, playabilityStatus: null };
+  clock.advance(content.LIVE_START_POLL_MS);
+
+  assert.equal(isLiveObscured(doc), true);
+});
+
 test("live guard keeps a shown overlay when the stream ends before the user chooses", () => {
   const clock = createFakeClock();
   const win = createGuardWindow("https://www.youtube.com/watch?v=ends-under-overlay");

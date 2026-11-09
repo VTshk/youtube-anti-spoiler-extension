@@ -9,7 +9,7 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
   https://vtshk.github.io/youtube-anti-spoiler-extension/privacy/).
 - Do not re-upload `dist/` from main: it already contains G (that is 1.0.1).
 
-## Uncommitted in this worktree (owner accepted, not committed yet — commit only on the owner's word)
+## Committed as a48ebc8 + regression fixes on this branch (not pushed, not merged into main)
 - Popup footer: the email is gone; an "About us" button opens a bottom sheet (Argon's editorial design with the header
   of his centred design): thank-you headline, one sentence, Contact block, email link + copy button. 10 languages;
   "Anti‑Spoiler" in the thanks uses a non-breaking hyphen. Files: `popup/popup.html|css|js`, `_locales/*`.
@@ -17,7 +17,7 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
   → `#close-button button`, fallback `#show-hide-button button`); the chat stays covered. `src/content/content.js`.
 - Tests: `tests/popup.test.js`, `tests/content.test.js` — 353/353 pass at that point (367 with the live guard fixes below). README updated.
 - Live checks in Chrome (muted): `%TEMP%\yas-store\cap\about-chat-check.mjs` — 16/16.
-- Live guard fixes (2026-11-09, uncommitted), details and live tables in `docs/design/2026-11-09-audit/AUDIT.md`:
+- Live guard fixes (2026-11-09), details and live tables in `docs/design/2026-11-09-audit/AUDIT.md`:
   - no cover or guard over YouTube's own player message (`playabilityStatus` not `OK`: bot wall, unavailable, age
     check, upcoming stream) — `live-player-bridge.js`, `live-start-controller.js`;
   - browser Back from a stream no longer leaves the panel and cover over the previous page; the mini-player still
@@ -25,10 +25,15 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
   - Tests 367/367 (14 new). Live cells in muted Chrome all as expected; logs `cap/blocked-check.log`,
     `cap/live-cells.log`, `cap/back-cells.log` (HEAD repro), `cap/back-cells-v2.log` (fixed).
 
+## Regression fixes on top of a48ebc8 (committed, not pushed)
+- Regression check of a48ebc8 (owner asked "did we break anything?"): Astra found two live-guard gaps that
+  b94d45a did not have — both fixed in `live-start-controller.js`, 2 new tests (369/369; both fail on a48ebc8).
+  Details and the old-vs-new live comparison: `docs/design/2026-11-09-audit/AUDIT.md`, section "Regression check".
+
 ## Open items
-0. Done 2026-11-09 (uncommitted): guard over YouTube's player error, and guard left after Back — see above.
+0. Done 2026-11-09 (a48ebc8): guard over YouTube's player error, and guard left after Back — see above.
 1. Audit results: `docs/design/2026-11-09-audit/AUDIT.md`. Owner (2026-11-09): items 1–2 are too minor, skip them.
-   Items 3–5 are fixed (uncommitted): skip buttons hide during ads, FAQ rewritten (README + landing), unused seek
+   Items 3–5 are fixed (a48ebc8): skip buttons hide during ads, FAQ rewritten (README + landing), unused seek
    verification removed from the bridge. The owner sees ads in their own browser. Rig network: region CH with the
    bot wall in the evening of 2026-11-09; the owner then switched the VPN — videos play again (`smoke.mjs` 13/13),
    and the owner says there will be no ads on it, so ad cells still cannot be checked here.

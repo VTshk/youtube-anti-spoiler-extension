@@ -93,3 +93,24 @@ landing FAQ rewritten; unused seek verification removed from the bridge (≈120 
 - Inline hover-preview player after uncovering the open video (Astra F4).
 - Live chat header controls other than Close (chat mode, menu) stay under the cover — by design: the whole chat
   iframe is blurred.
+
+## Regression check of a48ebc8 (2026-11-09, owner: "did these changes break anything?")
+- Unit tests 367/367 on a48ebc8.
+- Old vs new live comparison (muted, `cap/regress.mjs` → `regress-old.log` / `regress-new.log` / `regress-fixed.log`,
+  compare with `regress-compare.mjs`): 22 scenarios on b94d45a and on the new build — watch page (pills, +1m = 60 s,
+  eye, time/bar hidden, comments cover), previews on (watch, home, search: 100% thumbs, titles linked/unlinked),
+  in-site move, Shorts, protection off, comments off, bar off, live stream (guard, last button, guard off, comments
+  off, protection off), popup. Same everywhere; 0 page errors. The only differences (comments cover shown, a player
+  on search/Shorts) were load timing: `regress-diag.mjs` gave identical results on both builds.
+- Astra regression review of the diff: two real gaps, not in b94d45a, fixed:
+  1. after YouTube's error message without a video id, the cover dropped for it did not come back when the player
+     could play (in-site move to a stream) until a live signal — now `shielded` is kept while blocked, so the next
+     tick raises the cover again;
+  2. an upcoming stream that started while open could play uncovered and aloud up to 1 s (slow tick) — now a
+     playback event while blocked runs the check at once.
+  Tests: "an upcoming stream that starts playing is covered at once…", "the cover comes back when the player stops
+  reporting an error" — both fail on a48ebc8, pass now; 369/369.
+- Live after the fix: the 22 scenarios same as b94d45a; `UNPLAYABLE` video — no cover/guard in 3 settings (the
+  "message visible" probe is the known broken one). Sky News `/live` currently can't be rewound — same on b94d45a,
+  so Start from beginning was not re-run live; that path is unchanged since its PASS earlier today.
+- Not checkable here: ads, a real bot wall (the network plays videos now), an upcoming stream going live.

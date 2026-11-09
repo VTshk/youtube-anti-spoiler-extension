@@ -975,6 +975,17 @@
         return;
       }
 
+      // The video plays, so YouTube no longer shows its own message (an
+      // upcoming stream has started): check now, not on the next slow tick,
+      // so the cover and the pause land before the stream is seen.
+      if (activeGuard.playerBlocked && !activeGuard.engaged) {
+        runTick(playbackLockDocument);
+
+        if (!activeGuard) {
+          return;
+        }
+      }
+
       if (activeGuard.shielded) {
         muteForShield(video);
       }
@@ -1630,8 +1641,12 @@
       // unavailable, age check, upcoming stream): there is nothing to guard,
       // and the cover would hide that message. Keep watching: an upcoming
       // stream that goes live becomes playable without a page change.
+      // `shielded` stays as it was, so the cover comes back on the first
+      // tick the player can play (an in-site move to a stream, a stream that
+      // starts) instead of waiting for a live signal.
       if (!activeGuard.engaged && activeGuard.playerBlocked) {
-        dropShield(doc);
+        removeLiveStartObscuring(doc);
+        restoreShieldMute();
         scheduleTick(
           doc,
           elapsed >= LIVE_START_TIMEOUT_MS ? LIVE_GUARD_HEARTBEAT_MS : LIVE_START_POLL_MS,
