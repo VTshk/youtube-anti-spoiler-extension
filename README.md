@@ -81,7 +81,7 @@ Under **Advanced settings**:
 - **Blur video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip and in the player bar; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. By default it follows **Blur previews** (the pressed chain button next to its switch): titles are blurred exactly when previews are, and the switch only shows that value. Click the chain button to set it separately; click it again to link it back.
 - **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
 
-At the bottom of the popup is a contact line with the support email.
+At the bottom of the popup, **About us** opens a short sheet about the extension with the support email and a button that copies it.
 
 While protection is on, the extension does not pass the playback position to Chrome's media controls. Settings switched mid-video reach the media controls right away. Chrome may still show a position it reads from the video element itself; this cannot be turned off from an extension.
 
@@ -109,7 +109,7 @@ When a live stream opens, the player is blacked out and muted right away, before
 
 If the extension can't tell whether the video is live, it offers **Start from beginning** and **Play** (resume where the video is).
 
-If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat is blurred behind **Show comments**; the user can open it with that button at any time, also before making the choice. Recordings of finished streams are not affected.
+If the streamer turned rewinding off, the extension says the stream can't be rewound and offers only **Continue live**; the skip buttons are not shown on such a stream. A pre-roll ad plays blurred and muted, then the choice appears. The choice holds for the current visit to the stream; opening it again asks again. Live chat is blurred behind **Show comments**; the user can open it with that button at any time, also before making the choice. The close (×) button on the cover closes the chat panel like YouTube's own; reopened, the chat is still covered. Recordings of finished streams are not affected.
 
 ## FAQ
 
@@ -127,7 +127,7 @@ Yes. In an esports series, the length of the VOD tells you how many maps or game
 
 ### Can I blur thumbnails and titles that give away the winner?
 
-Yes. Turn on "Blur previews" in the popup for thumbnails, previews and end screens. Under "Advanced settings", turn on "Blur video titles" for titles, including the open video and browser tab. Both settings are off by default.
+Yes. Turn on "Blur previews" in the popup: it blurs thumbnails, previews and end screens, and video titles follow it, including the open video and the browser tab. To set titles separately, open "Advanced settings" and click the chain button next to "Blur video titles". Both are off by default.
 
 ### Does it hide comments and live chat?
 

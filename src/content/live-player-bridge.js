@@ -8,15 +8,12 @@
   }
 })(typeof globalThis !== "undefined" ? globalThis : this, function createLivePlayerBridge() {
   const LIVE_START_SEEK_EVENT = "youtube-anti-spoiler-live-start-seek";
-  const LIVE_START_SEEK_RESULT_EVENT = "youtube-anti-spoiler-live-start-seek-result";
   const LIVE_GUARD_PAUSE_EVENT = "youtube-anti-spoiler-live-guard-pause";
   const LIVE_GUARD_PLAY_EVENT = "youtube-anti-spoiler-live-guard-play";
   const LIVE_GUARD_CONTINUE_EVENT = "youtube-anti-spoiler-live-guard-continue";
   const LIVE_STATE_REQUEST_EVENT = "youtube-anti-spoiler-live-state-request";
   const LIVE_STATE_RESULT_EVENT = "youtube-anti-spoiler-live-state-result";
   const REFRESH_EVENT = "youtube-anti-spoiler-locationchange";
-  const LIVE_START_VERIFY_DELAY_MS = 500;
-  const LIVE_START_SEEK_TOLERANCE_SECONDS = 2;
   const BRIDGE_FLAG = "__youtubeAntiSpoilerLivePlayerBridgeInitialized";
   // Classes content.js puts on <html>; the MAIN world cannot read
   // chrome.storage, so they are its only view of the settings.
@@ -85,26 +82,6 @@
     }
 
     return null;
-  }
-
-  function getPlayerCurrentTime(player) {
-    if (!player || typeof player.getCurrentTime !== "function") {
-      return null;
-    }
-
-    try {
-      return getFiniteNumber(player.getCurrentTime());
-    } catch (error) {
-      return null;
-    }
-  }
-
-  function isNearSeekTarget(currentTime, seekSeconds) {
-    return (
-      Number.isFinite(currentTime) &&
-      Number.isFinite(seekSeconds) &&
-      Math.abs(currentTime - seekSeconds) <= LIVE_START_SEEK_TOLERANCE_SECONDS
-    );
   }
 
   function findPlayer(doc) {
@@ -182,6 +159,14 @@
     return getNestedObject(playerResponse, ["videoDetails", "videoId"]) || null;
   }
 
+  // "OK" when the video can play; otherwise YouTube shows its own message:
+  // LOGIN_REQUIRED (bot check, sign-in), UNPLAYABLE, ERROR,
+  // AGE_CHECK_REQUIRED, LIVE_STREAM_OFFLINE (upcoming stream).
+  function getPlayabilityStatus(playerResponse) {
+    const status = getNestedObject(playerResponse, ["playabilityStatus", "status"]);
+    return typeof status === "string" ? status : null;
+  }
+
   function getPlayerVideoData(player) {
     if (!player || typeof player.getVideoData !== "function") {
       return null;
@@ -223,8 +208,13 @@
     const signals = {};
 
     if (!videoId) {
+      // YouTube's own error ("Sign in to confirm you're not a bot", video
+      // unavailable) comes as a response without videoDetails, so it names no
+      // video. While nothing else names one either, the player holds that
+      // error, not a previous video.
       return {
         isLive: null,
+        playabilityStatus: getPlayabilityStatus(playerResponse),
         signals,
         videoId: null,
       };
@@ -260,6 +250,9 @@
     return {
       canRewind: playerHoldsVideo ? getPlayerCanRewind(player) : null,
       isLive,
+      playabilityStatus: matchingResponses.length > 0
+        ? getPlayabilityStatus(matchingResponses[0])
+        : null,
       rewindStart: playerHoldsVideo ? getPlayerRewindStart(player, doc) : null,
       signals,
       videoId,
@@ -337,31 +330,13 @@
     player.toggleAttribute(SEEK_BLOCKED_ATTRIBUTE, getPlayerCanRewind(player) === false);
   }
 
+  // "Start from beginning". The content script checks on its own whether the
+  // player got there (seeked events), so nothing is reported back.
   function seekPlayer(doc, fallbackSeconds) {
     const player = findPlayer(doc);
-    const seekSeconds = getPlayerSeekStart(player, fallbackSeconds);
 
-    if (!player || typeof player.seekTo !== "function") {
-      return {
-        currentTime: getPlayerCurrentTime(player),
-        seekSeconds,
-        success: false,
-      };
-    }
-
-    try {
-      player.seekTo(seekSeconds, true);
-      return {
-        currentTime: null,
-        seekSeconds,
-        success: false,
-      };
-    } catch (error) {
-      return {
-        currentTime: getPlayerCurrentTime(player),
-        seekSeconds,
-        success: false,
-      };
+    if (player && typeof player.seekTo === "function") {
+      player.seekTo(getPlayerSeekStart(player, fallbackSeconds), true);
     }
   }
 
@@ -474,48 +449,6 @@
     return playPlayer(doc);
   }
 
-  function verifyPlayerSeek(doc, seekResult) {
-    const player = findPlayer(doc);
-    const currentTime = getPlayerCurrentTime(player);
-
-    return {
-      currentTime,
-      seekSeconds: seekResult.seekSeconds,
-      success: isNearSeekTarget(currentTime, seekResult.seekSeconds),
-    };
-  }
-
-  function serializeSeekResultDetail(requestId, result) {
-    return JSON.stringify({
-      currentTime: result.currentTime,
-      requestId,
-      seekSeconds: result.seekSeconds,
-      success: result.success,
-    });
-  }
-
-  function dispatchSeekResult(root, doc, requestId, result) {
-    if (
-      !root ||
-      typeof root.CustomEvent !== "function" ||
-      !doc ||
-      typeof doc.dispatchEvent !== "function"
-    ) {
-      return false;
-    }
-
-    try {
-      doc.dispatchEvent(new root.CustomEvent(LIVE_START_SEEK_RESULT_EVENT, {
-        bubbles: true,
-        composed: true,
-        detail: serializeSeekResultDetail(requestId, result),
-      }));
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
   function dispatchLiveStateResult(root, doc, requestId, result) {
     if (
       !root ||
@@ -533,6 +466,7 @@
         detail: JSON.stringify({
           canRewind: result.canRewind === undefined ? null : result.canRewind,
           isLive: result.isLive,
+          playabilityStatus: result.playabilityStatus || null,
           requestId,
           rewindStart: result.rewindStart === undefined ? null : result.rewindStart,
           signals: result.signals,
@@ -543,26 +477,6 @@
     } catch (error) {
       return false;
     }
-  }
-
-  function scheduleSeekVerification(root, doc, requestId, seekResult) {
-    if (
-      seekResult.success ||
-      !root ||
-      typeof root.setTimeout !== "function"
-    ) {
-      dispatchSeekResult(root, doc, requestId, seekResult);
-      return;
-    }
-
-    root.setTimeout(() => {
-      dispatchSeekResult(
-        root,
-        doc,
-        requestId,
-        verifyPlayerSeek(doc, seekResult),
-      );
-    }, LIVE_START_VERIFY_DELAY_MS);
   }
 
   function patchHistory(win) {
@@ -718,13 +632,7 @@
 
     currentDocument.addEventListener(LIVE_START_SEEK_EVENT, (event) => {
       const detail = parseSeekDetail(event && event.detail);
-      const result = seekPlayer(currentDocument, detail.fallbackSeconds);
-      scheduleSeekVerification(
-        currentWindow,
-        currentDocument,
-        detail.requestId,
-        result,
-      );
+      seekPlayer(currentDocument, detail.fallbackSeconds);
     }, true);
 
     currentDocument.addEventListener(LIVE_GUARD_PAUSE_EVENT, () => {
@@ -764,30 +672,23 @@
     LIVE_STATE_REQUEST_EVENT,
     LIVE_STATE_RESULT_EVENT,
     LIVE_START_SEEK_EVENT,
-    LIVE_START_SEEK_RESULT_EVENT,
-    LIVE_START_VERIFY_DELAY_MS,
     REFRESH_EVENT,
     SEEK_BLOCKED_ATTRIBUTE,
     SEEK_BLOCKED_CHECK_MS,
     continuePlayer,
-    dispatchSeekResult,
-    getPlayerCurrentTime,
     getPlayerSeekStart,
     getPlayerSeekableEnd,
     getLiveState,
     HIDDEN_MEDIA_TITLE,
     MEDIA_TITLE_ATTRIBUTE,
     initLivePlayerBridge,
-    isNearSeekTarget,
     parseSeekDetail,
     patchHistory,
     patchMediaSession,
     pausePlayer,
     playPlayer,
-    scheduleSeekVerification,
     seekPlayer,
     seekPlayerToLiveHead,
     syncSeekBlockedAttribute,
-    verifyPlayerSeek,
   };
 });

@@ -135,9 +135,37 @@
     "message": "テーマを保存できませんでした",
     "description": "Popup error when the chosen theme could not be saved."
   },
-  "popupContactLabel": {
-    "message": "ご質問・ご提案：",
-    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
+  "popupAboutButton": {
+    "message": "私たちについて",
+    "description": "Footer button of the popup that opens the About sheet; also the title of that sheet."
+  },
+  "popupAboutThanks": {
+    "message": "Anti‑Spoiler をご利用いただき、ありがとうございます！",
+    "description": "First line of the About sheet in the popup, shown larger: thanks to the user for using the extension."
+  },
+  "popupAboutText": {
+    "message": "試合もレースも配信も、最後の1分までドキドキを楽しめるように作りました。",
+    "description": "Text under the thank-you line in the About sheet: why the extension exists."
+  },
+  "popupContactTitle": {
+    "message": "お問い合わせ",
+    "description": "Heading of the contact block in the About sheet."
+  },
+  "popupContactNote": {
+    "message": "不具合、ほしい機能、アイデアなど、お気軽にご連絡ください。",
+    "description": "Text above the contact email in the About sheet: where to write about bugs, missing features or ideas."
+  },
+  "popupCopyEmail": {
+    "message": "アドレスをコピー",
+    "description": "Screen reader label and tooltip of the button that copies the contact email."
+  },
+  "popupEmailCopied": {
+    "message": "コピーしました",
+    "description": "Short confirmation shown after the contact email was copied."
+  },
+  "popupAboutClose": {
+    "message": "閉じる",
+    "description": "Screen reader label and tooltip of the button that closes the About sheet."
   },
   "liveGuardTitle": {
     "message": "ネタバレ防止が有効です",
@@ -186,6 +214,10 @@
   "commentsShowButton": {
     "message": "コメントを表示",
     "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "commentsCloseChat": {
+    "message": "チャットを閉じる",
+    "description": "Screen reader label and tooltip of the close (×) button on the live chat cover. Closes the chat panel like YouTube’s own close button."
   },
   "skipBack10Minutes": {
     "message": "10分戻る",

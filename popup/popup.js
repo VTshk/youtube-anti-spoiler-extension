@@ -507,9 +507,50 @@
     });
   }
 
+  // The About sheet. showModal() gives Escape and keeps focus inside. A
+  // click whose target is the dialog itself landed on the backdrop: the
+  // content fills one inner block, so it closes the sheet.
+  function bindAboutSheet() {
+    const sheet = root.document.querySelector("[data-about-sheet]");
+    const copyButton = root.document.querySelector("[data-copy-email]");
+    const address = root.document
+      .querySelector("[data-contact-email]")
+      .getAttribute("href")
+      .replace("mailto:", "");
+    let copiedTimer = null;
+
+    root.document.querySelector("[data-about-open]").addEventListener("click", () => sheet.showModal());
+    root.document.querySelector("[data-about-close]").addEventListener("click", () => sheet.close());
+    sheet.addEventListener("click", (event) => {
+      if (event.target === sheet) {
+        sheet.close();
+      }
+    });
+
+    // The copy icon turns into a check for two seconds.
+    copyButton.addEventListener("click", async () => {
+      try {
+        await root.navigator.clipboard.writeText(address);
+      } catch (error) {
+        console.error("[Anti-Spoiler for YouTube] Could not copy the address.", error);
+        return;
+      }
+
+      copyButton.toggleAttribute("data-copied", true);
+      namespace.setLabel(copyButton, "popupEmailCopied");
+      root.clearTimeout(copiedTimer);
+      copiedTimer = root.setTimeout(() => {
+        copyButton.toggleAttribute("data-copied", false);
+        namespace.setLabel(copyButton, "popupCopyEmail");
+      }, 2000);
+    });
+  }
+
   async function start() {
     // First, so the colours are right as early as possible.
     readStoredTheme().then(showTheme);
+    // Works in read-only mode too: it needs no settings.
+    bindAboutSheet();
 
     const toggles = getToggleElements();
     const powerToggle = getPowerToggle();

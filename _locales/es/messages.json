@@ -135,9 +135,37 @@
     "message": "No se pudo guardar el tema",
     "description": "Popup error when the chosen theme could not be saved."
   },
-  "popupContactLabel": {
-    "message": "¿Preguntas o sugerencias?",
-    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
+  "popupAboutButton": {
+    "message": "Sobre nosotros",
+    "description": "Footer button of the popup that opens the About sheet; also the title of that sheet."
+  },
+  "popupAboutThanks": {
+    "message": "¡Gracias por usar Anti‑Spoiler!",
+    "description": "First line of the About sheet in the popup, shown larger: thanks to the user for using the extension."
+  },
+  "popupAboutText": {
+    "message": "Lo creamos para que cada partido, carrera y directo mantenga la emoción hasta el último minuto.",
+    "description": "Text under the thank-you line in the About sheet: why the extension exists."
+  },
+  "popupContactTitle": {
+    "message": "Contacto",
+    "description": "Heading of the contact block in the About sheet."
+  },
+  "popupContactNote": {
+    "message": "¿Has encontrado un error, echas en falta una función o tienes una idea? Escríbenos.",
+    "description": "Text above the contact email in the About sheet: where to write about bugs, missing features or ideas."
+  },
+  "popupCopyEmail": {
+    "message": "Copiar dirección",
+    "description": "Screen reader label and tooltip of the button that copies the contact email."
+  },
+  "popupEmailCopied": {
+    "message": "Copiado",
+    "description": "Short confirmation shown after the contact email was copied."
+  },
+  "popupAboutClose": {
+    "message": "Cerrar",
+    "description": "Screen reader label and tooltip of the button that closes the About sheet."
   },
   "liveGuardTitle": {
     "message": "La protección contra spoilers está activa",
@@ -186,6 +214,10 @@
   "commentsShowButton": {
     "message": "Mostrar comentarios",
     "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "commentsCloseChat": {
+    "message": "Cerrar chat",
+    "description": "Screen reader label and tooltip of the close (×) button on the live chat cover. Closes the chat panel like YouTube’s own close button."
   },
   "skipBack10Minutes": {
     "message": "Retroceder 10 minutos",

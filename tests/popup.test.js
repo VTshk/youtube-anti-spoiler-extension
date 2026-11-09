@@ -143,6 +143,7 @@ async function loadPopup(
     failThemeWrite = false,
     fetch = fetchPackagedFile,
     uiLanguage = "en-US",
+    failCopy = false,
   } = {},
 ) {
   const storageChangeListeners = [];
@@ -158,6 +159,8 @@ async function loadPopup(
   // Every successful chrome.storage.sync.set, in order.
   const syncWrites = [];
   const fetchedUrls = [];
+  const clipboardWrites = [];
+  const timers = [];
   // With delayLanguageRead, the language read answers only when the test
   // calls finishLanguageRead().
   let pendingLanguageRead = null;
@@ -279,6 +282,24 @@ async function loadPopup(
       },
     },
     document,
+    navigator: {
+      clipboard: {
+        writeText(text) {
+          if (failCopy) {
+            return Promise.reject(new Error("clipboard blocked"));
+          }
+
+          clipboardWrites.push(text);
+          return Promise.resolve();
+        },
+      },
+    },
+    // Timers wait until the test runs them.
+    setTimeout(callback) {
+      timers.push(callback);
+      return timers.length;
+    },
+    clearTimeout() {},
   };
 
   context.globalThis = context;
@@ -316,6 +337,12 @@ async function loadPopup(
     syncWrites,
     titlesLinkButton: getElement("[data-titles-link]"),
     status: getElement("[data-status]"),
+    aboutOpenButton: getElement("[data-about-open]"),
+    aboutCloseButton: getElement("[data-about-close]"),
+    aboutSheet: getElement("[data-about-sheet]"),
+    copyButton: getElement("[data-copy-email]"),
+    clipboardWrites,
+    timers,
     storedSettings,
     findText(key) {
       return elements.find((element) => element.dataset.yasI18n === key);
@@ -458,8 +485,8 @@ test("the whole capsule is the label of the master switch, with the play triangl
   // No click handler of its own: one would toggle a second time. The only
   // listener on the capsule follows the pointer for the hover circle, and
   // the only click listeners are the theme button's, outside the capsule,
-  // and the titles chain button's in Advanced.
-  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 2);
+  // the titles chain button's in Advanced, and the four of the About sheet.
+  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 6);
   assert.match(POPUP_JS, /themeButton\.addEventListener\("click", changeTheme\)/);
   assert.match(POPUP_JS, /linkButton\.addEventListener\("click"/);
   assert.match(POPUP_JS, /hero\.addEventListener\("pointermove"/);
@@ -1176,7 +1203,7 @@ test("the language chip and the theme button sit in the capsule, outside its lab
 test("the labels written in the popup HTML match the English messages", () => {
   const labels = [...POPUP_HTML.matchAll(/data-yas-i18n-label="([A-Za-z0-9]+)"\s+aria-label="([^"]+)"/g)];
 
-  assert.equal(labels.length, 5);
+  assert.equal(labels.length, 7);
   labels.forEach(([, key, text]) => {
     assert.equal(text, en(key), key);
   });
@@ -1330,32 +1357,129 @@ test("popup language chip shows the listed language as two capitals", async () =
   assert.equal(english.languageCode.textContent, "DE");
 });
 
-// --- Contact line ---
+// --- Footer and the About sheet ---
 
-test("popup ends with a contact line outside the capsule and every settings panel", () => {
+test("popup ends with an About button outside the capsule and every settings panel", () => {
   const footer = POPUP_HTML.match(/<footer class="contact">([\s\S]*?)<\/footer>\s*<\/main>/);
 
-  assert.ok(footer, "the contact line is the last part of the popup");
+  assert.ok(footer, "the footer is the last part of the popup");
+  // No address in the footer any more (owner, 2026-11-09): one button.
+  assert.doesNotMatch(footer[1], /mailto|@/);
   assert.match(
     footer[1],
-    /<span data-yas-i18n="popupContactLabel">Questions or ideas\?<\/span>\s*<a href="mailto:vtshka8@gmail\.com">vtshka8@gmail\.com<\/a>/,
+    /<button type="button" class="about-button" data-about-open>\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<span data-yas-i18n="popupAboutButton">About us<\/span>\s*<\/button>/,
   );
   // After the Advanced card has closed, so it shows with protection off and
   // in read-only mode.
   assert.match(POPUP_HTML, /<\/details>\s*<!--[\s\S]*?-->\s*<footer class="contact">/);
-  assert.equal(en("popupContactLabel"), "Questions or ideas?");
+  assert.equal(en("popupAboutButton"), "About us");
 
+  // The thin line above it stays (owner, 2026-11-06).
   assert.match(POPUP_CSS, /\.contact::before\s*\{[^}]*left:\s*24px;[^}]*right:\s*24px;[^}]*border-top:\s*1px solid var\(--line\);/);
-  assert.match(POPUP_CSS, /\.contact\s*\{[^}]*margin-top:\s*14px;[^}]*padding-top:\s*10px;[^}]*color:\s*color-mix\(in srgb, var\(--muted\) 85%, var\(--bg\)\);[^}]*font-size:\s*9px;[^}]*text-align:\s*center;[^}]*overflow-wrap:\s*anywhere;/);
-  assert.match(POPUP_CSS, /\.contact span\s*\{[^}]*font-size:\s*8px;/);
-  assert.match(POPUP_CSS, /\.contact a\s*\{[^}]*color:\s*inherit;[^}]*text-decoration:\s*underline;/);
-  assert.match(POPUP_CSS, /\.contact a:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--focus\);/);
-  // No script for the link.
-  assert.doesNotMatch(POPUP_JS, /mailto|contact/i);
+  assert.match(POPUP_CSS, /\.about-button\s*\{[^}]*color:\s*var\(--muted\);[^}]*cursor:\s*pointer;/);
+  assert.match(POPUP_CSS, /\.about-button:hover\s*\{[^}]*color:\s*var\(--text\);/);
+  assert.match(POPUP_CSS, /\.about-button:focus-visible,[\s\S]*?outline:\s*2px solid var\(--focus\);/);
 });
 
-test("every locale has the theme and contact texts", () => {
-  const keys = ["popupThemeAuto", "popupThemeLight", "popupThemeDark", "popupThemeError", "popupContactLabel"];
+test("the About sheet is a dialog after the popup, with the text, the address and a copy button", () => {
+  const sheet = POPUP_HTML.match(/<\/main>\s*<!--[\s\S]*?-->\s*<dialog class="about-sheet" data-about-sheet aria-labelledby="about-title">([\s\S]*?)<\/dialog>/);
+
+  assert.ok(sheet, "the sheet follows the popup");
+  assert.match(sheet[1], /<p class="about-title" id="about-title" data-yas-i18n="popupAboutButton">About us<\/p>/);
+  assert.match(sheet[1], /<button type="button" class="about-close" data-about-close data-yas-i18n-label="popupAboutClose"/);
+  assert.ok(sheet[1].includes(`<p class="about-thanks" data-yas-i18n="popupAboutThanks">${en("popupAboutThanks")}</p>`), "popupAboutThanks");
+  assert.ok(sheet[1].includes(`data-yas-i18n="popupAboutText">${en("popupAboutText")}<`), "popupAboutText");
+  assert.match(sheet[1], /data-yas-i18n="popupContactTitle">Contact</);
+  assert.ok(sheet[1].includes(`data-yas-i18n="popupContactNote">${en("popupContactNote")}<`), "popupContactNote");
+  // The address is not translated.
+  assert.match(sheet[1], /<a href="mailto:vtshka8@gmail\.com" data-contact-email>\s*<svg[\s\S]*?<\/svg>\s*<span>vtshka8@gmail\.com<\/span>\s*<\/a>/);
+  assert.match(sheet[1], /<button type="button" class="about-copy" data-copy-email data-yas-i18n-label="popupCopyEmail"/);
+
+  // The header runs edge to edge; the rest sits in one block under it.
+  assert.match(sheet[1], /^\s*<div class="about-body">\s*<div class="about-head">[\s\S]*?<\/div>\s*<div class="about-main">/);
+
+  // It rises from the bottom edge over a dimmed, softly blurred popup, and
+  // stays still for people who turned motion off.
+  assert.match(POPUP_CSS, /\.about-sheet\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*auto 0 0;[^}]*border-radius:\s*20px 20px 0 0;[^}]*transform:\s*translateY\(100%\);/);
+  assert.match(POPUP_CSS, /\.about-sheet\[open\]\s*\{[^}]*transform:\s*none;/);
+  assert.match(POPUP_CSS, /@starting-style\s*\{\s*\.about-sheet\[open\]\s*\{[^}]*translateY\(100%\)/);
+  assert.match(POPUP_CSS, /\.about-sheet\[open\]::backdrop\s*\{[^}]*background:\s*rgb\(0 0 0 \/ 0\.46\);[^}]*backdrop-filter:\s*blur\(2px\);/);
+  assert.match(POPUP_CSS, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.about-sheet,\s*\.about-sheet::backdrop\s*\{\s*transition:\s*none;/);
+  assert.match(POPUP_CSS, /\.about-head\s*\{[^}]*padding:\s*11px 12px 11px 18px;[^}]*border-bottom:\s*1px solid var\(--line\);/);
+  // The thanks is the headline; the address and the copy button share one track.
+  assert.match(POPUP_CSS, /\.about-thanks\s*\{[^}]*font-size:\s*17px;[^}]*font-weight:\s*800;/);
+  assert.match(POPUP_CSS, /\.about-email\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*background:\s*var\(--bg\);/);
+});
+
+test("the name in the thanks never splits at its hyphen", () => {
+  fs.readdirSync(path.join(rootPath, "_locales")).forEach((code) => {
+    const file = JSON.parse(
+      fs.readFileSync(path.join(rootPath, "_locales", code, "messages.json"), "utf8"),
+    );
+
+    // U+2011, the non-breaking hyphen.
+    assert.ok(file.popupAboutThanks.message.includes("Anti‑Spoiler"), code);
+  });
+});
+
+test("the About button opens the sheet; the close button and the backdrop close it", async () => {
+  const popup = await loadPopup();
+  const calls = [];
+  popup.aboutSheet.showModal = () => calls.push("open");
+  popup.aboutSheet.close = () => calls.push("close");
+
+  popup.aboutOpenButton.listeners.click();
+  popup.aboutCloseButton.listeners.click();
+  // A click inside the sheet does not close it; one on the backdrop does.
+  popup.aboutSheet.listeners.click({ target: popup.copyButton });
+  popup.aboutSheet.listeners.click({ target: popup.aboutSheet });
+
+  assert.deepEqual(calls, ["open", "close", "close"]);
+});
+
+test("the About sheet works in read-only mode too", async () => {
+  const popup = await loadPopup({}, { failRead: true });
+  const calls = [];
+  popup.aboutSheet.showModal = () => calls.push("open");
+
+  popup.aboutOpenButton.listeners.click();
+
+  assert.deepEqual(calls, ["open"]);
+});
+
+test("the copy button copies the address and shows a check for two seconds", async () => {
+  const popup = await loadPopup();
+
+  await popup.copyButton.listeners.click();
+
+  assert.deepEqual(popup.clipboardWrites, ["vtshka8@gmail.com"]);
+  assert.equal(popup.copyButton.getAttribute("data-copied"), "");
+  assert.equal(popup.copyButton.getAttribute("aria-label"), "Copied");
+
+  popup.timers.at(-1)();
+
+  assert.equal(popup.copyButton.getAttribute("data-copied"), null);
+  assert.equal(popup.copyButton.getAttribute("aria-label"), "Copy address");
+  assert.match(POPUP_CSS, /\.about-copy\[data-copied\] \.about-copied-icon\s*\{[^}]*display:\s*block;/);
+});
+
+test("a blocked clipboard leaves the copy button as it was", async (t) => {
+  t.mock.method(console, "error", () => {});
+  const popup = await loadPopup({}, { failCopy: true });
+
+  await popup.copyButton.listeners.click();
+
+  assert.deepEqual(popup.clipboardWrites, []);
+  assert.equal(popup.copyButton.getAttribute("data-copied"), null);
+  assert.equal(popup.timers.length, 0);
+});
+
+test("every locale has the theme, About and contact texts", () => {
+  const keys = [
+    "popupThemeAuto", "popupThemeLight", "popupThemeDark", "popupThemeError",
+    "popupAboutButton", "popupAboutThanks", "popupAboutText", "popupContactTitle", "popupContactNote",
+    "popupCopyEmail", "popupEmailCopied", "popupAboutClose", "commentsCloseChat",
+  ];
 
   fs.readdirSync(path.join(rootPath, "_locales")).forEach((code) => {
     const file = JSON.parse(

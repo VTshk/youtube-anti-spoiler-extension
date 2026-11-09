@@ -567,19 +567,16 @@ p {
   cursor: default;
 }
 
-/* The contact line under the cards: tiny and paler than the notes, so it
-   does not pull the eye from the settings. The owner chose an 8 px label
-   and a 9 px address, set apart by a thin line 24 px shorter than the
-   cards on each side (2026-11-06). */
+/* The footer under the cards: one quiet "About us" button that opens the
+   About sheet, set apart by the thin line the owner chose: 24 px shorter
+   than the cards on each side (2026-11-06). Muted like the notes, so it
+   does not pull the eye from the settings; the hover fill shows it is a
+   button. */
 .contact {
   position: relative;
-  margin-top: 14px;
-  padding-top: 10px;
-  color: color-mix(in srgb, var(--muted) 85%, var(--bg));
-  font-size: 9px;
-  line-height: 1.25;
+  margin-top: 10px;
+  padding-top: 6px;
   text-align: center;
-  overflow-wrap: anywhere;
 }
 
 .contact::before {
@@ -591,24 +588,256 @@ p {
   border-top: 1px solid var(--line);
 }
 
-.contact span {
-  font-size: 8px;
+.about-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-/* Same colour as the label; a faint underline alone marks the link. */
-.contact a {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
-  text-underline-offset: 2px;
+.about-button svg {
+  width: 14px;
+  height: 14px;
 }
 
-.contact a:hover {
+.about-button:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
   color: var(--text);
 }
 
-.contact a:focus-visible {
+.about-button:focus-visible,
+.about-close:focus-visible,
+.about-copy:focus-visible,
+.about-email a:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
-  border-radius: 2px;
+}
+
+/* The About sheet rises from the bottom edge of the popup: Argon's
+   editorial variant with the header of its centred one (owner,
+   2026-11-09). The slide-in needs Chrome 117 (@starting-style); older
+   versions just show it. */
+.about-sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: auto;
+  max-width: none;
+  max-height: calc(100% - 20px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 -14px 40px rgb(0 0 0 / 0.26);
+  overflow: auto;
+  transform: translateY(100%);
+  transition:
+    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    overlay 240ms allow-discrete,
+    display 240ms allow-discrete;
+}
+
+.about-sheet[open] {
+  transform: none;
+}
+
+@starting-style {
+  .about-sheet[open] {
+    transform: translateY(100%);
+  }
+}
+
+/* The popup behind dims and softly blurs. */
+.about-sheet::backdrop {
+  background: rgb(0 0 0 / 0);
+  backdrop-filter: blur(0);
+  transition:
+    background 240ms,
+    backdrop-filter 240ms,
+    overlay 240ms allow-discrete,
+    display 240ms allow-discrete;
+}
+
+.about-sheet[open]::backdrop {
+  background: rgb(0 0 0 / 0.46);
+  backdrop-filter: blur(2px);
+}
+
+@starting-style {
+  .about-sheet[open]::backdrop {
+    background: rgb(0 0 0 / 0);
+    backdrop-filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-sheet,
+  .about-sheet::backdrop {
+    transition: none;
+  }
+}
+
+/* The header runs edge to edge, set off by a line. */
+.about-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 12px 11px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.about-close {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.about-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.about-close:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+.about-main {
+  padding: 14px 18px 18px;
+}
+
+/* The thanks is the headline. "Anti‑Spoiler" in it has a non-breaking
+   hyphen in every language, so the name never splits across lines. */
+.about-thanks {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.about-text {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+.about-contact {
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.about-contact-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.about-contact-note {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* The address and the copy button share one track. */
+.about-email {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.about-email a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.about-email a svg,
+.about-copy svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.about-email a svg {
+  color: var(--accent);
+}
+
+.about-email a:hover {
+  background: var(--surface);
+}
+
+.about-copy {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.about-copy:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* For two seconds after a copy the icon is a check. */
+.about-copied-icon,
+.about-copy[data-copied] .about-copy-icon {
+  display: none;
+}
+
+.about-copy[data-copied] .about-copied-icon {
+  display: block;
+}
+
+.about-copy[data-copied] {
+  border-color: var(--accent);
+  color: var(--accent);
 }

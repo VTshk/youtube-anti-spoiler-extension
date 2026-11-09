@@ -135,9 +135,37 @@
     "message": "Tidak dapat menyimpan tema",
     "description": "Popup error when the chosen theme could not be saved."
   },
-  "popupContactLabel": {
-    "message": "Pertanyaan atau saran?",
-    "description": "Text before the contact email at the bottom of the popup: where to send questions, complaints or suggestions."
+  "popupAboutButton": {
+    "message": "Tentang kami",
+    "description": "Footer button of the popup that opens the About sheet; also the title of that sheet."
+  },
+  "popupAboutThanks": {
+    "message": "Terima kasih telah menggunakan Anti‑Spoiler!",
+    "description": "First line of the About sheet in the popup, shown larger: thanks to the user for using the extension."
+  },
+  "popupAboutText": {
+    "message": "Kami membuatnya agar setiap pertandingan, balapan, dan siaran tetap menegangkan hingga menit terakhir.",
+    "description": "Text under the thank-you line in the About sheet: why the extension exists."
+  },
+  "popupContactTitle": {
+    "message": "Kontak",
+    "description": "Heading of the contact block in the About sheet."
+  },
+  "popupContactNote": {
+    "message": "Menemukan bug, butuh fitur baru, atau punya ide? Tulis kepada kami.",
+    "description": "Text above the contact email in the About sheet: where to write about bugs, missing features or ideas."
+  },
+  "popupCopyEmail": {
+    "message": "Salin alamat",
+    "description": "Screen reader label and tooltip of the button that copies the contact email."
+  },
+  "popupEmailCopied": {
+    "message": "Disalin",
+    "description": "Short confirmation shown after the contact email was copied."
+  },
+  "popupAboutClose": {
+    "message": "Tutup",
+    "description": "Screen reader label and tooltip of the button that closes the About sheet."
   },
   "liveGuardTitle": {
     "message": "Perlindungan spoiler aktif",
@@ -186,6 +214,10 @@
   "commentsShowButton": {
     "message": "Tampilkan komentar",
     "description": "Button on the comments cover and the live chat cover that uncovers them for this video."
+  },
+  "commentsCloseChat": {
+    "message": "Tutup chat",
+    "description": "Screen reader label and tooltip of the close (×) button on the live chat cover. Closes the chat panel like YouTube’s own close button."
   },
   "skipBack10Minutes": {
     "message": "Mundur 10 menit",

@@ -129,12 +129,47 @@
       </details>
 
       <!-- Outside the settings panels, so it shows while protection is off
-           and in read-only mode too. The address is not translated. -->
+           and in read-only mode too. The button opens the About sheet. -->
       <footer class="contact">
-        <span data-yas-i18n="popupContactLabel">Questions or ideas?</span>
-        <a href="mailto:vtshka8@gmail.com">vtshka8@gmail.com</a>
+        <button type="button" class="about-button" data-about-open>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <span data-yas-i18n="popupAboutButton">About us</span>
+        </button>
       </footer>
     </main>
+
+    <!-- The About sheet slides up from the bottom. A modal dialog: Escape
+         closes it, focus stays inside, and the dialog element itself is the
+         backdrop area, so its content sits in one inner block. The address
+         is not translated. -->
+    <dialog class="about-sheet" data-about-sheet aria-labelledby="about-title">
+      <div class="about-body">
+        <div class="about-head">
+          <p class="about-title" id="about-title" data-yas-i18n="popupAboutButton">About us</p>
+          <button type="button" class="about-close" data-about-close data-yas-i18n-label="popupAboutClose" aria-label="Close" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="about-main">
+          <p class="about-thanks" data-yas-i18n="popupAboutThanks">Thank you for using Anti‑Spoiler!</p>
+          <p class="about-text" data-yas-i18n="popupAboutText">We made it so that every match, race and stream keeps its suspense to the very last minute.</p>
+          <section class="about-contact">
+            <p class="about-contact-title" data-yas-i18n="popupContactTitle">Contact</p>
+            <p class="about-contact-note" data-yas-i18n="popupContactNote">Found a bug, missing a feature or have an idea? Write to us.</p>
+            <div class="about-email">
+              <a href="mailto:vtshka8@gmail.com" data-contact-email>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <span>vtshka8@gmail.com</span>
+              </a>
+              <button type="button" class="about-copy" data-copy-email data-yas-i18n-label="popupCopyEmail" aria-label="Copy address" title="Copy address">
+                <svg class="about-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+                <svg class="about-copied-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </dialog>
 
     <script src="../src/shared/settings.js"></script>
     <script src="../src/shared/i18n.js"></script>

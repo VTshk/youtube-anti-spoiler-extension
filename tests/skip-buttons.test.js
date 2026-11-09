@@ -238,7 +238,7 @@ test("skip buttons are hidden by default and shown only with a hidden timeline, 
     "html.yas-extension-enabled.yas-hide-player-progress-bar" +
     `:not(.${content.LIVE_START_OBSCURED_CLASS})` +
     `:not(.${content.REVEAL_VIDEO_CLASS}) ` +
-    `#movie_player:not([data-yas-seek-blocked]):not([data-yas-fit~="no-skip"]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
+    `#movie_player:not(.ad-showing):not([data-yas-seek-blocked]):not([data-yas-fit~="no-skip"]) .${skipButtons.SKIP_BUTTONS_CLASS}`;
 
   assert.equal(content.LIVE_START_OBSCURED_CLASS, "yas-live-start-obscured");
   assert.match(
@@ -267,6 +267,14 @@ test("skip buttons follow the progress bar setting and the protection switch", (
     false,
   );
   assert.deepEqual(content.getEnabledClassNames({ extensionEnabled: false }), []);
+});
+
+test("skip buttons hide while an ad plays, so they never seek the ad", () => {
+  const css = content.buildSpoilerCss();
+  const showRule = css.split("\n").find((line) => line.includes(`.${skipButtons.SKIP_BUTTONS_CLASS} {`) && line.startsWith("html."));
+
+  assert.ok(showRule, "the rule that shows the skip buttons");
+  assert.match(showRule, /#movie_player:not\(\.ad-showing\)/);
 });
 
 test("skip buttons are drawn like YouTube's player pills, with hover and a focus ring", () => {

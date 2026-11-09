@@ -434,6 +434,7 @@ function answerLiveStateRequests(doc, win, answer) {
       detail: JSON.stringify({
         canRewind: reply.canRewind === undefined ? null : reply.canRewind,
         isLive: reply.isLive,
+        playabilityStatus: reply.playabilityStatus || null,
         requestId: JSON.parse(event.detail).requestId,
         rewindStart: reply.rewindStart === undefined ? null : reply.rewindStart,
         videoId: reply.videoId,
@@ -1580,6 +1581,100 @@ test("chat spoiler guard keeps live chat blurred until explicitly disabled", () 
     false,
   );
   assert.equal(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+});
+
+// YouTube's close (×) is in the chat header, inside the chat iframe, under
+// the cover; the cover's own close button presses it (seen 2026-11-09).
+function createChatDocumentWithCloseButtons({ headerClose, hideChat }) {
+  const chat = createElement("ytd-live-chat-frame");
+  const doc = createLiveDocument({ chat });
+  const chatFrame = {
+    contentDocument: {
+      querySelector: (selector) => (selector === "#close-button button" ? headerClose : null),
+    },
+  };
+  const pageQuerySelector = doc.querySelector;
+
+  doc.querySelector = function querySelector(selector) {
+    if (selector === "#chatframe") {
+      return chatFrame;
+    }
+
+    if (selector === "#show-hide-button button") {
+      return hideChat;
+    }
+
+    return pageQuerySelector.call(this, selector);
+  };
+
+  return doc;
+}
+
+// Each test opens its own video: "Show comments" in an earlier test sticks
+// to that test's video only.
+function withChatVideo(videoId, check) {
+  globalThis.location = { href: `https://www.youtube.com/watch?v=${videoId}` };
+
+  try {
+    check();
+  } finally {
+    delete globalThis.location;
+    switchChatGuardOff();
+  }
+}
+
+test("the live chat cover has a close button that presses YouTube's own close", () => {
+  withChatVideo("chat-close-header", () => {
+    const clicks = [];
+    const doc = createChatDocumentWithCloseButtons({
+      headerClose: { click: () => clicks.push("header close") },
+      hideChat: { click: () => clicks.push("hide chat") },
+    });
+
+    content.applySettings({ extensionEnabled: true, startLiveFromBeginning: true }, doc);
+
+    const closeButton = doc
+      .getElementById(content.CHAT_GUARD_OVERLAY_ID)
+      .querySelector('[data-chat-guard-action="close"]');
+
+    assert.equal(closeButton.className, "yas-chat-guard-close");
+    assert.equal(closeButton.attributes["aria-label"], "Close chat");
+
+    closeButton.click();
+
+    assert.deepEqual(clicks, ["header close"]);
+    // Closing is not "Show comments": the chat stays covered.
+    assert.equal(
+      doc.documentElement.classList.contains(content.CHAT_GUARD_OBSCURED_CLASS),
+      true,
+    );
+    assert.notEqual(doc.getElementById(content.CHAT_GUARD_OVERLAY_ID), null);
+  });
+});
+
+test("on the older chat layout the cover's close button presses \"Hide chat\"", () => {
+  withChatVideo("chat-close-older", () => {
+    const clicks = [];
+    const doc = createChatDocumentWithCloseButtons({
+      headerClose: null,
+      hideChat: { click: () => clicks.push("hide chat") },
+    });
+
+    content.applySettings({ extensionEnabled: true, startLiveFromBeginning: true }, doc);
+    doc
+      .getElementById(content.CHAT_GUARD_OVERLAY_ID)
+      .querySelector('[data-chat-guard-action="close"]')
+      .click();
+
+    assert.deepEqual(clicks, ["hide chat"]);
+  });
+});
+
+test("the close button sits in the top right corner of the chat cover", () => {
+  const css = content.buildSpoilerCss();
+
+  assert.match(css, /#youtube-anti-spoiler-chat-guard \.yas-chat-guard-close \{[^}]*position: absolute !important;[^}]*top: 4px !important;[^}]*right: 8px !important;[^}]*width: 40px !important;[^}]*height: 40px !important;/);
+  assert.match(css, /\.yas-chat-guard-close::after \{[^}]*transform: rotate\(-45deg\) !important;/);
 });
 
 test("chat spoiler guard stays hidden when live protection is off", () => {
@@ -3434,6 +3529,93 @@ test("live guard asks with Start from beginning and Play when the status stays u
   assert.deepEqual([...controller.getAttemptedVideoIds()], ["unknown-for-long"]);
 });
 
+// YouTube's own player message instead of the video (live check 2026-11-09:
+// "Sign in to confirm you're not a bot" got our cover, then the guard).
+
+function armGuardOnBlockedVideo(videoId, bridgeAnswer) {
+  const clock = createFakeClock();
+  const win = createGuardWindow(`https://www.youtube.com/watch?v=${videoId}`);
+  const video = createLiveVideo({ duration: NaN });
+  const doc = createLiveDocument({ video, player: createElement("div") });
+  const guard = { bridgeAnswer };
+  answerLiveStateRequests(doc, win, () => guard.bridgeAnswer);
+  const controller = content.createLiveStartController(win, clock.options);
+
+  controller.sync(LIVE_SETTINGS, doc);
+  return { clock, controller, doc, guard, video };
+}
+
+for (const status of [
+  "LOGIN_REQUIRED",
+  "UNPLAYABLE",
+  "ERROR",
+  "AGE_CHECK_REQUIRED",
+  "LIVE_STREAM_OFFLINE",
+]) {
+  test(`live guard stays away from YouTube's ${status} message`, () => {
+    const { clock, doc, video } = armGuardOnBlockedVideo("blocked", {
+      videoId: "blocked",
+      isLive: null,
+      playabilityStatus: status,
+    });
+
+    assert.equal(isLiveObscured(doc), false);
+
+    clock.advance(2 * content.LIVE_START_TIMEOUT_MS);
+
+    assert.equal(getLiveOverlay(doc), null);
+    assert.equal(isLiveObscured(doc), false);
+    assert.equal(video.pauseCalls, 0);
+    assert.equal(video.muted, false);
+  });
+}
+
+test("live guard stays away from an error response that names no video", () => {
+  // The bot wall: no videoDetails in the response, no id in getVideoData().
+  const { clock, doc } = armGuardOnBlockedVideo("bot-wall", {
+    videoId: null,
+    isLive: null,
+    playabilityStatus: "LOGIN_REQUIRED",
+  });
+
+  clock.advance(2 * content.LIVE_START_TIMEOUT_MS);
+
+  assert.equal(getLiveOverlay(doc), null);
+  assert.equal(isLiveObscured(doc), false);
+});
+
+test("live guard ignores a blocked status reported for another video", () => {
+  const { clock, doc, video } = armGuardOnBlockedVideo("current", {
+    videoId: "previous",
+    isLive: null,
+    playabilityStatus: "UNPLAYABLE",
+  });
+
+  assert.equal(isLiveObscured(doc), true);
+
+  clock.advance(content.LIVE_START_TIMEOUT_MS);
+
+  assertAsksAboutUnknownStatus(doc);
+  assertGuardHolds(doc, video);
+});
+
+test("live guard engages when an upcoming stream goes live", () => {
+  const { clock, doc, guard, video } = armGuardOnBlockedVideo("upcoming", {
+    videoId: "upcoming",
+    isLive: null,
+    playabilityStatus: "LIVE_STREAM_OFFLINE",
+  });
+
+  clock.advance(2 * content.LIVE_START_TIMEOUT_MS);
+  assert.equal(getLiveOverlay(doc), null);
+
+  guard.bridgeAnswer = { videoId: "upcoming", isLive: true, playabilityStatus: "OK" };
+  clock.advance(content.LIVE_START_TIMEOUT_MS);
+
+  assert.notEqual(getLiveOverlay(doc), null);
+  assertGuardHolds(doc, video);
+});
+
 test("live guard keeps a shown overlay when the stream ends before the user chooses", () => {
   const clock = createFakeClock();
   const win = createGuardWindow("https://www.youtube.com/watch?v=ends-under-overlay");
@@ -3552,6 +3734,36 @@ test("live guard ends when the mini-player is closed", () => {
   guard.clock.advance(liveStart.LIVE_GUARD_HEARTBEAT_MS);
 
   assertGuardEnded(guard);
+});
+
+test("live guard ends after browser Back hides the watch page with the stream", () => {
+  // Owner's report 2026-11-09: the hidden watch page keeps the player and the
+  // stream, so the bridge keeps naming it, but the player has no box. The
+  // panel and the cover stayed over the previous page.
+  const guard = armGuardThenLeaveForHome("back-from-stream");
+
+  guard.doc.player.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });
+  guard.clock.advance(liveStart.LIVE_GUARD_HEARTBEAT_MS);
+
+  // Hidden at once, not left at the player's old place over the page.
+  assert.equal(getLiveOverlay(guard.doc).hidden, true);
+
+  guard.clock.advance(liveStart.LIVE_GUARD_PLAYER_GONE_MS);
+
+  assertGuardEnded(guard);
+});
+
+test("live guard waits for the mini-player that opens from a 0x0 player", () => {
+  const guard = armGuardThenLeaveForHome("opening-mini");
+  const fullBox = guard.doc.player.getBoundingClientRect;
+
+  guard.doc.player.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });
+  guard.clock.advance(liveStart.LIVE_GUARD_HEARTBEAT_MS);
+  guard.doc.player.getBoundingClientRect = fullBox;
+  guard.clock.advance(liveStart.LIVE_GUARD_PLAYER_GONE_MS);
+
+  assertGuardHolds(guard.doc, guard.video);
+  assert.equal(getLiveOverlay(guard.doc).hidden, false);
 });
 
 test("live guard ends when the player shows another video off the watch page", () => {

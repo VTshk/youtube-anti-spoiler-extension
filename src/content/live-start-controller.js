@@ -20,7 +20,6 @@
   const LIVE_GUARD_PLAY_EVENT = "youtube-anti-spoiler-live-guard-play";
   const LIVE_GUARD_CONTINUE_EVENT = "youtube-anti-spoiler-live-guard-continue";
   const LIVE_START_SEEK_EVENT = "youtube-anti-spoiler-live-start-seek";
-  const LIVE_START_SEEK_RESULT_EVENT = "youtube-anti-spoiler-live-start-seek-result";
   const LIVE_STATE_REQUEST_EVENT = "youtube-anti-spoiler-live-state-request";
   const LIVE_STATE_RESULT_EVENT = "youtube-anti-spoiler-live-state-result";
   const LIVE_START_TIMEOUT_MS = 10000;
@@ -671,7 +670,14 @@
       const fullscreenElement = doc && doc.fullscreenElement;
       const boundsTarget = fullscreenElement || findLiveGuardBoundsTarget(doc);
 
-      if (!overlay || !overlay.style || !boundsTarget) {
+      if (!overlay || !overlay.style) {
+        return false;
+      }
+
+      // No player box (browser Back hid the watch page, the mini-player is
+      // still opening): hide instead of staying at the old place over the page.
+      if (!boundsTarget) {
+        overlay.hidden = true;
         return false;
       }
 
@@ -694,6 +700,8 @@
       ) {
         return false;
       }
+
+      overlay.hidden = false;
 
       if (fullscreenElement) {
         // Mounted inside the fullscreen element, which is its containing block:
@@ -836,9 +844,24 @@
       }
 
       activeGuard.playerVideoId = liveState.videoId;
+      // The bridge reports a status only for this video, or (videoId null)
+      // for an error response while the player names no video at all.
+      activeGuard.playerBlocked = Boolean(
+        (liveState.videoId === activeGuard.videoId || liveState.videoId === null) &&
+        typeof liveState.playabilityStatus === "string" &&
+        liveState.playabilityStatus !== "OK"
+      );
 
       if (liveState.videoId === activeGuard.videoId) {
-        activeGuard.playerSeenAt = getNow();
+        // Shown means named by the bridge and on screen. After browser Back
+        // the hidden watch page keeps the player and the stream, so the bridge
+        // still names it, but the player has no box; the guard then stayed
+        // over the previous page (owner's report 2026-11-09). The mini-player
+        // also opens from a 0×0 player, hence a wait, not an instant end.
+        if (findLiveGuardBoundsTarget(liveStateResultDocument)) {
+          activeGuard.playerSeenAt = getNow();
+        }
+
         latestLiveState = liveState;
       } else {
         // The player holds another video now (or has not loaded this one yet):
@@ -1549,13 +1572,21 @@
 
     // Off the watch page the guard follows the player (mini-player) until it
     // closes or shows another video. Closed means: no #movie_player, or the
-    // bridge has not named this video for a while.
+    // player has not shown this video for a while (handleLiveStateResult).
     function playerLeftGuardedVideo(doc, now) {
       return Boolean(
         !findYouTubePlayer(doc) ||
         (activeGuard.playerVideoId && activeGuard.playerVideoId !== activeGuard.videoId) ||
         now - activeGuard.playerSeenAt >= LIVE_GUARD_PLAYER_GONE_MS
       );
+    }
+
+    function dropShield(doc) {
+      if (activeGuard.shielded) {
+        activeGuard.shielded = false;
+        removeLiveStartObscuring(doc);
+        restoreShieldMute();
+      }
     }
 
     function runTick(doc) {
@@ -1592,7 +1623,21 @@
         "notLive =", notLive,
         "looksLive =", looksLive,
         "engaged =", activeGuard.engaged,
+        "blocked =", activeGuard.playerBlocked,
       );
+
+      // YouTube shows its own message instead of the video (bot check,
+      // unavailable, age check, upcoming stream): there is nothing to guard,
+      // and the cover would hide that message. Keep watching: an upcoming
+      // stream that goes live becomes playable without a page change.
+      if (!activeGuard.engaged && activeGuard.playerBlocked) {
+        dropShield(doc);
+        scheduleTick(
+          doc,
+          elapsed >= LIVE_START_TIMEOUT_MS ? LIVE_GUARD_HEARTBEAT_MS : LIVE_START_POLL_MS,
+        );
+        return;
+      }
 
       if (!activeGuard.engaged && video) {
         if (liveNow || (looksLive && elapsed >= LIVE_START_NOT_LIVE_GRACE_MS)) {
@@ -1628,11 +1673,7 @@
       // is unknown, and weak live signals raise it; a positive "not live" for
       // this video drops it, so regular videos unblur quickly.
       if (notLive) {
-        if (activeGuard.shielded) {
-          activeGuard.shielded = false;
-          removeLiveStartObscuring(doc);
-          restoreShieldMute();
-        }
+        dropShield(doc);
 
         // Give up once the video also reports a regular, finite duration after
         // the grace window (or at the timeout). Give-up paths never mark the
@@ -1731,6 +1772,8 @@
         startedAt: getNow(),
         playerSeenAt: getNow(),
         playerVideoId: null,
+        // YouTube shows its own message instead of this video.
+        playerBlocked: false,
         engaged: false,
         statusUnknown: false,
         guarded: false,
@@ -1796,7 +1839,6 @@
     LIVE_GUARD_PLAY_EVENT,
     LIVE_GUARD_CONTINUE_EVENT,
     LIVE_START_SEEK_EVENT,
-    LIVE_START_SEEK_RESULT_EVENT,
     LIVE_STATE_REQUEST_EVENT,
     LIVE_STATE_RESULT_EVENT,
     LIVE_START_TIMEOUT_MS,

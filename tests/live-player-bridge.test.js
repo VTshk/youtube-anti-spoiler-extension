@@ -106,12 +106,7 @@ test("live player bridge init patches history alongside its event listeners", ()
 
 test("live player bridge seeks with the page-world YouTube player API", () => {
   const seekToCalls = [];
-  const timers = [];
-  let currentTime = 300;
   const player = {
-    getCurrentTime() {
-      return currentTime;
-    },
     getProgressState() {
       return {
         seekableStart: 42,
@@ -119,12 +114,11 @@ test("live player bridge seeks with the page-world YouTube player API", () => {
     },
     seekTo(seconds, allowSeekAhead) {
       seekToCalls.push([seconds, allowSeekAhead]);
-      currentTime = seconds;
     },
   };
   const doc = createDocument(() => player);
 
-  bridge.initLivePlayerBridge(createRoot(doc, timers));
+  bridge.initLivePlayerBridge(createRoot(doc, []));
 
   doc.dispatch(bridge.LIVE_START_SEEK_EVENT, JSON.stringify({
     fallbackSeconds: 24,
@@ -132,38 +126,23 @@ test("live player bridge seeks with the page-world YouTube player API", () => {
   }));
 
   assert.deepEqual(seekToCalls, [[42, true]]);
+  // The content script checks the seek itself (seeked events): nothing is reported back.
   assert.equal(doc.dispatchedEvents.length, 0);
-  assert.equal(timers[0].delay, bridge.LIVE_START_VERIFY_DELAY_MS);
-
-  timers[0].callback();
-
-  assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
-    currentTime: 42,
-    requestId: 7,
-    seekSeconds: 42,
-    success: true,
-  });
 });
 
 test("live player bridge falls back to the content seekable start", () => {
   const seekToCalls = [];
-  const timers = [];
-  let currentTime = 300;
   const player = {
-    getCurrentTime() {
-      return currentTime;
-    },
     getProgressState() {
       return {};
     },
     seekTo(seconds, allowSeekAhead) {
       seekToCalls.push([seconds, allowSeekAhead]);
-      currentTime = seconds;
     },
   };
   const doc = createDocument(() => player);
 
-  bridge.initLivePlayerBridge(createRoot(doc, timers));
+  bridge.initLivePlayerBridge(createRoot(doc, []));
 
   doc.dispatch(bridge.LIVE_START_SEEK_EVENT, JSON.stringify({
     fallbackSeconds: 24,
@@ -171,46 +150,24 @@ test("live player bridge falls back to the content seekable start", () => {
   }));
 
   assert.deepEqual(seekToCalls, [[24, true]]);
-  timers[0].callback();
-
-  assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
-    currentTime: 24,
-    requestId: 8,
-    seekSeconds: 24,
-    success: true,
-  });
 });
 
-test("live player bridge reports an unready player so the content script can retry", () => {
-  const timers = [];
+test("live player bridge ignores a seek while the player is not ready, and seeks once it is", () => {
   let player = null;
   const doc = createDocument(() => player);
 
-  bridge.initLivePlayerBridge(createRoot(doc, timers));
+  bridge.initLivePlayerBridge(createRoot(doc, []));
 
   doc.dispatch(bridge.LIVE_START_SEEK_EVENT, JSON.stringify({
     fallbackSeconds: 24,
     requestId: 9,
   }));
-
-  timers[0].callback();
-
-  assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
-    currentTime: null,
-    requestId: 9,
-    seekSeconds: 24,
-    success: false,
-  });
+  assert.equal(doc.dispatchedEvents.length, 0);
 
   const seekToCalls = [];
-  let currentTime = 300;
   player = {
-    getCurrentTime() {
-      return currentTime;
-    },
     seekTo(seconds, allowSeekAhead) {
       seekToCalls.push([seconds, allowSeekAhead]);
-      currentTime = seconds;
     },
   };
   doc.dispatch(bridge.LIVE_START_SEEK_EVENT, JSON.stringify({
@@ -219,45 +176,6 @@ test("live player bridge reports an unready player so the content script can ret
   }));
 
   assert.deepEqual(seekToCalls, [[24, true]]);
-  timers[1].callback();
-
-  assert.deepEqual(JSON.parse(doc.dispatchedEvents[1].detail), {
-    currentTime: 24,
-    requestId: 10,
-    seekSeconds: 24,
-    success: true,
-  });
-});
-
-test("live player bridge reports failure when YouTube stays at the live edge", () => {
-  const timers = [];
-  const seekToCalls = [];
-  const player = {
-    getCurrentTime() {
-      return 300;
-    },
-    seekTo(seconds, allowSeekAhead) {
-      seekToCalls.push([seconds, allowSeekAhead]);
-    },
-  };
-  const doc = createDocument(() => player);
-
-  bridge.initLivePlayerBridge(createRoot(doc, timers));
-
-  doc.dispatch(bridge.LIVE_START_SEEK_EVENT, JSON.stringify({
-    fallbackSeconds: 24,
-    requestId: 11,
-  }));
-
-  assert.deepEqual(seekToCalls, [[24, true]]);
-  timers[0].callback();
-
-  assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
-    currentTime: 300,
-    requestId: 11,
-    seekSeconds: 24,
-    success: false,
-  });
 });
 
 test("live player bridge pauses the page-world YouTube player", () => {
@@ -382,6 +300,7 @@ test("live player bridge reports current live state from page-world player data"
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
     canRewind: null,
     isLive: true,
+    playabilityStatus: null,
     requestId: 12,
     rewindStart: null,
     signals: {
@@ -435,6 +354,7 @@ test("live player bridge reports a finished-stream VOD as not live", () => {
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
     canRewind: null,
     isLive: false,
+    playabilityStatus: null,
     requestId: 13,
     rewindStart: null,
     signals: {},
@@ -475,6 +395,7 @@ test("live player bridge trusts live-now markers in the player response", () => 
   assert.deepEqual(JSON.parse(doc.dispatchedEvents[0].detail), {
     canRewind: null,
     isLive: true,
+    playabilityStatus: null,
     requestId: 14,
     rewindStart: null,
     signals: {
@@ -500,6 +421,7 @@ test("live player bridge reports an unknown live state while no source names a v
   assert.deepEqual(requestLiveState(null), {
     canRewind: null,
     isLive: null,
+    playabilityStatus: null,
     requestId: 21,
     rewindStart: null,
     signals: {},
@@ -573,6 +495,7 @@ test("live player bridge ignores a stale initial player response for another vid
   assert.deepEqual(result, {
     canRewind: null,
     isLive: null,
+    playabilityStatus: null,
     requestId: 21,
     rewindStart: null,
     signals: {},
@@ -624,6 +547,93 @@ test("live player bridge ignores a player response that names no video", () => {
 
   assert.equal(result.isLive, null);
   assert.deepEqual(result.signals, {});
+});
+
+test("live player bridge reports the current video's playability status", () => {
+  for (const status of [
+    "OK",
+    "LOGIN_REQUIRED",
+    "UNPLAYABLE",
+    "ERROR",
+    "AGE_CHECK_REQUIRED",
+    "LIVE_STREAM_OFFLINE",
+  ]) {
+    const result = requestLiveState({
+      getVideoData() {
+        return { video_id: "current" };
+      },
+      getPlayerResponse() {
+        return {
+          playabilityStatus: { status },
+          videoDetails: { videoId: "current" },
+        };
+      },
+    });
+
+    assert.equal(result.playabilityStatus, status, status);
+  }
+});
+
+test("live player bridge reports YouTube's error response while no video is named", () => {
+  // Live check 2026-11-09, bot wall: the player response has no videoDetails
+  // and getVideoData() names no video.
+  const result = requestLiveState({
+    getVideoData() {
+      return { video_id: "" };
+    },
+    getPlayerResponse() {
+      return {
+        playabilityStatus: {
+          status: "LOGIN_REQUIRED",
+          reason: "Sign in to confirm you're not a bot",
+        },
+      };
+    },
+  });
+
+  assert.equal(result.videoId, null);
+  assert.equal(result.playabilityStatus, "LOGIN_REQUIRED");
+});
+
+test("live player bridge ignores the playability status of a stale response", () => {
+  // SPA navigation from an unavailable video A to stream B: the player names
+  // B, the responses still describe A.
+  const result = requestLiveState(
+    {
+      getVideoData() {
+        return { video_id: "stream-b" };
+      },
+      getPlayerResponse() {
+        return {
+          playabilityStatus: { status: "UNPLAYABLE" },
+          videoDetails: { videoId: "video-a" },
+        };
+      },
+    },
+    {
+      ytInitialPlayerResponse: {
+        playabilityStatus: { status: "ERROR" },
+        videoDetails: { videoId: "video-a" },
+      },
+    },
+  );
+
+  assert.equal(result.videoId, "stream-b");
+  assert.equal(result.playabilityStatus, null);
+});
+
+test("live player bridge ignores an error response without a video id once the player names a video", () => {
+  const result = requestLiveState({
+    getVideoData() {
+      return { video_id: "named" };
+    },
+    getPlayerResponse() {
+      return { playabilityStatus: { status: "LOGIN_REQUIRED" } };
+    },
+  });
+
+  assert.equal(result.videoId, "named");
+  assert.equal(result.playabilityStatus, null);
 });
 
 test("live player bridge takes the video id from the player response when videoData has none", () => {

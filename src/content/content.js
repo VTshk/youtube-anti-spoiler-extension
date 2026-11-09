@@ -415,6 +415,10 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
   text-align: center !important;
 }
 
+#${LIVE_GUARD_OVERLAY_ID}[hidden] {
+  display: none !important;
+}
+
 #${CHAT_GUARD_OVERLAY_ID} {
   position: absolute !important;
   inset: 0 !important;
@@ -467,11 +471,49 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
   outline-offset: 2px !important;
 }
 
+/* The close button sits where YouTube's own close (×) is in the chat
+   header: 40 px round, 4 px from the top and 8 px from the right edge
+   (measured 2026-11-09). The cross is drawn by two bars. */
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-close {
+  position: absolute !important;
+  top: 4px !important;
+  right: 8px !important;
+  width: 40px !important;
+  min-height: 0 !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  color: #f4f4f5 !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-close:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-close::before,
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-close::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 19px !important;
+  left: 11px !important;
+  width: 18px !important;
+  height: 2px !important;
+  border-radius: 1px !important;
+  background: currentColor !important;
+  transform: rotate(45deg) !important;
+}
+
+#${CHAT_GUARD_OVERLAY_ID} .yas-chat-guard-close::after {
+  transform: rotate(-45deg) !important;
+}
+
 /* Skip buttons are inserted into every player and shown only while the
    timeline they stand in for is hidden, and never over the live guard.
    On a live stream whose streamer turned rewinding off the player refuses
    every seek, so the buttons would do nothing and are not shown either.
-   An uncovered video shows its own timeline, so they go then too. */
+   An uncovered video shows its own timeline, so they go then too.
+   During an ad they would seek the ad, so they hide then as well. */
 #movie_player .${SKIP_BUTTONS_CLASS} {
   display: none !important;
 }
@@ -480,7 +522,7 @@ html.${CHAT_GUARD_OBSCURED_CLASS} yt-live-chat-app #contents {
    (measured 2026-11-06): 40 px high, 8 px from the top of the 56 px bar,
    rgba(0,0,0,.3) behind, radius 28px, 14 px weight 500 text. The six
    buttons share one pill, as YouTube groups previous, play and next. */
-html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS})${UNLESS_REVEALED} #movie_player:not([${SEEK_BLOCKED_ATTRIBUTE}]):not([${FIT_ATTRIBUTE}~="no-skip"]) .${SKIP_BUTTONS_CLASS} {
+html.${CLASS_BY_SETTING.extensionEnabled}.${CLASS_BY_SETTING.hidePlayerProgressBar}:not(.${LIVE_START_OBSCURED_CLASS})${UNLESS_REVEALED} #movie_player:not(.ad-showing):not([${SEEK_BLOCKED_ATTRIBUTE}]):not([${FIT_ATTRIBUTE}~="no-skip"]) .${SKIP_BUTTONS_CLASS} {
   display: inline-flex !important;
   align-items: center !important;
   height: 40px !important;
@@ -867,8 +909,40 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     });
     panel.appendChild(button);
 
+    // YouTube's own close button is in the chat header, under this cover,
+    // so the cover has one in the same corner that presses YouTube's. The
+    // chat stays covered: closing it is not "Show comments".
+    const closeButton = doc.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "yas-chat-guard-close";
+    closeButton.dataset.chatGuardAction = "close";
+    shared.setLabel(closeButton, "commentsCloseChat");
+    closeButton.addEventListener("click", (event) => {
+      if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+
+      closeLiveChat(doc);
+    });
+    overlay.appendChild(closeButton);
+
     host.appendChild(overlay);
     return true;
+  }
+
+  // The chat header is inside the chat iframe, which is on youtube.com too,
+  // so this page can reach it. Current layouts have a close (×) button
+  // there (seen 2026-11-09); older ones have "Hide chat" under the frame.
+  function closeLiveChat(doc) {
+    const chatFrame = doc.querySelector("#chatframe");
+    const chatDocument = chatFrame ? chatFrame.contentDocument : null;
+    const youTubeCloseButton =
+      (chatDocument && chatDocument.querySelector("#close-button button")) ||
+      doc.querySelector("#show-hide-button button");
+
+    if (youTubeCloseButton) {
+      youTubeCloseButton.click();
+    }
   }
 
   function appendChatGuardElement(doc, parent, tagName, className, textKey) {
@@ -1709,7 +1783,6 @@ html.${COMMENTS_GUARD_OBSCURED_CLASS} ${COMMENTS_PANEL_SELECTOR} > #content > yt
     LIVE_GUARD_PLAY_EVENT: shared.LIVE_GUARD_PLAY_EVENT,
     LIVE_GUARD_CONTINUE_EVENT: shared.LIVE_GUARD_CONTINUE_EVENT,
     LIVE_START_SEEK_EVENT: shared.LIVE_START_SEEK_EVENT,
-    LIVE_START_SEEK_RESULT_EVENT: shared.LIVE_START_SEEK_RESULT_EVENT,
     LIVE_STATE_REQUEST_EVENT: shared.LIVE_STATE_REQUEST_EVENT,
     LIVE_STATE_RESULT_EVENT: shared.LIVE_STATE_RESULT_EVENT,
     LIVE_START_TIMEOUT_MS: shared.LIVE_START_TIMEOUT_MS,
