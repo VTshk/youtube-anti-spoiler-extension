@@ -136,8 +136,8 @@
     "description": "Popup error when the chosen theme could not be saved."
   },
   "popupAboutButton": {
-    "message": "Über uns & Feedback",
-    "description": "Footer link of the popup that opens the About screen (about the extension and how to write to us); also the title of that screen."
+    "message": "Feedback",
+    "description": "Underlined footer link of the popup that opens the About screen (thanks and how to write to us); also the title of that screen."
   },
   "popupAboutThanks": {
     "message": "Danke, dass Sie Anti‑Spoiler nutzen!",

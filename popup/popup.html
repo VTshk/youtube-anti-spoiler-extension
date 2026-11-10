@@ -129,15 +129,12 @@
       </details>
 
       <!-- Outside the settings panels, so it shows while protection is off
-           and in read-only mode too: the version on the left, the link to
-           the About screen on the right (owner, 2026-11-10). popup.js fills
-           in the version from the manifest. -->
+           and in read-only mode too: the version on the left, an underlined
+           "Feedback" link to the About screen on the right (owner,
+           2026-11-10). popup.js fills in the version from the manifest. -->
       <footer class="contact">
         <span class="version" data-version></span>
-        <button type="button" class="about-button" data-about-open>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-          <span data-yas-i18n="popupAboutButton">About &amp; feedback</span>
-        </button>
+        <button type="button" class="about-button" data-about-open data-yas-i18n="popupAboutButton">Feedback</button>
       </footer>
     </main>
 
@@ -151,7 +148,7 @@
           <button type="button" class="about-back" data-about-back data-yas-i18n-label="popupAboutBack" aria-label="Back" title="Back">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">About &amp; feedback</h1>
+          <h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">Feedback</h1>
         </div>
         <div class="about-main">
           <p class="about-thanks" data-yas-i18n="popupAboutThanks">Thank you for using Anti‑Spoiler!</p>

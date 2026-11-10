@@ -567,16 +567,17 @@ p {
   cursor: default;
 }
 
-/* The footer under the cards (owner, 2026-11-10, variant B4): the version
-   on the left, a quiet link to the About screen on the right. No line: the
-   gap sets it apart. Muted like the notes, so it does not pull the eye from
-   the settings; the hover fill shows the link is a button. */
+/* The footer under the cards (owner, 2026-11-10): the version on the
+   left, an underlined "Feedback" link to the About screen on the right. No
+   line: the gap sets it apart. Muted like the notes, so it does not pull
+   the eye from the settings; on hover the text and its underline brighten.
+   No hover fill: in the short popup it ran into the bottom edge. */
 .contact {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 4px;
-  padding: 0 8px 0 16px;
+  margin-top: 10px;
+  padding: 0 16px 4px;
 }
 
 .version {
@@ -586,29 +587,23 @@ p {
 }
 
 .about-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 8px;
+  padding: 6px 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 4px;
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 12px;
   font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--muted) 50%, transparent);
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
-.about-button svg {
-  width: 14px;
-  height: 14px;
-}
-
 .about-button:hover {
-  background: color-mix(in srgb, var(--text) 8%, transparent);
   color: var(--text);
+  text-decoration-color: currentColor;
 }
 
 .about-button:focus-visible,

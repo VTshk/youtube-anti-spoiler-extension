@@ -81,7 +81,7 @@ Under **Advanced settings**:
 - **Blur video titles** - blurs titles in lists, recommendations, and end cards, and chapter names in the timeline tooltip and in the player bar; blurs the title of the open video and the line under it (views, "Streamed X ago", the upload date), and the text of its description, which often repeats the title (the **more** / **Show less** buttons stay readable); removes the browser's own title tooltip on hover; shows `YouTube` as the tab title on video pages; shows `YouTube video` as the title in Chrome's media controls and the system media overlay. By default it follows **Blur previews** (the pressed chain button next to its switch): titles are blurred exactly when previews are, and the switch only shows that value. Click the chain button to set it separately; click it again to link it back.
 - **Hide comments** - blurs comments under a video, in the comments panel, and on Shorts behind a **Show comments** button; the panel's title, sort menu, and Close button stay usable. The choice counts for the current video or Short only. Enabled by default.
 
-At the bottom of the popup are the version and **About & feedback**: it opens a short screen in place of the settings, with the support email and a button that copies it; Back (or Escape) returns.
+At the bottom of the popup are the version and a **Feedback** link: it opens a short screen in place of the settings, with the support email and a button that copies it; Back (or Escape) returns.
 
 While protection is on, the extension does not pass the playback position to Chrome's media controls. Settings switched mid-video reach the media controls right away. Chrome may still show a position it reads from the video element itself; this cannot be turned off from an extension.
 

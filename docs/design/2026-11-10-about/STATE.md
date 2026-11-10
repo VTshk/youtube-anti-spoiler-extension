@@ -29,3 +29,14 @@ Owner: «мне не нравится как выглядит "о нас" в ф�
     focus title → link after Escape and after Back, labels translated.
   - Not checked: the real toolbar popup window (shots are the popup page in a 352 px tab, sized like Chrome does),
     a screen reader, whether Chrome closes the popup on Escape before the page sees it.
+- Owner on the built B4 (2026-11-10, screenshot of the real popup): «мне не особо нравится как выглядит. и при
+  наведении у нас там чуть не сливается» — the 32 px hover pill nearly touched the popup's bottom edge. Round 2 drawn
+  (`about-footer-v2.mjs`, board `board-footer-v2.png`: 1 air + underline, 2 centred, 3 card row, 4 air + soft pill).
+  Owner: «а давай просто напишем "обратная связь" и сделаем подчеркиванием». Built (not committed):
+  - footer: version left; right a text-only `<button>` "Feedback" («Обратная связь»), 12 px muted, always underlined
+    (underline at 50 % muted), hover brightens text and underline, no fill, no icon; `.contact` margin-top 10 px and
+    4 px extra bottom padding; the About screen title uses the same key;
+  - `popupAboutButton` = Feedback / Обратная связь / Feedback / Comentarios / Votre avis / Masukan / フィードバック /
+    피드백 / Feedback / Geri bildirim;
+  - tests 370/370; live (`about-live.mjs` → popup 414 on / 194 off, ja 203; About 295–335; no scroll; focus title →
+    link; no page errors), board `board-feedback.png` (ru dark: normal, hover, off) and the light theme checked.

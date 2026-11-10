@@ -1374,22 +1374,24 @@ test("popup ends with the version and an About link outside the capsule and ever
 
   assert.ok(footer, "the footer is the last part of the popup");
   assert.doesNotMatch(footer[1], /mailto|@/);
-  // Variant B4 (owner, 2026-11-10): the version on the left, the link on the right.
+  // The version on the left, an underlined "Feedback" link on the right,
+  // text only (owner, 2026-11-10).
   assert.match(
     footer[1],
-    /^\s*<span class="version" data-version><\/span>\s*<button type="button" class="about-button" data-about-open>\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<span data-yas-i18n="popupAboutButton">About &amp; feedback<\/span>\s*<\/button>\s*$/,
+    /^\s*<span class="version" data-version><\/span>\s*<button type="button" class="about-button" data-about-open data-yas-i18n="popupAboutButton">Feedback<\/button>\s*$/,
   );
   // After the Advanced card has closed, so it shows with protection off and
   // in read-only mode.
   assert.match(POPUP_HTML, /<\/details>\s*<!--[\s\S]*?-->\s*<footer class="contact">/);
-  assert.equal(en("popupAboutButton"), "About & feedback");
+  assert.equal(en("popupAboutButton"), "Feedback");
 
   // No line above it: the gap sets it apart.
   assert.doesNotMatch(POPUP_CSS, /\.contact::before/);
   assert.match(POPUP_CSS, /\.contact\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;/);
   assert.match(POPUP_CSS, /\.version\s*\{[^}]*color:\s*var\(--muted\);[^}]*font-size:\s*11px;/);
-  assert.match(POPUP_CSS, /\.about-button\s*\{[^}]*min-height:\s*32px;[^}]*color:\s*var\(--muted\);[^}]*cursor:\s*pointer;/);
-  assert.match(POPUP_CSS, /\.about-button:hover\s*\{[^}]*color:\s*var\(--text\);/);
+  assert.match(POPUP_CSS, /\.about-button\s*\{[^}]*color:\s*var\(--muted\);[^}]*text-decoration:\s*underline;[^}]*cursor:\s*pointer;/);
+  // No hover fill: it ran into the popup's bottom edge.
+  assert.match(POPUP_CSS, /\.about-button:hover\s*\{\s*color:\s*var\(--text\);\s*text-decoration-color:\s*currentColor;\s*\}/);
   assert.match(POPUP_CSS, /\.about-button:focus-visible,[\s\S]*?outline:\s*2px solid var\(--focus\);/);
 });
 
@@ -1407,7 +1409,7 @@ test("the About screen follows the popup, hidden, with the text, the address and
   // Back on the left of the header, then the title.
   assert.match(
     screen[1],
-    /<div class="about-head">\s*<button type="button" class="about-back" data-about-back data-yas-i18n-label="popupAboutBack" aria-label="Back" title="Back">\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<\/button>\s*<h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">About &amp; feedback<\/h1>\s*<\/div>/,
+    /<div class="about-head">\s*<button type="button" class="about-back" data-about-back data-yas-i18n-label="popupAboutBack" aria-label="Back" title="Back">\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<\/button>\s*<h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">Feedback<\/h1>\s*<\/div>/,
   );
   assert.ok(screen[1].includes(`<p class="about-thanks" data-yas-i18n="popupAboutThanks">${en("popupAboutThanks")}</p>`), "popupAboutThanks");
   assert.ok(screen[1].includes(`data-yas-i18n="popupAboutText">${en("popupAboutText")}<`), "popupAboutText");
