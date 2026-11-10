@@ -4,7 +4,7 @@
 "We need to redraw the screenshots beautifully: expensive, rich, and instantly clear what the extension can do, where,
 and how. Also variants for the small promo tile. The three of you (Claude, Astra, Argon) — work hard, think, draw."
 
-## Product (version 1.0.1, Chrome MV3, runs only on www.youtube.com)
+## Product (version 1.1.0, Chrome MV3, runs only on www.youtube.com)
 Store name: "Anti-Spoiler for YouTube™ – Hide Video Length & Progress Bar". Audience: sports and esports fans watching
 replays / VODs / long streams, where the video length or the bar position gives away the result ("4 minutes left and
 1–1? there's no overtime then"). Features, in the user's order of importance:

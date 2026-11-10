@@ -7,7 +7,7 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
 - Uploaded to the Chrome Web Store from build 9c5cc25 (ZIP with "/" entries); the owner submitted it for review.
 - `main` b94d45a is pushed; GitHub Pages works (privacy URL
   https://vtshk.github.io/youtube-anti-spoiler-extension/privacy/).
-- Do not re-upload `dist/` from main: it already contains G (that is 1.0.1).
+- Do not re-upload `dist/` from main: it already contains G (that is 1.1.0).
 
 ## Committed as a48ebc8 + regression fixes on this branch (not pushed, not merged into main)
 - Popup footer: the email is gone; an "About us" button opens a bottom sheet (Argon's editorial design with the header
@@ -40,7 +40,7 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
 2. Owner's report "live guard on a finished stream": not reproduced in 24 runs; most likely the bot-wall bug (fixed,
    see above: on HEAD the guard showed over the wall on finished streams). Owner will watch. If it repeats: in
    the YouTube tab console `localStorage.YAS_DEBUG = "1"`, then send the `[YAS]` lines and the video link.
-3. 1.0.1 after 1.0.0 is approved: bump version, live smoke, fix texts saying title blur is off by default, build the
+3. 1.1.0 after 1.0.0 is approved (owner 2026-11-10: 1.1.0, not 1.0.1 — new features, not only fixes): bump version, live smoke, fix texts saying title blur is off by default, build the
    ZIP, upload the new images. Screenshots and the small tile are DONE (2026-11-10): `store/screenshots/`
    1-watch-without-spoilers, 2-live-from-start, 3-clean-feeds, 4-uncover-one-video, 5-your-settings,
    tile-small-440x280 (owner's pick 7a); landing `docs/screenshots/1..5.png` + feature texts. The marquee 1400×560 is
