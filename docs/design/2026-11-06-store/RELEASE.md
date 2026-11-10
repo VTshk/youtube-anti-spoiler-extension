@@ -40,9 +40,12 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
 2. Owner's report "live guard on a finished stream": not reproduced in 24 runs; most likely the bot-wall bug (fixed,
    see above: on HEAD the guard showed over the wall on finished streams). Owner will watch. If it repeats: in
    the YouTube tab console `localStorage.YAS_DEBUG = "1"`, then send the `[YAS]` lines and the video link.
-3. 1.0.1 after 1.0.0 is approved: bump version, live smoke, recapture store screenshot 4 (titles follow previews) and
-   any slide showing the old footer email, fix texts saying title blur is off by default, build the ZIP.
-4. Small promo tile: deferred by the owner; boards in this folder.
+3. 1.0.1 after 1.0.0 is approved: bump version, live smoke, fix texts saying title blur is off by default, build the
+   ZIP, upload the new images. Screenshots and the small tile are DONE (2026-11-10): `store/screenshots/`
+   1-watch-without-spoilers, 2-live-from-start, 3-clean-feeds, 4-uncover-one-video, 5-your-settings,
+   tile-small-440x280 (owner's pick 7a); landing `docs/screenshots/1..5.png` + feature texts. The marquee 1400×560 is
+   still the old style. Details: `docs/design/2026-11-09-store-art/STATE.md`.
+4. Small promo tile: done (see 3).
 
 ## Rules learned this session
 - Every Chrome run must be muted (`--mute-audio`); memory `mute-browser-runs`.
