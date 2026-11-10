@@ -507,11 +507,15 @@
     });
   }
 
-  // The About sheet. showModal() gives Escape and keeps focus inside. A
-  // click whose target is the dialog itself landed on the backdrop: the
-  // content fills one inner block, so it closes the sheet.
-  function bindAboutSheet() {
-    const sheet = root.document.querySelector("[data-about-sheet]");
+  // The About screen takes the place of the popup's content (owner,
+  // 2026-11-10), so the popup grows to fit it instead of scrolling inside.
+  // Back or Escape returns. Focus moves to the title and back to the link,
+  // so a screen reader says where it is.
+  function bindAboutScreen() {
+    const popupMain = root.document.querySelector("[data-popup-main]");
+    const aboutScreen = root.document.querySelector("[data-about-screen]");
+    const openButton = root.document.querySelector("[data-about-open]");
+    const aboutTitle = root.document.querySelector("[data-about-title]");
     const copyButton = root.document.querySelector("[data-copy-email]");
     const address = root.document
       .querySelector("[data-contact-email]")
@@ -519,11 +523,26 @@
       .replace("mailto:", "");
     let copiedTimer = null;
 
-    root.document.querySelector("[data-about-open]").addEventListener("click", () => sheet.showModal());
-    root.document.querySelector("[data-about-close]").addEventListener("click", () => sheet.close());
-    sheet.addEventListener("click", (event) => {
-      if (event.target === sheet) {
-        sheet.close();
+    function openAbout() {
+      popupMain.hidden = true;
+      aboutScreen.hidden = false;
+      aboutTitle.focus();
+    }
+
+    function closeAbout() {
+      aboutScreen.hidden = true;
+      popupMain.hidden = false;
+      openButton.focus();
+    }
+
+    root.document.querySelector("[data-version]").textContent =
+      "v" + root.chrome.runtime.getManifest().version;
+    openButton.addEventListener("click", openAbout);
+    root.document.querySelector("[data-about-back]").addEventListener("click", closeAbout);
+    aboutScreen.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeAbout();
       }
     });
 
@@ -550,7 +569,7 @@
     // First, so the colours are right as early as possible.
     readStoredTheme().then(showTheme);
     // Works in read-only mode too: it needs no settings.
-    bindAboutSheet();
+    bindAboutScreen();
 
     const toggles = getToggleElements();
     const powerToggle = getPowerToggle();

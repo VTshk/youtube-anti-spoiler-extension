@@ -13,6 +13,8 @@ Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a
 - Popup footer: the email is gone; an "About us" button opens a bottom sheet (Argon's editorial design with the header
   of his centred design): thank-you headline, one sentence, Contact block, email link + copy button. 10 languages;
   "Anti‑Spoiler" in the thanks uses a non-breaking hyphen. Files: `popup/popup.html|css|js`, `_locales/*`.
+  Replaced 2026-11-10 (owner, variant B4, `docs/design/2026-11-10-about/STATE.md`): the footer shows the version on the
+  left and "About & feedback" on the right; About is its own screen in place of the settings with Back, no sheet.
 - Live chat cover: a close (×) button in YouTube's own close position, presses YouTube's close (`#chatframe`
   → `#close-button button`, fallback `#show-hide-button button`); the chat stays covered. `src/content/content.js`.
 - Tests: `tests/popup.test.js`, `tests/content.test.js` — 353/353 pass at that point (367 with the live guard fixes below). README updated.

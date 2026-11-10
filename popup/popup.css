@@ -567,33 +567,30 @@ p {
   cursor: default;
 }
 
-/* The footer under the cards: one quiet "About us" button that opens the
-   About sheet, set apart by the thin line the owner chose: 24 px shorter
-   than the cards on each side (2026-11-06). Muted like the notes, so it
-   does not pull the eye from the settings; the hover fill shows it is a
-   button. */
+/* The footer under the cards (owner, 2026-11-10, variant B4): the version
+   on the left, a quiet link to the About screen on the right. No line: the
+   gap sets it apart. Muted like the notes, so it does not pull the eye from
+   the settings; the hover fill shows the link is a button. */
 .contact {
-  position: relative;
-  margin-top: 10px;
-  padding-top: 6px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding: 0 8px 0 16px;
 }
 
-.contact::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 24px;
-  right: 24px;
-  border-top: 1px solid var(--line);
+.version {
+  color: var(--muted);
+  font-size: 11px;
+  opacity: 0.7;
 }
 
 .about-button {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-height: 24px;
-  padding: 0 10px;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -615,98 +612,48 @@ p {
 }
 
 .about-button:focus-visible,
-.about-close:focus-visible,
+.about-back:focus-visible,
 .about-copy:focus-visible,
 .about-email a:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
-/* The About sheet rises from the bottom edge of the popup: Argon's
-   editorial variant with the header of its centred one (owner,
-   2026-11-09). The slide-in needs Chrome 117 (@starting-style); older
-   versions just show it. */
-.about-sheet {
-  position: fixed;
-  inset: auto 0 0;
-  width: auto;
-  max-width: none;
-  max-height: calc(100% - 20px);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-top: 1px solid var(--line);
-  border-radius: 20px 20px 0 0;
+/* The About screen: one card in the place of the popup's content, the
+   header with Back on the left, like a settings page. */
+.about {
+  padding: 10px 12px;
+}
+
+.about-body {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
   background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 -14px 40px rgb(0 0 0 / 0.26);
-  overflow: auto;
-  transform: translateY(100%);
-  transition:
-    transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    overlay 240ms allow-discrete,
-    display 240ms allow-discrete;
 }
 
-.about-sheet[open] {
-  transform: none;
-}
-
-@starting-style {
-  .about-sheet[open] {
-    transform: translateY(100%);
-  }
-}
-
-/* The popup behind dims and softly blurs. */
-.about-sheet::backdrop {
-  background: rgb(0 0 0 / 0);
-  backdrop-filter: blur(0);
-  transition:
-    background 240ms,
-    backdrop-filter 240ms,
-    overlay 240ms allow-discrete,
-    display 240ms allow-discrete;
-}
-
-.about-sheet[open]::backdrop {
-  background: rgb(0 0 0 / 0.46);
-  backdrop-filter: blur(2px);
-}
-
-@starting-style {
-  .about-sheet[open]::backdrop {
-    background: rgb(0 0 0 / 0);
-    backdrop-filter: blur(0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .about-sheet,
-  .about-sheet::backdrop {
-    transition: none;
-  }
-}
-
-/* The header runs edge to edge, set off by a line. */
 .about-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 11px 12px 11px 18px;
+  gap: 6px;
+  padding: 8px 12px 8px 8px;
   border-bottom: 1px solid var(--line);
 }
 
+/* Focused by popup.js when the screen opens, for screen readers; not a
+   control, so no ring. */
 .about-title {
+  margin: 0;
   font-size: 14px;
   font-weight: 700;
+  outline: none;
 }
 
-.about-close {
+.about-back {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
   border-radius: 8px;
@@ -715,12 +662,12 @@ p {
   cursor: pointer;
 }
 
-.about-close svg {
-  width: 16px;
-  height: 16px;
+.about-back svg {
+  width: 18px;
+  height: 18px;
 }
 
-.about-close:hover {
+.about-back:hover {
   background: color-mix(in srgb, var(--text) 8%, transparent);
   color: var(--text);
 }

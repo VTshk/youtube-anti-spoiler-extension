@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <main class="shell">
+    <main class="shell" data-popup-main>
       <div class="hero-wrap">
         <!-- The capsule repeats the logo: red, crossed by a dark band, with the
              play triangle half hidden behind the band. The whole capsule is the
@@ -129,26 +129,29 @@
       </details>
 
       <!-- Outside the settings panels, so it shows while protection is off
-           and in read-only mode too. The button opens the About sheet. -->
+           and in read-only mode too: the version on the left, the link to
+           the About screen on the right (owner, 2026-11-10). popup.js fills
+           in the version from the manifest. -->
       <footer class="contact">
+        <span class="version" data-version></span>
         <button type="button" class="about-button" data-about-open>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
-          <span data-yas-i18n="popupAboutButton">About us</span>
+          <span data-yas-i18n="popupAboutButton">About &amp; feedback</span>
         </button>
       </footer>
     </main>
 
-    <!-- The About sheet slides up from the bottom. A modal dialog: Escape
-         closes it, focus stays inside, and the dialog element itself is the
-         backdrop area, so its content sits in one inner block. The address
-         is not translated. -->
-    <dialog class="about-sheet" data-about-sheet aria-labelledby="about-title">
+    <!-- The About screen takes the place of the popup's content, so the
+         popup grows to fit it and never scrolls inside, even when it was
+         short with protection off. Back returns. The address is not
+         translated. -->
+    <section class="about" data-about-screen hidden aria-labelledby="about-title">
       <div class="about-body">
         <div class="about-head">
-          <p class="about-title" id="about-title" data-yas-i18n="popupAboutButton">About us</p>
-          <button type="button" class="about-close" data-about-close data-yas-i18n-label="popupAboutClose" aria-label="Close" title="Close">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <button type="button" class="about-back" data-about-back data-yas-i18n-label="popupAboutBack" aria-label="Back" title="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
+          <h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">About &amp; feedback</h1>
         </div>
         <div class="about-main">
           <p class="about-thanks" data-yas-i18n="popupAboutThanks">Thank you for using Anti‑Spoiler!</p>
@@ -169,7 +172,7 @@
           </section>
         </div>
       </div>
-    </dialog>
+    </section>
 
     <script src="../src/shared/settings.js"></script>
     <script src="../src/shared/i18n.js"></script>

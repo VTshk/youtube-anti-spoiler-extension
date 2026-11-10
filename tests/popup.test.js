@@ -39,6 +39,9 @@ function createPopupElement(tagName) {
     removeAttribute(name) {
       delete this.attributes[name];
     },
+    focus() {
+      this.focused = true;
+    },
     toggleAttribute(name, force) {
       if (force) {
         this.attributes[name] = "";
@@ -202,6 +205,9 @@ async function loadPopup(
         getURL(relativePath) {
           return `chrome-extension://test-id/${relativePath}`;
         },
+        getManifest() {
+          return { version: "1.0.0" };
+        },
       },
       storage: {
         sync: {
@@ -337,9 +343,12 @@ async function loadPopup(
     syncWrites,
     titlesLinkButton: getElement("[data-titles-link]"),
     status: getElement("[data-status]"),
+    popupMain: getElement("[data-popup-main]"),
+    version: getElement("[data-version]"),
     aboutOpenButton: getElement("[data-about-open]"),
-    aboutCloseButton: getElement("[data-about-close]"),
-    aboutSheet: getElement("[data-about-sheet]"),
+    aboutBackButton: getElement("[data-about-back]"),
+    aboutScreen: getElement("[data-about-screen]"),
+    aboutTitle: getElement("[data-about-title]"),
     copyButton: getElement("[data-copy-email]"),
     clipboardWrites,
     timers,
@@ -485,8 +494,8 @@ test("the whole capsule is the label of the master switch, with the play triangl
   // No click handler of its own: one would toggle a second time. The only
   // listener on the capsule follows the pointer for the hover circle, and
   // the only click listeners are the theme button's, outside the capsule,
-  // the titles chain button's in Advanced, and the four of the About sheet.
-  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 6);
+  // the titles chain button's in Advanced, and the three of the About screen.
+  assert.equal(POPUP_JS.match(/addEventListener\("click"/g).length, 5);
   assert.match(POPUP_JS, /themeButton\.addEventListener\("click", changeTheme\)/);
   assert.match(POPUP_JS, /linkButton\.addEventListener\("click"/);
   assert.match(POPUP_JS, /hero\.addEventListener\("pointermove"/);
@@ -534,7 +543,8 @@ test("popup HTML English texts match the English messages", () => {
 
   assert.ok(keyedTexts.length >= 14);
   keyedTexts.forEach(([, key, text]) => {
-    assert.equal(text, en(key), key);
+    // "&" is written "&amp;" in HTML.
+    assert.equal(text.replaceAll("&amp;", "&"), en(key), key);
   });
 });
 
@@ -1357,56 +1367,64 @@ test("popup language chip shows the listed language as two capitals", async () =
   assert.equal(english.languageCode.textContent, "DE");
 });
 
-// --- Footer and the About sheet ---
+// --- Footer and the About screen ---
 
-test("popup ends with an About button outside the capsule and every settings panel", () => {
+test("popup ends with the version and an About link outside the capsule and every settings panel", () => {
   const footer = POPUP_HTML.match(/<footer class="contact">([\s\S]*?)<\/footer>\s*<\/main>/);
 
   assert.ok(footer, "the footer is the last part of the popup");
-  // No address in the footer any more (owner, 2026-11-09): one button.
   assert.doesNotMatch(footer[1], /mailto|@/);
+  // Variant B4 (owner, 2026-11-10): the version on the left, the link on the right.
   assert.match(
     footer[1],
-    /<button type="button" class="about-button" data-about-open>\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<span data-yas-i18n="popupAboutButton">About us<\/span>\s*<\/button>/,
+    /^\s*<span class="version" data-version><\/span>\s*<button type="button" class="about-button" data-about-open>\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<span data-yas-i18n="popupAboutButton">About &amp; feedback<\/span>\s*<\/button>\s*$/,
   );
   // After the Advanced card has closed, so it shows with protection off and
   // in read-only mode.
   assert.match(POPUP_HTML, /<\/details>\s*<!--[\s\S]*?-->\s*<footer class="contact">/);
-  assert.equal(en("popupAboutButton"), "About us");
+  assert.equal(en("popupAboutButton"), "About & feedback");
 
-  // The thin line above it stays (owner, 2026-11-06).
-  assert.match(POPUP_CSS, /\.contact::before\s*\{[^}]*left:\s*24px;[^}]*right:\s*24px;[^}]*border-top:\s*1px solid var\(--line\);/);
-  assert.match(POPUP_CSS, /\.about-button\s*\{[^}]*color:\s*var\(--muted\);[^}]*cursor:\s*pointer;/);
+  // No line above it: the gap sets it apart.
+  assert.doesNotMatch(POPUP_CSS, /\.contact::before/);
+  assert.match(POPUP_CSS, /\.contact\s*\{[^}]*display:\s*flex;[^}]*justify-content:\s*space-between;/);
+  assert.match(POPUP_CSS, /\.version\s*\{[^}]*color:\s*var\(--muted\);[^}]*font-size:\s*11px;/);
+  assert.match(POPUP_CSS, /\.about-button\s*\{[^}]*min-height:\s*32px;[^}]*color:\s*var\(--muted\);[^}]*cursor:\s*pointer;/);
   assert.match(POPUP_CSS, /\.about-button:hover\s*\{[^}]*color:\s*var\(--text\);/);
   assert.match(POPUP_CSS, /\.about-button:focus-visible,[\s\S]*?outline:\s*2px solid var\(--focus\);/);
 });
 
-test("the About sheet is a dialog after the popup, with the text, the address and a copy button", () => {
-  const sheet = POPUP_HTML.match(/<\/main>\s*<!--[\s\S]*?-->\s*<dialog class="about-sheet" data-about-sheet aria-labelledby="about-title">([\s\S]*?)<\/dialog>/);
+test("the footer shows the version from the manifest", async () => {
+  const popup = await loadPopup();
 
-  assert.ok(sheet, "the sheet follows the popup");
-  assert.match(sheet[1], /<p class="about-title" id="about-title" data-yas-i18n="popupAboutButton">About us<\/p>/);
-  assert.match(sheet[1], /<button type="button" class="about-close" data-about-close data-yas-i18n-label="popupAboutClose"/);
-  assert.ok(sheet[1].includes(`<p class="about-thanks" data-yas-i18n="popupAboutThanks">${en("popupAboutThanks")}</p>`), "popupAboutThanks");
-  assert.ok(sheet[1].includes(`data-yas-i18n="popupAboutText">${en("popupAboutText")}<`), "popupAboutText");
-  assert.match(sheet[1], /data-yas-i18n="popupContactTitle">Contact</);
-  assert.ok(sheet[1].includes(`data-yas-i18n="popupContactNote">${en("popupContactNote")}<`), "popupContactNote");
+  assert.equal(popup.version.textContent, "v1.0.0");
+});
+
+test("the About screen follows the popup, hidden, with the text, the address and a copy button", () => {
+  const screen = POPUP_HTML.match(/<\/main>\s*<!--[\s\S]*?-->\s*<section class="about" data-about-screen hidden aria-labelledby="about-title">([\s\S]*)<\/section>\s*<script/);
+
+  assert.ok(screen, "the screen follows the popup");
+  assert.match(POPUP_HTML, /<main class="shell" data-popup-main>/);
+  // Back on the left of the header, then the title.
+  assert.match(
+    screen[1],
+    /<div class="about-head">\s*<button type="button" class="about-back" data-about-back data-yas-i18n-label="popupAboutBack" aria-label="Back" title="Back">\s*<svg[^>]*aria-hidden="true">[\s\S]*?<\/svg>\s*<\/button>\s*<h1 class="about-title" id="about-title" tabindex="-1" data-about-title data-yas-i18n="popupAboutButton">About &amp; feedback<\/h1>\s*<\/div>/,
+  );
+  assert.ok(screen[1].includes(`<p class="about-thanks" data-yas-i18n="popupAboutThanks">${en("popupAboutThanks")}</p>`), "popupAboutThanks");
+  assert.ok(screen[1].includes(`data-yas-i18n="popupAboutText">${en("popupAboutText")}<`), "popupAboutText");
+  assert.match(screen[1], /data-yas-i18n="popupContactTitle">Contact</);
+  assert.ok(screen[1].includes(`data-yas-i18n="popupContactNote">${en("popupContactNote")}<`), "popupContactNote");
   // The address is not translated.
-  assert.match(sheet[1], /<a href="mailto:vtshka8@gmail\.com" data-contact-email>\s*<svg[\s\S]*?<\/svg>\s*<span>vtshka8@gmail\.com<\/span>\s*<\/a>/);
-  assert.match(sheet[1], /<button type="button" class="about-copy" data-copy-email data-yas-i18n-label="popupCopyEmail"/);
+  assert.match(screen[1], /<a href="mailto:vtshka8@gmail\.com" data-contact-email>\s*<svg[\s\S]*?<\/svg>\s*<span>vtshka8@gmail\.com<\/span>\s*<\/a>/);
+  assert.match(screen[1], /<button type="button" class="about-copy" data-copy-email data-yas-i18n-label="popupCopyEmail"/);
+  assert.match(screen[1], /^\s*<div class="about-body">\s*<div class="about-head">[\s\S]*?<\/div>\s*<div class="about-main">/);
 
-  // The header runs edge to edge; the rest sits in one block under it.
-  assert.match(sheet[1], /^\s*<div class="about-body">\s*<div class="about-head">[\s\S]*?<\/div>\s*<div class="about-main">/);
-
-  // It rises from the bottom edge over a dimmed, softly blurred popup, and
-  // stays still for people who turned motion off.
-  assert.match(POPUP_CSS, /\.about-sheet\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*auto 0 0;[^}]*border-radius:\s*20px 20px 0 0;[^}]*transform:\s*translateY\(100%\);/);
-  assert.match(POPUP_CSS, /\.about-sheet\[open\]\s*\{[^}]*transform:\s*none;/);
-  assert.match(POPUP_CSS, /@starting-style\s*\{\s*\.about-sheet\[open\]\s*\{[^}]*translateY\(100%\)/);
-  assert.match(POPUP_CSS, /\.about-sheet\[open\]::backdrop\s*\{[^}]*background:\s*rgb\(0 0 0 \/ 0\.46\);[^}]*backdrop-filter:\s*blur\(2px\);/);
-  assert.match(POPUP_CSS, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.about-sheet,\s*\.about-sheet::backdrop\s*\{\s*transition:\s*none;/);
-  assert.match(POPUP_CSS, /\.about-head\s*\{[^}]*padding:\s*11px 12px 11px 18px;[^}]*border-bottom:\s*1px solid var\(--line\);/);
-  // The thanks is the headline; the address and the copy button share one track.
+  // One card in the page flow, so the popup grows to fit it: no dialog,
+  // nothing fixed, no inner scroll.
+  assert.doesNotMatch(POPUP_HTML, /<dialog/);
+  assert.doesNotMatch(POPUP_CSS, /about-sheet|::backdrop|position:\s*fixed/);
+  assert.match(POPUP_CSS, /\.about-body\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*border-radius:\s*14px;[^}]*background:\s*var\(--surface\);/);
+  assert.match(POPUP_CSS, /\.about-head\s*\{[^}]*border-bottom:\s*1px solid var\(--line\);/);
+  assert.match(POPUP_CSS, /\.about-back:focus-visible,[\s\S]*?outline:\s*2px solid var\(--focus\);/);
   assert.match(POPUP_CSS, /\.about-thanks\s*\{[^}]*font-size:\s*17px;[^}]*font-weight:\s*800;/);
   assert.match(POPUP_CSS, /\.about-email\s*\{[^}]*border:\s*1px solid var\(--line\);[^}]*background:\s*var\(--bg\);/);
 });
@@ -1422,29 +1440,44 @@ test("the name in the thanks never splits at its hyphen", () => {
   });
 });
 
-test("the About button opens the sheet; the close button and the backdrop close it", async () => {
+test("the About link swaps the popup for the About screen; Back and Escape return", async () => {
   const popup = await loadPopup();
-  const calls = [];
-  popup.aboutSheet.showModal = () => calls.push("open");
-  popup.aboutSheet.close = () => calls.push("close");
+
+  assert.equal(popup.aboutScreen.hidden, true);
 
   popup.aboutOpenButton.listeners.click();
-  popup.aboutCloseButton.listeners.click();
-  // A click inside the sheet does not close it; one on the backdrop does.
-  popup.aboutSheet.listeners.click({ target: popup.copyButton });
-  popup.aboutSheet.listeners.click({ target: popup.aboutSheet });
+  assert.equal(popup.popupMain.hidden, true);
+  assert.equal(popup.aboutScreen.hidden, false);
+  assert.equal(popup.aboutTitle.focused, true);
 
-  assert.deepEqual(calls, ["open", "close", "close"]);
+  popup.aboutBackButton.listeners.click();
+  assert.equal(popup.popupMain.hidden, false);
+  assert.equal(popup.aboutScreen.hidden, true);
+  assert.equal(popup.aboutOpenButton.focused, true);
+
+  // Other keys do nothing; Escape returns and stops the browser from
+  // closing the popup.
+  popup.aboutOpenButton.listeners.click();
+  let prevented = false;
+  const preventDefault = () => {
+    prevented = true;
+  };
+  popup.aboutScreen.listeners.keydown({ key: "Tab", preventDefault });
+  assert.equal(popup.aboutScreen.hidden, false);
+  assert.equal(prevented, false);
+  popup.aboutScreen.listeners.keydown({ key: "Escape", preventDefault });
+  assert.equal(prevented, true);
+  assert.equal(popup.aboutScreen.hidden, true);
+  assert.equal(popup.popupMain.hidden, false);
 });
 
-test("the About sheet works in read-only mode too", async () => {
+test("the About screen works in read-only mode too", async () => {
   const popup = await loadPopup({}, { failRead: true });
-  const calls = [];
-  popup.aboutSheet.showModal = () => calls.push("open");
 
   popup.aboutOpenButton.listeners.click();
 
-  assert.deepEqual(calls, ["open"]);
+  assert.equal(popup.aboutScreen.hidden, false);
+  assert.equal(popup.version.textContent, "v1.0.0");
 });
 
 test("the copy button copies the address and shows a check for two seconds", async () => {
@@ -1478,7 +1511,7 @@ test("every locale has the theme, About and contact texts", () => {
   const keys = [
     "popupThemeAuto", "popupThemeLight", "popupThemeDark", "popupThemeError",
     "popupAboutButton", "popupAboutThanks", "popupAboutText", "popupContactTitle", "popupContactNote",
-    "popupCopyEmail", "popupEmailCopied", "popupAboutClose", "commentsCloseChat",
+    "popupCopyEmail", "popupEmailCopied", "popupAboutBack", "commentsCloseChat",
   ];
 
   fs.readdirSync(path.join(rootPath, "_locales")).forEach((code) => {
