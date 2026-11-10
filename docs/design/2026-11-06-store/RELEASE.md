@@ -1,4 +1,23 @@
-# Release status (updated 2026-11-09)
+# Release status (updated 2026-11-10)
+
+## 1.1.0 — ready to upload (prepared 2026-11-10)
+- Version 1.1.0 in `manifest.json` and `package.json`. ZIP: `dist/youtube-anti-spoiler-extension-1.1.0.zip`
+  (`npm run build:release`; 31 entries, "/" separators, manifest at the root, exactly the tracked runtime files;
+  sha256 starts b8bddde0d7a27ec1). `dist/` is git-ignored: rebuild from the release commit if needed.
+- No manifest changes since 1.0.0 (same permissions): no new permission prompt for users.
+- What is new since 1.0.0: title blur follows preview blur (chain button to set it separately); live chat cover with
+  a × that closes the chat; the live guard stays off YouTube's own player messages and is cleared after Back; skip
+  buttons hide during ads; popup footer = version + underlined "Feedback" link opening a Feedback screen with Back.
+- Checks: `npm test` 370/370; `cap/smoke.mjs` on a real YouTube video 13/13 PASS (protection on, off, a setting off,
+  no page errors), log `%TEMP%/yas-store/cap/smoke-1.1.0.log`. Live streams were not re-run for this build: the
+  live code has not changed since 3782306, checked then (`docs/design/2026-11-09-audit/AUDIT.md`).
+- Store images: `store/screenshots/` 1–5 (5 re-rendered with the 1.1.0 footer) and `tile-small-440x280.png`; the
+  marquee 1400×560 is still the old style (optional). English listing (`store/listing.md`) updated: titles follow
+  previews, × closes the chat, "Feedback" in the popup. The 9 translated listings are an older text: still true,
+  but they do not mention these three points.
+- Owner, in the Chrome Web Store dashboard: if 1.0.0 is still in review, wait or cancel that review; Package →
+  Upload new package (the ZIP); Store listing → replace the 5 screenshots and the small tile, paste the English
+  detailed description; Submit for review.
 
 Start here in a new session. Worktree `.claude/worktrees/project-overview-62c71a`, branch
 `claude/project-overview-62c71a`, fast-forwarded to `main` b94d45a (includes G, the title-blur link).
